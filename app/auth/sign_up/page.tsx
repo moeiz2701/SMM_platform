@@ -6,6 +6,9 @@ import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import styles from '@/styling/auth.module.css';
 import { FaLeaf } from 'react-icons/fa';
+import API_ROUTES from '@/app/apiRoutes';
+import { useSearchParams } from 'next/navigation';
+
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -15,6 +18,8 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const role = searchParams.get('role') || 'user';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,12 +34,13 @@ export default function SignupPage() {
 
     try {
       // Replace with your actual signup logic
-      const response = await fetch('/api/auth/signup', {
+      const response = await fetch(API_ROUTES.AUTH.REGISTER, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({ name, email, password, role }),
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -42,7 +48,7 @@ export default function SignupPage() {
         throw new Error(errorData.message || 'Signup failed');
       }
 
-      router.push('/login');
+      router.push('/auth/log_in');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed');
     } finally {
@@ -244,6 +250,8 @@ export default function SignupPage() {
     </div>
   );
 }
+
+
 
 
 

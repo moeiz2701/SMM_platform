@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import API_ROUTES from '@/app/apiRoutes';
 import Link from 'next/link';
 import styles from '@/styling/auth.module.css';
 
 import { FaLeaf } from 'react-icons/fa';
+import { signIn } from 'next-auth/react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -21,19 +22,25 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const result = await signIn('credentials', {
-        redirect: false,
-        email,
-        password,
+      // Call backend Express API for login
+      const response = await fetch(API_ROUTES.AUTH.LOGIN, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include',
       });
 
-      if (result?.error) {
-        setError(result.error);
-      } else {
-        router.push('/dashboard');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
       }
+
+      // Redirect to dashboard after successful login
+      router.push('/dashboard');
     } catch (err) {
-      setError('An unexpected error occurred. Please try again.');
+      setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
       setLoading(false);
     }

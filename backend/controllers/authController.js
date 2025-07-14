@@ -7,13 +7,14 @@ const crypto = require('crypto');
 // @route   POST /api/v1/auth/register
 // @access  Public
 exports.register = async (req, res, next) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, role } = req.body;
 
   try {
     const user = await User.create({
       name,
       email,
-      password
+      password,
+      role: role || 'user'
     });
 
     sendTokenResponse(user, 200, res);
@@ -190,6 +191,7 @@ exports.logout = async (req, res, next) => {
 };
 
 // Get token from model, create cookie and send response
+// Get token from model, create cookie and send response
 const sendTokenResponse = (user, statusCode, res) => {
   const token = user.getSignedJwtToken();
 
@@ -202,6 +204,10 @@ const sendTokenResponse = (user, statusCode, res) => {
 
   if (process.env.NODE_ENV === 'production') {
     options.secure = true;
+    options.sameSite = 'none';
+  } else {
+    options.secure = false;
+    options.sameSite = 'lax';
   }
 
   res
