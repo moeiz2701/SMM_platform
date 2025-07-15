@@ -34,7 +34,7 @@ app.use('/api/v1/ai-tools', aiToolsRoutes);
 app.use('/api/v1/analytics', analyticsRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/upload', uploadRoutes);
-app.use('/api/v1/clients', clientRoutes);
+
 
 const PORT = process.env.PORT || 3000;
 
