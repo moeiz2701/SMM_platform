@@ -6,6 +6,8 @@
   --theme-secondary: #ffffff;
   --theme-tertiary: #4f46e5;
   --theme-text: var(--foreground);
+  --text-secondary: #d7d7d7;
+   --text-primary: #ffffff;
 
 }
 
@@ -38,4 +40,11 @@ a {
   html {
     color-scheme: dark;
   }
+}
+button{
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid white;
+  background-color: transparent;
+  
 }

@@ -24,7 +24,10 @@ const app = express();
 app.use(express.json());
 
 // Enable CORS
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3001', // your frontend domain
+  credentials: true,               // allow cookies / sessions
+}));
 
 // Mount routers
 app.use('/api/v1/auth', authRoutes);
