@@ -24,14 +24,3 @@
     color: var(--text-primary);
     cursor: pointer;
 }
-.logo{
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-    font-size: 1rem;
-    font-weight: bold;
-}
-.websiteLogo{
-    font-size: 2rem;
-}

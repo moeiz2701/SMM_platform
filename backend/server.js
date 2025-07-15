@@ -2,6 +2,9 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const cookieParser = require('cookie-parser');
+
+// After express and before routes
 
 // Load env vars
 dotenv.config();
@@ -22,10 +25,11 @@ const app = express();
 
 // Body parser
 app.use(express.json());
+app.use(cookieParser());
 
 // Enable CORS
 app.use(cors({
-  origin: 'http://localhost:3001', // your frontend domain
+  origin: 'http://localhost:3001', // your actual frontend domain
   credentials: true,               // allow cookies / sessions
 }));
 

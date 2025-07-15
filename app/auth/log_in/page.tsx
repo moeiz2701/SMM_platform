@@ -38,7 +38,7 @@ export default function LoginPage() {
       }
 
       // Redirect to dashboard after successful login
-      router.push('/dashboard');
+      router.push('/manager');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
