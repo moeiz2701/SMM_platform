@@ -4,6 +4,9 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 const cookieParser = require('cookie-parser');
 
+
+
+
 // After express and before routes
 
 // Load env vars
@@ -21,6 +24,8 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const clientRoutes = require('./routes/clientRoutes');
+const oauthRoutes = require('./routes/oauthRoutes');
+const socialAccountRoutes = require('./routes/socialAccountRoutes');
 
 const app = express();
 
@@ -43,6 +48,8 @@ app.use('/api/v1/analytics', analyticsRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/upload', uploadRoutes);
 app.use('/api/v1/clients', clientRoutes);
+app.use('/api/v1/oauth', oauthRoutes);
+app.use('/api/v1/social-accounts', socialAccountRoutes);
 
 const PORT = process.env.PORT || 3000;
 

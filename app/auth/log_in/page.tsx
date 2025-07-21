@@ -37,8 +37,22 @@ export default function LoginPage() {
         throw new Error(errorData.message || 'Login failed');
       }
 
-      // Redirect to dashboard after successful login
-      router.push('/manager');
+      // Get user info to determine role
+      const meRes = await fetch(API_ROUTES.AUTH.ME, { credentials: 'include' });
+      if (meRes.ok) {
+        const meData = await meRes.json();
+        const role = meData.data?.role;
+        if (role === 'manager') {
+          router.push('/manager');
+        } else if (role === 'admin') {
+          router.push('/admin');
+        } else {
+          router.push('/client');
+        }
+      } else {
+        // fallback if user info cannot be fetched
+        router.push('/client');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {

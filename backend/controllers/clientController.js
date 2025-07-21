@@ -76,6 +76,9 @@ exports.createClient = asyncHandler(async (req, res, next) => {
   // Add user to req.body
   req.body.user = req.user.id;
 
+  // profilePhoto should be a Cloudinary URL if provided
+  // (Assume frontend uploads to Cloudinary and sends the URL)
+
   const client = await Client.create(req.body);
 
   res.status(201).json({
@@ -102,6 +105,9 @@ exports.updateClient = asyncHandler(async (req, res, next) => {
       new ErrorResponse(`Not authorized to update this client`, 401)
     );
   }
+
+  // profilePhoto should be a Cloudinary URL if provided
+  // (Assume frontend uploads to Cloudinary and sends the URL)
 
   client = await Client.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
