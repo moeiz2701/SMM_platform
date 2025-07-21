@@ -1,0 +1,449 @@
+/* .layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--background, #303030);
+} */
+
+.main {
+  flex: 1;
+  margin-left: auto;
+  padding: 2rem;
+  color: var(--theme-text, #fffafa);
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 1.5rem 0;
+  color: var(--theme-text, #fffafa);
+}
+
+.topActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+}
+
+.leftActions {
+  display: flex;
+  gap: 1rem;
+}
+
+.addButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--theme-tertiary, #4f46e5);
+  color: var(--theme-secondary, #ffffff);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.addButton:hover {
+  opacity: 0.9;
+}
+
+.filterButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--component-background, #1b202a);
+  color: var(--theme-text, #fffafa);
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.filterButton:hover {
+  background-color: var(--theme-primary, #0e0d0d);
+}
+
+.plusIcon {
+  font-size: 1.125rem;
+  font-weight: bold;
+}
+
+.filterIcon {
+  font-size: 0.875rem;
+}
+
+.searchContainer {
+  flex-shrink: 0;
+  width: 300px;
+}
+
+.searchInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--text-secondary, #d7d7d7);
+  font-size: 1rem;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+  background-color: var(--component-background, #1b202a);
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  border-radius: 6px;
+  color: var(--theme-text, #fffafa);
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--theme-tertiary, #4f46e5);
+}
+
+.searchInput::placeholder {
+  color: var(--text-secondary, #d7d7d7);
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--text-secondary, #d7d7d7);
+}
+
+.tab {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary, #d7d7d7);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.tab:hover {
+  color: var(--theme-text, #fffafa);
+  background-color: var(--component-background, #1b202a);
+}
+
+.tabActive {
+  color: var(--theme-tertiary, #4f46e5) !important;
+  border-bottom-color: var(--theme-tertiary, #4f46e5) !important;
+  background-color: transparent !important;
+}
+
+.tableContainer {
+  background-color: var(--component-background, #1b202a);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  margin-bottom: 1.5rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table thead {
+  background-color: var(--theme-primary, #0e0d0d);
+}
+
+.table th {
+  padding: 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary, #d7d7d7);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--text-secondary, #d7d7d7);
+}
+
+.table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--text-secondary, #d7d7d7);
+  font-size: 0.875rem;
+}
+
+.table tbody tr:hover {
+  background-color: var(--theme-primary, #0e0d0d);
+}
+
+.evenRow {
+  background-color: var(--background, #303030);
+}
+
+.clientCell {
+  min-width: 200px;
+}
+
+.clientInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.clientAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--theme-tertiary, #4f46e5);
+  color: var(--theme-secondary, #ffffff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.clientDetails {
+  flex: 1;
+}
+
+.clientName {
+  font-weight: 600;
+  color: var(--theme-text, #fffafa);
+  margin-bottom: 0.25rem;
+}
+
+.clientCompany {
+  color: var(--text-secondary, #d7d7d7);
+  font-size: 0.75rem;
+}
+
+.contactCell {
+  min-width: 180px;
+}
+
+.contactInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.email {
+  color: var(--theme-text, #fffafa);
+  font-size: 0.875rem;
+}
+
+.phone {
+  color: var(--text-secondary, #d7d7d7);
+  font-size: 0.75rem;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.statusActive {
+  background-color: #065f46;
+  color: #10b981;
+}
+
+.statusInactive {
+  background-color: var(--text-secondary, #d7d7d7);
+  color: var(--theme-primary, #0e0d0d);
+}
+
+.statusPending {
+  background-color: #78350f;
+  color: #f59e0b;
+}
+
+.activityCell {
+  color: var(--text-secondary, #d7d7d7);
+  font-size: 0.875rem;
+}
+
+.projectsCell {
+  color: var(--theme-text, #fffafa);
+  font-weight: 500;
+  text-align: center;
+}
+
+.revenueCell {
+  color: #10b981;
+  font-weight: 600;
+  text-align: right;
+}
+
+.actionsCell {
+  text-align: center;
+}
+
+.actionsButton {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #d7d7d7);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.actionsButton:hover {
+  background-color: var(--theme-primary, #0e0d0d);
+  color: var(--theme-text, #fffafa);
+}
+
+.dotsIcon {
+  font-size: 1.25rem;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+}
+
+.counter {
+  color: var(--text-secondary, #d7d7d7);
+  font-size: 0.875rem;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .main {
+    margin-left: 0;
+    padding: 1rem;
+  }
+
+  .topActions {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .leftActions {
+    justify-content: center;
+  }
+
+  .searchContainer {
+    width: 100%;
+  }
+
+  .tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab {
+    flex-shrink: 0;
+  }
+
+  .tableContainer {
+    overflow-x: auto;
+  }
+
+  .table {
+    min-width: 900px;
+  }
+
+  .table th,
+  .table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .clientInfo {
+    gap: 0.5rem;
+  }
+
+  .clientAvatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.75rem;
+  }
+
+  .clientName {
+    font-size: 0.875rem;
+  }
+
+  .clientCompany {
+    font-size: 0.6875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .main {
+    padding: 0.75rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .leftActions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .addButton,
+  .filterButton {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .table {
+    min-width: 800px;
+  }
+
+  .table th,
+  .table td {
+    padding: 0.5rem 0.25rem;
+  }
+
+  .clientCell {
+    min-width: 150px;
+  }
+
+  .contactCell {
+    min-width: 140px;
+  }
+}
+
+/* Custom scrollbar for dark theme */
+.tableContainer::-webkit-scrollbar {
+  height: 8px;
+}
+
+.tableContainer::-webkit-scrollbar-track {
+  background: var(--theme-primary, #0e0d0d);
+}
+
+.tableContainer::-webkit-scrollbar-thumb {
+  background: var(--text-secondary, #d7d7d7);
+  border-radius: 4px;
+}
+
+.tableContainer::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-text, #fffafa);
+}

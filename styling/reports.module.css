@@ -1,0 +1,514 @@
+/* .layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--background, #303030);
+} */
+
+.main {
+  flex: 1;
+  margin-left: auto;
+  padding: 2rem;
+  color: var(--theme-text, #fffafa);
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 1.5rem 0;
+  color: var(--theme-text, #fffafa);
+}
+
+.topActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+}
+
+.dateSelector {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.dateDropdown {
+  background-color: var(--component-background, #1b202a);
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  border-radius: 6px;
+  color: var(--theme-text, #fffafa);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.dateDropdown:focus {
+  outline: none;
+  border-color: var(--theme-tertiary, #4f46e5);
+}
+
+.chooseDatesButton {
+  background-color: var(--component-background, #1b202a);
+  color: var(--theme-text, #fffafa);
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s ease;
+}
+
+.chooseDatesButton:hover {
+  background-color: var(--theme-primary, #0e0d0d);
+}
+
+.actionButtons {
+  display: flex;
+  gap: 1rem;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--component-background, #1b202a);
+  color: var(--theme-text, #fffafa);
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s ease;
+}
+
+.actionButton:hover {
+  background-color: var(--theme-primary, #0e0d0d);
+}
+
+.actionIcon {
+  font-size: 0.875rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--text-secondary, #d7d7d7);
+}
+
+.tab {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary, #d7d7d7);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.tab:hover {
+  color: var(--theme-text, #fffafa);
+  background-color: var(--component-background, #1b202a);
+}
+
+.tabActive {
+  color: var(--theme-tertiary, #4f46e5) !important;
+  border-bottom-color: var(--theme-tertiary, #4f46e5) !important;
+  background-color: transparent !important;
+}
+
+.summaryCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.metricCard {
+  background-color: var(--component-background, #1b202a);
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: transform 0.2s ease;
+}
+
+.metricCard:hover {
+  transform: translateY(-2px);
+}
+
+.cardHeader {
+  margin-bottom: 1rem;
+}
+
+.cardTitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary, #d7d7d7);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cardValue {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--theme-text, #fffafa);
+  margin-bottom: 0.5rem;
+}
+
+.cardChange {
+  margin-bottom: 0.5rem;
+}
+
+.changeText {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.changeText.increase {
+  color: #10b981;
+}
+
+.changeText.decrease {
+  color: #ef4444;
+}
+
+.cardSubtitle {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #d7d7d7);
+}
+
+.performanceSection {
+  background-color: var(--component-background, #1b202a);
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.sectionTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--theme-text, #fffafa);
+  margin: 0;
+}
+
+.trendButtons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.trendButton {
+  background-color: var(--theme-primary, #0e0d0d);
+  color: var(--text-secondary, #d7d7d7);
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.trendButton:hover {
+  color: var(--theme-text, #fffafa);
+}
+
+.trendButtonActive {
+  background-color: var(--theme-tertiary, #4f46e5) !important;
+  color: var(--theme-secondary, #ffffff) !important;
+  border-color: var(--theme-tertiary, #4f46e5) !important;
+}
+
+.chartContainer {
+  height: 300px;
+}
+
+.chartPlaceholder {
+  height: 100%;
+  background-color: var(--theme-primary, #0e0d0d);
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.chartArea {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chartTitle {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--theme-text, #fffafa);
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.chartContent {
+  flex: 1;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  padding: 1rem 0;
+}
+
+.chartLines {
+  display: flex;
+  align-items: end;
+  gap: 1rem;
+  height: 150px;
+}
+
+.chartLine {
+  width: 20px;
+  background-color: var(--theme-tertiary, #4f46e5);
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.chartLine:hover {
+  opacity: 0.8;
+}
+
+.chartAxis {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 1rem;
+  color: var(--text-secondary, #d7d7d7);
+  font-size: 0.75rem;
+}
+
+.platformSection {
+  background-color: var(--component-background, #1b202a);
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.platformContent {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.donutChartContainer {
+  flex-shrink: 0;
+}
+
+.donutChart {
+  position: relative;
+  width: 200px;
+  height: 200px;
+}
+
+.donutSvg {
+  width: 100%;
+  height: 100%;
+}
+
+.donutCenter {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.donutTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--theme-text, #fffafa);
+}
+
+.donutSubtitle {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #d7d7d7);
+}
+
+.platformLegend {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.platformItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.platformInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 100px;
+}
+
+.platformIndicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.platformName {
+  font-size: 0.875rem;
+  color: var(--theme-text, #fffafa);
+  font-weight: 500;
+}
+
+.platformStats {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.progressBarContainer {
+  flex: 1;
+  height: 8px;
+  background-color: var(--theme-primary, #0e0d0d);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.platformPercentage {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--theme-text, #fffafa);
+  min-width: 40px;
+  text-align: right;
+}
+
+.platformChange {
+  font-size: 0.75rem;
+  font-weight: 500;
+  min-width: 60px;
+  text-align: right;
+}
+
+.platformChange.increase {
+  color: #10b981;
+}
+
+.platformChange.decrease {
+  color: #ef4444;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .main {
+    margin-left: 0;
+    padding: 1rem;
+  }
+
+  .topActions {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .dateSelector {
+    justify-content: center;
+  }
+
+  .actionButtons {
+    justify-content: center;
+  }
+
+  .tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab {
+    flex-shrink: 0;
+  }
+
+  .summaryCards {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .sectionHeader {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .trendButtons {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .platformContent {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .donutChart {
+    width: 150px;
+    height: 150px;
+  }
+
+  .platformStats {
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .main {
+    padding: 0.75rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .summaryCards {
+    grid-template-columns: 1fr;
+  }
+
+  .actionButtons {
+    flex-direction: column;
+  }
+
+  .actionButton {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .chartContainer {
+    height: 200px;
+  }
+
+  .chartLines {
+    gap: 0.5rem;
+  }
+
+  .chartLine {
+    width: 15px;
+  }
+}

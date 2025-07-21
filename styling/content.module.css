@@ -1,12 +1,12 @@
-.layout {
+/* .layout {
   display: flex;
   min-height: 100vh;
   background-color: #111827;
-}
+} */
 
 .main {
   flex: 1;
-  margin-left: 280px;
+  margin-left: auto;
   padding: 2rem;
   color: #f3f4f6;
 }
@@ -342,4 +342,173 @@
 
 .tableContainer::-webkit-scrollbar-thumb:hover {
   background: #6b7280;
+}
+
+/* Add these to your existing CSS file */
+
+.filterWrapper {
+  position: relative;
+}
+
+.filterDropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 1rem;
+  width: 280px;
+  z-index: 10;
+  margin-top: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.filterGroup {
+  margin-bottom: 1rem;
+}
+
+.filterGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: #d1d5db;
+}
+
+.filterGroup select {
+  width: 100%;
+  padding: 0.5rem;
+  background-color: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+  color: #f3f4f6;
+  font-size: 0.875rem;
+}
+
+.filterGroup select:focus {
+  outline: none;
+  border-color: #60a5fa;
+}
+
+.filterActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.resetButton {
+  padding: 0.5rem 1rem;
+  background-color: transparent;
+  border: 1px solid #4b5563;
+  color: #f3f4f6;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.resetButton:hover {
+  background-color: #374151;
+}
+
+.applyButton {
+  padding: 0.5rem 1rem;
+  background-color: #3b82f6;
+  border: none;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.applyButton:hover {
+  background-color: #2563eb;
+}
+
+.chevronUp {
+  transform: rotate(180deg);
+  display: inline-block;
+}
+
+/* Mobile responsive adjustments for filters */
+@media (max-width: 768px) {
+  .filterDropdown {
+    width: 100%;
+    right: auto;
+    left: 0;
+  }
+  
+  .filterWrapper {
+    width: 100%;
+  }
+}
+
+/* Pagination Styles */
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.pageNumbers {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.pageButton {
+  padding: 0.5rem 0.75rem;
+  background-color: #374151;
+  color: #f3f4f6;
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  min-width: 36px;
+  text-align: center;
+}
+
+.pageButton:hover:not(.disabled) {
+  background-color: #4b5563;
+}
+
+.pageButton.active {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+
+.pageButton.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Footer adjustments */
+.footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .pageNumbers {
+    order: 1;
+    width: 100%;
+    justify-content: center;
+    margin: 0.5rem 0;
+  }
+  
+  .pageButton {
+    padding: 0.5rem;
+    min-width: 32px;
+  }
 }

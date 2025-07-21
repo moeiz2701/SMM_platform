@@ -38,13 +38,13 @@ export default function Sidebar({ className = "" }: SidebarProps) {
   }, []);
   const menuItems = [
     { icon: Home, label: "Dashboard", href: "/manager" },
-    { icon: FileText, label: "Content", href: "/content" },
-    { icon: CalendarIcon, label: "Calendar", href: "/calendar" },
-    { icon: User, label: "Client", href: "/client" },
-    { icon: Mail, label: "Messages", href: "/messages" },
-    { icon: FileText, label: "Reports", href: "/reports" },
-    { icon: FileText, label: "Billing", href: "/billing" },
-    { icon: Settings, label: "Settings", href: "/settings" },
+    { icon: FileText, label: "Content", href: "/manager/content" },
+    { icon: CalendarIcon, label: "Calendar", href: "/manager/calendar" },
+    { icon: User, label: "Client", href: "/manager/client" },
+    { icon: Mail, label: "Messages", href: "/manager/messages" },
+    { icon: FileText, label: "Reports", href: "/manager/reports" },
+    { icon: FileText, label: "Billing", href: "/manager/billing" },
+    { icon: Settings, label: "Settings", href: "manager/settings" },
   ];
   return (
     <>

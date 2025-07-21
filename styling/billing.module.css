@@ -1,0 +1,781 @@
+/* .layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--background, #303030);
+} */
+
+.main {
+  flex: 1;
+  margin-left: auto;
+  padding: 2rem;
+  color: var(--theme-text, #fffafa);
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 1.5rem 0;
+  color: var(--theme-text, #fffafa);
+}
+
+.headerContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tab {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--theme-primary, #0e0d0d);
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  color: var(--text-secondary, #d7d7d7);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.tab:hover {
+  color: var(--theme-text, #fffafa);
+  background-color: var(--component-background, #1b202a);
+}
+
+.tabActive {
+  background-color: var(--theme-tertiary, #4f46e5) !important;
+  color: var(--theme-secondary, #ffffff) !important;
+  border-color: var(--theme-tertiary, #4f46e5) !important;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 1rem;
+}
+
+.createButton,
+.addButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--theme-tertiary, #4f46e5);
+  color: var(--theme-secondary, #ffffff);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.createButton:hover,
+.addButton:hover {
+  opacity: 0.9;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--component-background, #1b202a);
+  color: var(--theme-text, #fffafa);
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s ease;
+}
+
+.actionButton:hover {
+  background-color: var(--theme-primary, #0e0d0d);
+}
+
+.plusIcon {
+  font-size: 1.125rem;
+  font-weight: bold;
+}
+
+.actionIcon {
+  font-size: 0.875rem;
+}
+
+.tabContent {
+  margin-top: 1rem;
+}
+
+/* Filter Section */
+.filtersSection {
+  background-color: var(--component-background, #1b202a);
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.filtersGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filterLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--theme-text, #fffafa);
+}
+
+.filterSelect {
+  background-color: var(--theme-primary, #0e0d0d);
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  border-radius: 6px;
+  color: var(--theme-text, #fffafa);
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--theme-tertiary, #4f46e5);
+}
+
+.dateInputWrapper {
+  position: relative;
+}
+
+.dateInput {
+  width: 100%;
+  background-color: var(--theme-primary, #0e0d0d);
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  border-radius: 6px;
+  color: var(--theme-text, #fffafa);
+  padding: 0.75rem 2.5rem 0.75rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.dateInput:focus {
+  outline: none;
+  border-color: var(--theme-tertiary, #4f46e5);
+}
+
+.calendarIcon {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary, #d7d7d7);
+  pointer-events: none;
+}
+
+.filterActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.resetButton {
+  background-color: var(--theme-secondary, #ffffff);
+  color: var(--theme-tertiary, #4f46e5);
+  border: 1px solid var(--theme-tertiary, #4f46e5);
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.resetButton:hover {
+  background-color: var(--theme-tertiary, #4f46e5);
+  color: var(--theme-secondary, #ffffff);
+}
+
+.applyButton {
+  background-color: var(--theme-tertiary, #4f46e5);
+  color: var(--theme-secondary, #ffffff);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: opacity 0.2s ease;
+}
+
+.applyButton:hover {
+  opacity: 0.9;
+}
+
+/* Table Styles */
+.tableContainer {
+  background-color: var(--component-background, #1b202a);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  margin-bottom: 1.5rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table thead {
+  background-color: var(--theme-primary, #0e0d0d);
+}
+
+.table th {
+  padding: 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary, #d7d7d7);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--text-secondary, #d7d7d7);
+}
+
+.table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--text-secondary, #d7d7d7);
+  font-size: 0.875rem;
+}
+
+.table tbody tr:hover {
+  background-color: var(--theme-primary, #0e0d0d);
+}
+
+.evenRow {
+  background-color: var(--background, #303030);
+}
+
+.invoiceLink {
+  color: var(--theme-tertiary, #4f46e5);
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity 0.2s ease;
+}
+
+.invoiceLink:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.clientCell {
+  color: var(--theme-text, #fffafa);
+  font-weight: 500;
+}
+
+.amountCell {
+  color: var(--theme-text, #fffafa);
+  font-weight: 600;
+}
+
+.dateCell {
+  color: var(--text-secondary, #d7d7d7);
+}
+
+.dueDateCell {
+  color: var(--text-secondary, #d7d7d7);
+}
+
+.dueDateWarning {
+  color: #ef4444 !important;
+  font-weight: 500;
+}
+
+.descriptionCell {
+  color: var(--theme-text, #fffafa);
+  font-weight: 500;
+}
+
+.categoryCell {
+  color: var(--text-secondary, #d7d7d7);
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.statusPaid {
+  background-color: #065f46;
+  color: #10b981;
+}
+
+.statusPending {
+  background-color: #1e3a8a;
+  color: var(--theme-tertiary, #4f46e5);
+}
+
+.statusOverdue {
+  background-color: #7f1d1d;
+  color: #ef4444;
+}
+
+.statusDraft {
+  background-color: var(--text-secondary, #d7d7d7);
+  color: var(--theme-primary, #0e0d0d);
+}
+
+.statusCancelled {
+  background-color: #374151;
+  color: var(--text-secondary, #d7d7d7);
+}
+
+.actionsCell {
+  min-width: 120px;
+}
+
+.actionLinks {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.actionLink {
+  color: var(--theme-tertiary, #4f46e5);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: opacity 0.2s ease;
+}
+
+.actionLink:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.deleteLink {
+  color: #ef4444;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: opacity 0.2s ease;
+}
+
+.deleteLink:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+}
+
+.paginationInfo {
+  color: var(--text-secondary, #d7d7d7);
+  font-size: 0.875rem;
+}
+
+.paginationControls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.paginationButton {
+  background-color: var(--component-background, #1b202a);
+  color: var(--theme-text, #fffafa);
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  min-width: 40px;
+  text-align: center;
+}
+
+.paginationButton:hover:not(.disabled) {
+  background-color: var(--theme-primary, #0e0d0d);
+}
+
+.paginationButton.active {
+  background-color: var(--theme-tertiary, #4f46e5);
+  color: var(--theme-secondary, #ffffff);
+  border-color: var(--theme-tertiary, #4f46e5);
+}
+
+.paginationButton.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ellipsis {
+  color: var(--text-secondary, #d7d7d7);
+  padding: 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* Expenses Section */
+.expensesSection {
+  margin-bottom: 2rem;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.sectionTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--theme-text, #fffafa);
+  margin: 0;
+}
+
+.categoriesSection {
+  background-color: var(--component-background, #1b202a);
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.categoriesList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.categoryItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.categoryInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.categoryName {
+  font-weight: 500;
+  color: var(--theme-text, #fffafa);
+}
+
+.categoryAmount {
+  font-weight: 600;
+  color: var(--theme-text, #fffafa);
+}
+
+.progressBarContainer {
+  height: 8px;
+  background-color: var(--theme-primary, #0e0d0d);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Reports Section */
+.summaryCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.summaryCard {
+  background-color: var(--component-background, #1b202a);
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: transform 0.2s ease;
+}
+
+.summaryCard:hover {
+  transform: translateY(-2px);
+}
+
+.cardIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin: 0 auto 1rem;
+}
+
+.cardAmount {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--theme-text, #fffafa);
+  margin-bottom: 0.5rem;
+}
+
+.cardTitle {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #d7d7d7);
+  font-weight: 500;
+}
+
+.revenueSection {
+  background-color: var(--component-background, #1b202a);
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.chartPlaceholder {
+  height: 300px;
+  background-color: var(--theme-primary, #0e0d0d);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.chartArea {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chartContent {
+  flex: 1;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  padding: 1rem 0;
+  gap: 0.5rem;
+}
+
+.chartBar {
+  flex: 1;
+  background-color: var(--theme-tertiary, #4f46e5);
+  border-radius: 2px;
+  min-height: 20px;
+  transition: all 0.3s ease;
+}
+
+.chartBar:hover {
+  opacity: 0.8;
+}
+
+.chartAxis {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 0.5rem;
+  color: var(--text-secondary, #d7d7d7);
+  font-size: 0.75rem;
+}
+
+.paymentStatusSection {
+  background-color: var(--component-background, #1b202a);
+  border: 1px solid var(--text-secondary, #d7d7d7);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.statusLegend {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #d7d7d7);
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.paidAmount {
+  color: #10b981 !important;
+  font-weight: 600;
+}
+
+.pendingAmount {
+  color: var(--theme-tertiary, #4f46e5) !important;
+  font-weight: 600;
+}
+
+.overdueAmount {
+  color: #ef4444 !important;
+  font-weight: 600;
+}
+
+.totalRow {
+  background-color: var(--theme-primary, #0e0d0d) !important;
+  font-weight: 600;
+}
+
+.totalLabel {
+  color: var(--theme-text, #fffafa) !important;
+  font-weight: 700;
+}
+
+.totalAmount {
+  color: var(--theme-text, #fffafa) !important;
+  font-weight: 700;
+}
+
+.totalPaid {
+  color: #10b981 !important;
+  font-weight: 700;
+}
+
+.totalPending {
+  color: var(--theme-tertiary, #4f46e5) !important;
+  font-weight: 700;
+}
+
+.totalOverdue {
+  color: #ef4444 !important;
+  font-weight: 700;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .main {
+    margin-left: 0;
+    padding: 1rem;
+  }
+
+  .headerContent {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .tabs {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .actionButtons {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .filtersGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .filterActions {
+    justify-content: center;
+  }
+
+  .summaryCards {
+    grid-template-columns: 1fr;
+  }
+
+  .sectionHeader {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .statusLegend {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .tableContainer {
+    overflow-x: auto;
+  }
+
+  .table {
+    min-width: 800px;
+  }
+
+  .pagination {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .paginationControls {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .main {
+    padding: 0.75rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .tabs {
+    flex-direction: column;
+  }
+
+  .actionButtons {
+    flex-direction: column;
+  }
+
+  .actionButton,
+  .createButton,
+  .addButton {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .chartContent {
+    gap: 0.25rem;
+  }
+}
+
+/* Custom scrollbar */
+.tableContainer::-webkit-scrollbar {
+  height: 8px;
+}
+
+.tableContainer::-webkit-scrollbar-track {
+  background: var(--theme-primary, #0e0d0d);
+}
+
+.tableContainer::-webkit-scrollbar-thumb {
+  background: var(--text-secondary, #d7d7d7);
+  border-radius: 4px;
+}
+
+.tableContainer::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-text, #fffafa);
+}
