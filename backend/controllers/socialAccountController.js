@@ -1,0 +1,109 @@
+// @desc    Get all social accounts for the current user's client
+// @route   GET /api/v1/social-accounts
+// @access  Private
+
+const SocialAccount = require('../models/SocialAccount');
+const Client = require('../models/Client');
+const ErrorResponse = require('../utils/errorResponse');
+const asyncHandler = require('../middleware/async');
+
+// @desc    Add a social account
+// @route   POST /api/v1/social-accounts/:platform
+// @access  Private
+exports.addSocialAccount = asyncHandler(async (req, res, next) => {
+  const { platform } = req.params;
+  // Find client for the current user
+  const client = await Client.findOne({ user: req.user.id });
+  if (!client) {
+    return next(new ErrorResponse('Client not found for user', 404));
+  }
+
+  // Use client name as accountName, random string for token
+  const randomToken = Math.random().toString(36).substring(2, 18);
+
+
+  // Platform-specific random values
+  let followersCount = Math.floor(Math.random() * 10000) + 100;
+  let postCount = Math.floor(Math.random() * 500) + 10;
+  if (platform === 'facebook') {
+    followersCount = Math.floor(Math.random() * 50000) + 500;
+    postCount = Math.floor(Math.random() * 1000) + 50;
+  } else if (platform === 'linkedin') {
+    followersCount = Math.floor(Math.random() * 20000) + 200;
+    postCount = Math.floor(Math.random() * 300) + 5;
+  } else if (platform === 'instagram') {
+    followersCount = Math.floor(Math.random() * 100000) + 1000;
+    postCount = Math.floor(Math.random() * 2000) + 100;
+  }
+
+  // Random bios for demo
+  const bios = [
+    'Software engineering student passionate about building scalable web apps.',
+    'Aspiring full-stack developer and tech enthusiast.',
+    'Loves coding, coffee, and cloud computing.',
+    'React, Node.js, and MongoDB fan. Always learning.',
+    'Building the future, one line of code at a time.'
+  ];
+  const description = bios[Math.floor(Math.random() * bios.length)];
+
+  const socialAccount = await SocialAccount.create({
+    platform,
+    accountName: client.name,
+    accountId: client._id.toString(),
+    accessToken: randomToken,
+    user: req.user.id,
+    client: client._id,
+    followersCount,
+    postCount,
+    description
+  });
+
+  res.status(201).json({
+    success: true,
+    data: socialAccount
+  });
+});
+
+// @desc    Delete a social account
+// @route   DELETE /api/v1/social-accounts/:platform
+// @access  Private
+exports.deleteSocialAccount = asyncHandler(async (req, res, next) => {
+  const { platform } = req.params;
+  // Find client for the current user
+  const client = await Client.findOne({ user: req.user.id });
+  if (!client) {
+    return next(new ErrorResponse('Client not found for user', 404));
+  }
+
+  const deleted = await SocialAccount.findOneAndDelete({
+    platform,
+    user: req.user.id,
+    client: client._id
+  });
+
+  if (!deleted) {
+    return next(new ErrorResponse('Social account not found', 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    data: {}
+  });
+});
+
+exports.getSocialAccounts = asyncHandler(async (req, res, next) => {
+  // Find client for the current user
+  const client = await Client.findOne({ user: req.user.id });
+  if (!client) {
+    return next(new ErrorResponse('Client not found for user', 404));
+  }
+
+  // Find all social accounts for this client
+  const accounts = await SocialAccount.find({ client: client._id, user: req.user.id });
+
+  res.status(200).json({
+    success: true,
+    count: accounts.length,
+    data: accounts
+  });
+});

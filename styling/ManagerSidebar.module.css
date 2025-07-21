@@ -8,6 +8,21 @@
   background: linear-gradient(90deg, #374151 0%, #1e293b 100%);
   color: #60a5fa !important;
 }
+.content{
+  width: 100%;
+  margin: 0 auto;
+  background-color: rgb(30, 41, 59, 0.3);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 0px 20px rgba(95, 87, 132, 0.4);
+  min-height: 100vh;
+  padding: 1.5rem;
+  color: #f8fafc;
+  margin-block: 1.5rem;
+
+}
+
+
  .mobile-menu-btn 
  {
           display: none;
@@ -51,7 +66,7 @@
           z-index: 1000;
           border-radius: 20px;
           margin: 20px;
-          padding-top: 20px;
+          
         }
 
         .sidebar-header {
@@ -142,12 +157,14 @@
         .user-avatar {
           width: 40px;
           height: 40px;
-          background: linear-gradient(135deg, #60a5fa, #a78bfa);
+          background: linear-gradient(90deg, #d2dced 0%, #6c82a4 100%);
+          color: #ffffff;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
+          border: none;
         }
 
         .user-info {

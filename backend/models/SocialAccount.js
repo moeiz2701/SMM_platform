@@ -34,6 +34,9 @@ const SocialAccountSchema = new mongoose.Schema({
   followersCount: {
     type: Number
   },
+  postCount: {
+    type: Number
+  },
   status: {
     type: String,
     enum: ['connected', 'disconnected', 'error'],
@@ -55,7 +58,19 @@ const SocialAccountSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  scopes: {
+    type: [String],
+    default: []
+  },
+  platformDetails: {
+    type: mongoose.Schema.Types.Mixed // for extra info returned from OAuth
+  },
+  description: {
+    type: String,
+    default: ''
   }
+
 });
 
 module.exports = mongoose.model('SocialAccount', SocialAccountSchema);

@@ -1,16 +1,14 @@
 const mongoose = require('mongoose');
 
+
+
 const ClientSchema = new mongoose.Schema({
   name: {
     type: String,
     required: [true, 'Please add a client name']
   },
-  description: {
-    type: String
-  },
-  industry: {
-    type: String
-  },
+  description: String,
+  industry: String,
   contactPerson: {
     name: String,
     email: String,
@@ -32,6 +30,10 @@ const ClientSchema = new mongoose.Schema({
     type: [String],
     default: []
   },
+  profilePhoto: {
+    type: String, // Cloudinary URL
+    default: ''
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -40,7 +42,14 @@ const ClientSchema = new mongoose.Schema({
     type: mongoose.Schema.ObjectId,
     ref: 'User',
     required: true
+  },
+  manager: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User', // Role: manager
   }
 });
+
+module.exports = mongoose.model('Client', ClientSchema);
+
 
 module.exports = mongoose.model('Client', ClientSchema);

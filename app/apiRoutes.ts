@@ -13,7 +13,17 @@ export const API_ROUTES = {
     UPDATE_DETAILS: `${API_BASE_URL}/auth/updatedetails`,
     UPDATE_PASSWORD: `${API_BASE_URL}/auth/updatepassword`,
   },
-  // Add other resource routes as needed
+
+  CLIENTS: {
+    CREATE: `${API_BASE_URL}/clients`,
+    // Add more client routes as needed
+  },
+
+  SOCIAL_ACCOUNTS: {
+    ADD: (platform: string) => `${API_BASE_URL}/social-accounts/${platform}`,
+    DELETE: (platform: string) => `${API_BASE_URL}/social-accounts/${platform}`,
+    GET_ALL: `${API_BASE_URL}/social-accounts`,
+  },
 };
 
 export default API_ROUTES;
