@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState } from "react"
+import ReusableTable, { type TableColumn, type TableAction } from "../../../components/table"
 import type {
   Invoice,
   Expense,
@@ -9,11 +10,10 @@ import type {
   SummaryCard,
   BillingTab,
   FilterState,
-  PaginationInfo,
 } from "../../../components/billing"
 import styles from "@/styling/billing.module.css"
 
-// Sample data
+// Sample data (keep existing data)
 const sampleInvoices: Invoice[] = [
   {
     id: "1",
@@ -163,7 +163,6 @@ const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 export default function BillingPage() {
   const [activeTab, setActiveTab] = useState<BillingTab>("Invoices")
-  const [currentPage, setCurrentPage] = useState(1)
   const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState<FilterState>({
     status: "All Statuses",
@@ -172,59 +171,12 @@ export default function BillingPage() {
     toDate: "",
   })
 
-  const itemsPerPage = 5
-
-  const paginationInfo: PaginationInfo = useMemo(() => {
-    const totalItems = sampleInvoices.length
-    const totalPages = Math.ceil(totalItems / itemsPerPage)
-
-    return {
-      currentPage,
-      totalPages,
-      totalItems,
-      itemsPerPage,
-    }
-  }, [currentPage])
-
-  const paginatedInvoices = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage
-    const endIndex = startIndex + itemsPerPage
-    return sampleInvoices.slice(startIndex, endIndex)
-  }, [currentPage])
-
-  const getStatusClass = (status: Invoice["status"]) => {
-    switch (status) {
-      case "Paid":
-        return styles.statusPaid
-      case "Pending":
-        return styles.statusPending
-      case "Overdue":
-        return styles.statusOverdue
-      case "Draft":
-        return styles.statusDraft
-      case "Cancelled":
-        return styles.statusCancelled
-      default:
-        return styles.statusDraft
-    }
-  }
-
-  const getDueDateClass = (status: Invoice["status"]) => {
-    return status === "Pending" || status === "Overdue" ? styles.dueDateWarning : ""
-  }
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
       minimumFractionDigits: 2,
     }).format(amount)
-  }
-
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= paginationInfo.totalPages) {
-      setCurrentPage(page)
-    }
   }
 
   const handleFilterToggle = () => {
@@ -246,115 +198,120 @@ export default function BillingPage() {
     })
   }
 
-  const renderPaginationButtons = () => {
-    const buttons = []
-    const { currentPage, totalPages } = paginationInfo
-
-    buttons.push(
-      <button
-        key="prev"
-        onClick={() => handlePageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className={`${styles.paginationButton} ${currentPage === 1 ? styles.disabled : ""}`}
-      >
-        Previous
-      </button>,
+  // Define columns for invoices table
+const invoiceColumns: TableColumn[] = [
+  {
+    key: "invoiceNumber",
+    label: "INVOICE #",
+    type: "string",
+    sortable: true,
+    render: (value) => (
+      <a href="#" className={styles.invoiceLink}>
+        {value}
+      </a>
+    ),
+  },
+  { key: "client", label: "CLIENT", type: "string", sortable: true },
+  { 
+    key: "amount", 
+    label: "AMOUNT", 
+    type: "currency", 
+    sortable: true,
+    render: (value, row) => (
+      <span className={row.status === 'Paid' ? styles.paidAmount : 
+                      row.status === 'Pending' ? styles.pendingAmount : 
+                      row.status === 'Overdue' ? styles.overdueAmount : ''}>
+        {formatCurrency(value)}
+      </span>
     )
-
-    for (let i = 1; i <= totalPages; i++) {
-      if (i === currentPage || i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
-        buttons.push(
-          <button
-            key={i}
-            onClick={() => handlePageChange(i)}
-            className={`${styles.paginationButton} ${i === currentPage ? styles.active : ""}`}
-          >
-            {i}
-          </button>,
-        )
-      } else if (i === currentPage - 2 || i === currentPage + 2) {
-        buttons.push(
-          <span key={`ellipsis-${i}`} className={styles.ellipsis}>
-            ...
-          </span>,
-        )
-      }
-    }
-
-    buttons.push(
-      <button
-        key="next"
-        onClick={() => handlePageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className={`${styles.paginationButton} ${currentPage === totalPages ? styles.disabled : ""}`}
-      >
-        Next
-      </button>,
+  },
+  { key: "date", label: "DATE", type: "date", sortable: true },
+  { key: "dueDate", label: "DUE DATE", type: "date", sortable: true },
+  { 
+    key: "status", 
+    label: "STATUS", 
+    type: "status", 
+    sortable: true,
+    render: (value) => (
+      <span className={value === 'Paid' ? styles.statusPaid : 
+                      value === 'Pending' ? styles.statusPending : 
+                      value === 'Overdue' ? styles.statusOverdue : 
+                      value === 'Draft' ? styles.statusDraft : ''}>
+        {value}
+      </span>
     )
+  },
+  { key: "actions", label: "ACTIONS", type: "actions", sortable: false },
+]
 
-    return buttons
-  }
+  // Define actions for invoices
+  const invoiceActions: TableAction[] = [
+    { label: "View", onClick: (row) => console.log("View", row) },
+    { label: "Edit", onClick: (row) => console.log("Edit", row) },
+  ]
+
+  // Define columns for expenses table
+  const expenseColumns: TableColumn[] = [
+    { key: "description", label: "DESCRIPTION", type: "string", sortable: true },
+    { key: "category", label: "CATEGORY", type: "string", sortable: true },
+    { key: "amount", label: "AMOUNT", type: "currency", sortable: true },
+    { key: "date", label: "DATE", type: "date", sortable: true },
+    { key: "client", label: "CLIENT", type: "string", sortable: true },
+    { key: "actions", label: "ACTIONS", type: "actions", sortable: false },
+  ]
+
+  // Define actions for expenses
+  const expenseActions: TableAction[] = [
+    { label: "Edit", onClick: (row) => console.log("Edit", row) },
+    { label: "Delete", onClick: (row) => console.log("Delete", row), className: styles.deleteLink },
+  ]
+
+  // Define columns for payment status table
+ const paymentStatusColumns: TableColumn[] = [
+  { key: "client", label: "CLIENT", type: "string", sortable: true },
+  { 
+    key: "total", 
+    label: "TOTAL", 
+    type: "currency", 
+    sortable: true,
+    render: (value) => <span className={styles.totalAmount}>{formatCurrency(value)}</span>
+  },
+  { 
+    key: "paid", 
+    label: "PAID", 
+    type: "currency", 
+    sortable: true,
+    render: (value) => <span className={styles.paidAmount}>{formatCurrency(value)}</span>
+  },
+  { 
+    key: "pending", 
+    label: "PENDING", 
+    type: "currency", 
+    sortable: true,
+    render: (value) => <span className={styles.pendingAmount}>{formatCurrency(value)}</span>
+  },
+  { 
+    key: "overdue", 
+    label: "OVERDUE", 
+    type: "currency", 
+    sortable: true,
+    render: (value) => <span className={styles.overdueAmount}>{formatCurrency(value)}</span>
+  },
+]
 
   const renderInvoicesTab = () => (
-    <>
-      <div className={styles.tableContainer}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>INVOICE #</th>
-              <th>CLIENT</th>
-              <th>AMOUNT</th>
-              <th>DATE</th>
-              <th>DUE DATE</th>
-              <th>STATUS</th>
-              <th>ACTIONS</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedInvoices.map((invoice, index) => (
-              <tr key={invoice.id} className={index % 2 === 0 ? styles.evenRow : ""}>
-                <td>
-                  <a href="#" className={styles.invoiceLink}>
-                    {invoice.invoiceNumber}
-                  </a>
-                </td>
-                <td className={styles.clientCell}>{invoice.client}</td>
-                <td className={styles.amountCell}>{formatCurrency(invoice.amount)}</td>
-                <td className={styles.dateCell}>{invoice.date}</td>
-                <td className={`${styles.dueDateCell} ${getDueDateClass(invoice.status)}`}>{invoice.dueDate}</td>
-                <td>
-                  <span className={`${styles.statusBadge} ${getStatusClass(invoice.status)}`}>{invoice.status}</span>
-                </td>
-                <td className={styles.actionsCell}>
-                  <div className={styles.actionLinks}>
-                    <a href="#" className={styles.actionLink}>
-                      View
-                    </a>
-                    <a href="#" className={styles.actionLink}>
-                      Edit
-                    </a>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className={styles.pagination}>
-        <div className={styles.paginationInfo}>
-          <span className={styles.paginationText}>
-            Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-            {Math.min(currentPage * itemsPerPage, paginationInfo.totalItems)} of {paginationInfo.totalItems} invoices
-          </span>
-        </div>
-        <div className={styles.paginationControls}>{renderPaginationButtons()}</div>
-      </div>
-    </>
+    <ReusableTable
+      data={sampleInvoices}
+      columns={invoiceColumns}
+      actions={invoiceActions}
+      pageSize={5}
+      searchPlaceholder="Search invoices..."
+    />
   )
 
   const renderExpensesTab = () => (
     <>
+    <div className={styles.expenseSection}>
       <div className={styles.expensesSection}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>Recent Expenses</h2>
@@ -363,44 +320,15 @@ export default function BillingPage() {
             Add Expense
           </button>
         </div>
-
-        <div className={styles.tableContainer}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>DESCRIPTION</th>
-                <th>CATEGORY</th>
-                <th>AMOUNT</th>
-                <th>DATE</th>
-                <th>CLIENT</th>
-                <th>ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sampleExpenses.map((expense, index) => (
-                <tr key={expense.id} className={index % 2 === 0 ? styles.evenRow : ""}>
-                  <td className={styles.descriptionCell}>{expense.description}</td>
-                  <td className={styles.categoryCell}>{expense.category}</td>
-                  <td className={styles.amountCell}>{formatCurrency(expense.amount)}</td>
-                  <td className={styles.dateCell}>{expense.date}</td>
-                  <td className={styles.clientCell}>{expense.client}</td>
-                  <td className={styles.actionsCell}>
-                    <div className={styles.actionLinks}>
-                      <a href="#" className={styles.actionLink}>
-                        Edit
-                      </a>
-                      <a href="#" className={styles.deleteLink}>
-                        Delete
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ReusableTable
+          data={sampleExpenses}
+          columns={expenseColumns}
+          actions={expenseActions}
+          pageSize={5}
+          searchPlaceholder="Search expenses..."
+        />
       </div>
-
+      </div>
       <div className={styles.categoriesSection}>
         <h2 className={styles.sectionTitle}>Expense Categories</h2>
         <div className={styles.categoriesList}>
@@ -445,7 +373,6 @@ export default function BillingPage() {
                 <option>Draft</option>
               </select>
             </div>
-
             <div className={styles.filterGroup}>
               <label className={styles.filterLabel}>Client</label>
               <select
@@ -460,7 +387,6 @@ export default function BillingPage() {
                 <option>Tech Solutions Inc</option>
               </select>
             </div>
-
             <div className={styles.filterGroup}>
               <label className={styles.filterLabel}>From Date</label>
               <div className={styles.dateInputWrapper}>
@@ -474,7 +400,6 @@ export default function BillingPage() {
                 <span className={styles.calendarIcon}>📅</span>
               </div>
             </div>
-
             <div className={styles.filterGroup}>
               <label className={styles.filterLabel}>To Date</label>
               <div className={styles.dateInputWrapper}>
@@ -489,7 +414,6 @@ export default function BillingPage() {
               </div>
             </div>
           </div>
-
           <div className={styles.filterActions}>
             <button onClick={resetFilters} className={styles.resetButton}>
               Reset
@@ -498,7 +422,6 @@ export default function BillingPage() {
           </div>
         </div>
       )}
-
       <div className={styles.summaryCards}>
         {summaryCards.map((card) => (
           <div key={card.id} className={styles.summaryCard}>
@@ -510,7 +433,6 @@ export default function BillingPage() {
           </div>
         ))}
       </div>
-
       <div className={styles.revenueSection}>
         <h2 className={styles.sectionTitle}>Monthly Revenue</h2>
         <div className={styles.chartPlaceholder}>
@@ -528,7 +450,6 @@ export default function BillingPage() {
           </div>
         </div>
       </div>
-
       <div className={styles.paymentStatusSection}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>Payment Status</h2>
@@ -547,58 +468,33 @@ export default function BillingPage() {
             </div>
           </div>
         </div>
-
-        <div className={styles.tableContainer}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>CLIENT</th>
-                <th>TOTAL</th>
-                <th>PAID</th>
-                <th>PENDING</th>
-                <th>OVERDUE</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paymentStatusData.map((status, index) => (
-                <tr key={status.client} className={index % 2 === 0 ? styles.evenRow : ""}>
-                  <td className={styles.clientCell}>{status.client}</td>
-                  <td className={styles.amountCell}>{formatCurrency(status.total)}</td>
-                  <td className={styles.paidAmount}>{formatCurrency(status.paid)}</td>
-                  <td className={styles.pendingAmount}>{formatCurrency(status.pending)}</td>
-                  <td className={styles.overdueAmount}>{formatCurrency(status.overdue)}</td>
-                </tr>
-              ))}
-              <tr className={styles.totalRow}>
-                <td className={styles.totalLabel}>Total</td>
-                <td className={styles.totalAmount}>
-                  {formatCurrency(paymentStatusData.reduce((sum, item) => sum + item.total, 0))}
-                </td>
-                <td className={styles.totalPaid}>
-                  {formatCurrency(paymentStatusData.reduce((sum, item) => sum + item.paid, 0))}
-                </td>
-                <td className={styles.totalPending}>
-                  {formatCurrency(paymentStatusData.reduce((sum, item) => sum + item.pending, 0))}
-                </td>
-                <td className={styles.totalOverdue}>
-                  {formatCurrency(paymentStatusData.reduce((sum, item) => sum + item.overdue, 0))}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <ReusableTable data={paymentStatusData} columns={paymentStatusColumns} pageSize={10} searchable={false} />
       </div>
     </>
   )
 
   return (
     <div className={styles.layout}>
-
       <main className={styles.main}>
         <div className={styles.header}>
           <h1 className={styles.title}>Billing & Invoices</h1>
-
-          <div className={styles.headerContent}>
+          <div className={styles.headerActions}>
+            <button className={styles.createButton}>
+              <span className={styles.plusIcon}>+</span>
+              Create Invoice
+            </button>
+            <div className={styles.rightActions}>
+              <button className={styles.actionButton} onClick={handleFilterToggle}>
+                <span className={styles.actionIcon}>⚙</span>
+                Filter
+              </button>
+              <button className={styles.actionButton}>
+                <span className={styles.actionIcon}>📤</span>
+                Export
+              </button>
+            </div>
+          </div>
+          <div className={styles.tabsContainer}>
             <div className={styles.tabs}>
               {billingTabs.map((tab) => (
                 <button
@@ -610,24 +506,9 @@ export default function BillingPage() {
                 </button>
               ))}
             </div>
-
-            <div className={styles.actionButtons}>
-              <button className={styles.createButton}>
-                <span className={styles.plusIcon}>+</span>
-                Create Invoice
-              </button>
-              <button className={styles.actionButton} onClick={handleFilterToggle}>
-                <span className={styles.actionIcon}>⚙</span>
-                Filter
-              </button>
-              <button className={styles.actionButton}>
-                <span className={styles.actionIcon}>📤</span>
-                Export
-              </button>
-            </div>
+            <div className={styles.divider}></div>
           </div>
         </div>
-
         <div className={styles.tabContent}>
           {activeTab === "Invoices" && renderInvoicesTab()}
           {activeTab === "Expenses" && renderExpensesTab()}

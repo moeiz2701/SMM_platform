@@ -1,0 +1,68 @@
+.searchContainer {
+  display: flex;
+  align-items: center;
+}
+
+.searchContainer .searchInput {
+  background-color: var(--component-background, #1b202a);
+  border: 1px solid rgba(215, 215, 215, 0.1);
+  border-radius: 8px;
+  color: var(--theme-text, #fffafa);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  width: 250px;
+  transition: all 0.2s ease;
+  font-family: "Poppins", sans-serif;
+}
+
+.searchContainer .searchInput:focus {
+  outline: none;
+  border-color:  #6c82a4;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* Updated action buttons to be smaller */
+.searchContainer .actionButtons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.searchContainer .createButton {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.searchContainer .actionButton {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+/* Updated tabs positioning */
+.searchContainer .tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #374151;
+  margin-bottom: 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .searchContainer .topControls {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .searchContainer {
+    width: 100%;
+  }
+  
+  .searchContainer .searchInput {
+    width: 100%;
+  }
+  
+  .searchContainer .actionButtons {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}

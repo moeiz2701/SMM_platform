@@ -1,12 +1,21 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useMemo } from "react"
-import type { Conversation } from "../../../components/messages"
+import type { Message } from "../../../components/messages"
 import styles from "@/styling/messages.module.css"
 
-const sampleConversations: Conversation[] = [
+const sampleConversations: {
+  id: string
+  name: string
+  role: string
+  avatar?: string
+  lastMessage: string
+  timestamp: string
+  isOnline: boolean
+  unreadCount: number
+  messages: Message[]
+}[] = [
   {
     id: "1",
     name: "Robert Johnson",
@@ -173,7 +182,6 @@ export default function MessagesPage() {
 
   const filteredConversations = useMemo(() => {
     if (!searchTerm) return sampleConversations
-
     return sampleConversations.filter(
       (conversation) =>
         conversation.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -208,63 +216,64 @@ export default function MessagesPage() {
 
   return (
     <div className={styles.layout}>
-
       <main className={styles.main}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>Messages</h1>
+        </div>
+
         <div className={styles.messagesContainer}>
           {/* Left Column - Messages List */}
           <div className={styles.messagesList}>
-            <div className={styles.messagesHeader}>
-              <h2 className={styles.messagesTitle}>Messages</h2>
-              <button className={styles.newMessageIcon}>✏️</button>
-            </div>
+  <div className={styles.messagesHeader}>
+    <div className={styles.searchContainer}>
+      <div className={styles.searchInputWrapper}>
+        <span className={styles.searchIcon}>🔍</span>
+        <input
+          type="text"
+          placeholder="Search conversations..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className={styles.searchInput}
+        />
+      </div>
+    </div>
+  </div>
 
-            <div className={styles.searchContainer}>
-              <div className={styles.searchInputWrapper}>
-                <span className={styles.searchIcon}>🔍</span>
-                <input
-                  type="text"
-                  placeholder="Search messages..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className={styles.searchInput}
-                />
-              </div>
+              <div className={styles.conversationsList}>
+    {filteredConversations.map((conversation) => (
+      <div
+        key={conversation.id}
+        className={`${styles.conversationItem} ${
+          activeConversationId === conversation.id ? styles.activeConversation : ""
+        }`}
+        onClick={() => setActiveConversationId(conversation.id)}
+      >
+        <div className={styles.conversationAvatar}>{getInitials(conversation.name)}</div>
+        <div className={styles.conversationContent}>
+          <div className={styles.conversationHeader}>
+            <div className={styles.conversationInfo}>
+              <div className={styles.conversationName}>{conversation.name}</div>
+              <div className={styles.conversationRole}>{conversation.role}</div>
             </div>
-
-            <div className={styles.conversationsList}>
-              {filteredConversations.map((conversation) => (
-                <div
-                  key={conversation.id}
-                  className={`${styles.conversationItem} ${
-                    activeConversationId === conversation.id ? styles.activeConversation : ""
-                  }`}
-                  onClick={() => setActiveConversationId(conversation.id)}
-                >
-                  <div className={styles.conversationAvatar}>{getInitials(conversation.name)}</div>
-                  <div className={styles.conversationContent}>
-                    <div className={styles.conversationHeader}>
-                      <div className={styles.conversationInfo}>
-                        <div className={styles.conversationName}>{conversation.name}</div>
-                        <div className={styles.conversationRole}>{conversation.role}</div>
-                      </div>
-                      <div className={styles.conversationMeta}>
-                        <div className={styles.conversationTime}>{conversation.timestamp}</div>
-                        {conversation.unreadCount > 0 && (
-                          <div className={styles.unreadBadge}>{conversation.unreadCount}</div>
-                        )}
-                      </div>
-                    </div>
-                    <div className={styles.lastMessage}>{conversation.lastMessage}</div>
-                  </div>
-                </div>
-              ))}
+            <div className={styles.conversationMeta}>
+              <div className={styles.conversationTime}>{conversation.timestamp}</div>
+              {conversation.unreadCount > 0 && (
+                <div className={styles.unreadBadge}>{conversation.unreadCount}</div>
+              )}
             </div>
-
-            <button className={styles.newMessageButton}>
-              <span className={styles.plusIcon}>+</span>
-              New Message
-            </button>
           </div>
+          <div className={styles.lastMessage}>{conversation.lastMessage}</div>
+        </div>
+      </div>
+    ))}
+  </div>
+           <div className={styles.newMessageSection}>
+    <button className={styles.newMessageButton}>
+      <span className={styles.plusIcon}>+</span>
+      New Message
+    </button>
+  </div>
+</div>
 
           {/* Right Column - Chat View */}
           <div className={styles.chatView}>
