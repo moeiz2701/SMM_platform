@@ -1,4 +1,5 @@
 export interface Client {
+  _id: string
   id: string
   name: string
   company: string

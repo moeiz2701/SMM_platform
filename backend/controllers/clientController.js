@@ -1,3 +1,7 @@
+// @desc    Send a request to a client (by manager)
+// @route   POST /api/v1/clients/:id/request
+// @access  Private/Manager
+
 const Client = require('../models/Client');
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
@@ -6,12 +10,12 @@ const asyncHandler = require('../middleware/async');
 // @route   GET /api/v1/clients
 // @access  Private
 exports.getClients = asyncHandler(async (req, res, next) => {
-  // Filter by user if not admin
+  // Admins and managers can see all clients, others only their own
   let query;
-  if (req.user.role !== 'admin') {
-    query = Client.find({ user: req.user.id });
-  } else {
+  if (req.user.role === 'admin' || req.user.role === 'manager') {
     query = Client.find().populate('user', 'name email');
+  } else {
+    query = Client.find({ user: req.user.id });
   }
 
   // Filtering
@@ -149,11 +153,18 @@ exports.deleteClient = asyncHandler(async (req, res, next) => {
 
 // @desc    Get clients by user
 // @route   GET /api/v1/clients/user/:userId
-// @access  Private/Admin
+// @access  Private/Admin/Manager
 exports.getClientsByUser = asyncHandler(async (req, res, next) => {
-  if (req.user.role !== 'admin') {
+  if (req.user.role !== 'admin' && req.user.role !== 'manager') {
     return next(
       new ErrorResponse(`Not authorized to access this route`, 401)
+    );
+  }
+
+  // Managers can only access their own clients
+  if (req.user.role === 'manager' && req.user.id !== req.params.userId) {
+    return next(
+      new ErrorResponse(`Not authorized to access other users' clients`, 401)
     );
   }
 
@@ -164,4 +175,34 @@ exports.getClientsByUser = asyncHandler(async (req, res, next) => {
     count: clients.length,
     data: clients
   });
+});
+exports.sendRequest = asyncHandler(async (req, res, next) => {
+  if (req.user.role !== 'manager') {
+    return next(new ErrorResponse('Only managers can send requests', 403));
+  }
+  const clientId = req.params.id;
+  const managerId = req.user.id;
+  try {
+    const client = await Client.sendRequest(clientId, managerId);
+    res.status(200).json({ success: true, requests: client.requests });
+  } catch (err) {
+    return next(new ErrorResponse(err.message, 404));
+  }
+});
+
+// @desc    Get all requests for a client
+// @route   GET /api/v1/clients/:id/requests
+// @access  Private/Admin/Manager
+exports.getRequests = asyncHandler(async (req, res, next) => {
+  // Only admin or manager can view requests
+  if (req.user.role !== 'admin' && req.user.role !== 'manager') {
+    return next(new ErrorResponse('Not authorized to view requests', 403));
+  }
+  const clientId = req.params.id;
+  try {
+    const requests = await Client.getRequests(clientId);
+    res.status(200).json({ success: true, requests });
+  } catch (err) {
+    return next(new ErrorResponse(err.message, 404));
+  }
 });

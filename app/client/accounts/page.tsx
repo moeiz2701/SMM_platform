@@ -84,21 +84,25 @@ const handleAddSocialAccount = async (platform: string) => {
         {/* Instagram */}
         <div className={styles.instagram} style={{cursor:'pointer'}} onClick={() => !getAccount('instagram') && handleAddSocialAccount('instagram')}>
           {getAccount('instagram') ? (
-            <div className={styles.accountDetails}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '40px' }}>
-              {clientProfilePhoto && (
-                <Image
-                  src={clientProfilePhoto}
-                  alt="Profile"
-                  width={100}
-                  height={100}
-                  style={{ borderRadius: '50%', objectFit: 'cover' }}
-                />
-              )}
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ display: 'inline', marginBottom: 0 }}>{getAccount('instagram')?.accountName || ''}</h3>
-                <span>{getAccount('instagram')?.description || ''}</span>
+            <div className={styles.accountDetails} style={{ position: 'relative' }}>
+              {/* Platform icon top-left */}
+              <div style={{ position: 'absolute', top: 90, left: 10 }}>
+                <Image src="/icons/instagram.svg" alt="Instagram" width={32} height={32} />
               </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '40px' }}>
+                {clientProfilePhoto && (
+                  <Image
+                    src={clientProfilePhoto}
+                    alt="Profile"
+                    width={100}
+                    height={100}
+                    style={{ borderRadius: '50%', objectFit: 'cover' }}
+                  />
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <h3 style={{ display: 'inline', marginBottom: 0 }}>{getAccount('instagram')?.accountName || ''}</h3>
+                  <span>{getAccount('instagram')?.description || ''}</span>
+                </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <p style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -119,21 +123,25 @@ const handleAddSocialAccount = async (platform: string) => {
         {/* LinkedIn */}
         <div className={styles.linkdin} style={{cursor:'pointer'}} onClick={() => !getAccount('linkedin') && handleAddSocialAccount('linkedin')}>
           {getAccount('linkedin') ? (
-             <div className={styles.accountDetails}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '40px' }}>
-              {clientProfilePhoto && (
-                <Image
-                  src={clientProfilePhoto}
-                  alt="Profile"
-                  width={100}
-                  height={100}
-                  style={{ borderRadius: '50%', objectFit: 'cover' }}
-                />
-              )}
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ display: 'inline', marginBottom: 0 }}>{getAccount('linkedin')?.accountName || ''}</h3>
-                <span >{getAccount('linkedin')?.description || ''}</span>
+            <div className={styles.accountDetails} style={{ position: 'relative' }}>
+              {/* Platform icon top-left */}
+              <div style={{ position: 'absolute', top: 90, left: 10 }}>
+                <Image src="/icons/linkedin.svg" alt="LinkedIn" width={32} height={32} />
               </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '40px' }}>
+                {clientProfilePhoto && (
+                  <Image
+                    src={clientProfilePhoto}
+                    alt="Profile"
+                    width={100}
+                    height={100}
+                    style={{ borderRadius: '50%', objectFit: 'cover' }}
+                  />
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <h3 style={{ display: 'inline', marginBottom: 0 }}>{getAccount('linkedin')?.accountName || ''}</h3>
+                  <span >{getAccount('linkedin')?.description || ''}</span>
+                </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <p style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -154,21 +162,25 @@ const handleAddSocialAccount = async (platform: string) => {
         {/* Facebook */}
         <div className={styles.facebook} style={{cursor:'pointer'}} onClick={() => !getAccount('facebook') && handleAddSocialAccount('facebook')}>
           {getAccount('facebook') ? (
-             <div className={styles.accountDetails}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '40px' }}>
-              {clientProfilePhoto && (
-                <Image
-                  src={clientProfilePhoto}
-                  alt="Profile"
-                  width={100}
-                  height={100}
-                  style={{ borderRadius: '50%', objectFit: 'cover' }}
-                />
-              )}
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ display: 'inline', marginBottom: 0 }}>{getAccount('facebook')?.accountName || ''}</h3>
-                <span >{getAccount('facebook')?.description || ''}</span>
+            <div className={styles.accountDetails} style={{ position: 'relative' }}>
+              {/* Platform icon top-left */}
+              <div style={{ position: 'absolute', top: 90, left: 10 }}>
+                <Image src="/icons/facebook.svg" alt="Facebook" width={32} height={32} />
               </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '40px' }}>
+                {clientProfilePhoto && (
+                  <Image
+                    src={clientProfilePhoto}
+                    alt="Profile"
+                    width={100}
+                    height={100}
+                    style={{ borderRadius: '50%', objectFit: 'cover' }}
+                  />
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <h3 style={{ display: 'inline', marginBottom: 0 }}>{getAccount('facebook')?.accountName || ''}</h3>
+                  <span >{getAccount('facebook')?.description || ''}</span>
+                </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <p style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

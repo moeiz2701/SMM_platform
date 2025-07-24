@@ -8,10 +8,36 @@
   --theme-tertiary: #4f46e5;
   --theme-text: var(--foreground);
   --text-secondary: #d7d7d7;
-   --text-primary: #ffffff;
+  --text-primary: #ffffff;
 
 }
-
+.button2{
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--component-background, #1b202a);
+  color: var(--theme-text, #fffafa);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border: none;
+  border: 1px solid transparent;
+}
+.button2:hover {
+  background-color: var(--theme-primary, #0e0d0d);
+  border: 1px solid white;
+}
+input{
+  width: 100%;
+  padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+  background-color: var(--component-background, #1b202a);
+  border-radius: 10px;
+  color: var(--theme-text, #fffafa);
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease;
+  border: none;
+}
 html,
 body {
   max-width: 100vw;
@@ -142,4 +168,7 @@ input, textarea, select {
 }
 span{
   font-family: 'BalooRegular', sans-serif;
+}
+button{
+  font-family: 'BalooMedium';
 }

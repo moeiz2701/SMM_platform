@@ -16,7 +16,10 @@ export const API_ROUTES = {
 
   CLIENTS: {
     CREATE: `${API_BASE_URL}/clients`,
-    // Add more client routes as needed
+    GET_ALL: `${API_BASE_URL}/clients`,
+    BY_USER: (userId: string) => `${API_BASE_URL}/clients/user/${userId}`,
+    SEND_REQUEST: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/request`,
+    GET_REQUESTS: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/requests`,
   },
 
   SOCIAL_ACCOUNTS: {

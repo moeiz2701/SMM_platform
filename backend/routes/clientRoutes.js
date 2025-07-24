@@ -5,8 +5,12 @@ const {
   createClient,
   updateClient,
   deleteClient,
-  getClientsByUser
+  getClientsByUser,
+  sendRequest,
+  getRequests
 } = require('../controllers/clientController');
+// Send a request to a client (manager only)
+
 
 const router = express.Router();
 
@@ -17,14 +21,19 @@ router
   .get(protect, getClients)
   .post(protect, createClient);
 
+
+router.post('/:id/request', protect, authorize('manager'), sendRequest);
+
+// Get all requests for a client (admin/manager)
+router.get('/:id/requests', protect, authorize('admin', 'manager'), getRequests);
+
+router
+  .route('/user/:userId')
+  .get(protect, authorize('admin', 'manager'), getClientsByUser);
+
 router
   .route('/:id')
   .get(protect, getClient)
   .put(protect, updateClient)
   .delete(protect, deleteClient);
-
-router
-  .route('/user/:userId')
-  .get(protect, authorize('admin'), getClientsByUser);
-
 module.exports = router;
