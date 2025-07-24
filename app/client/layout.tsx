@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Sidebar from '@/components/ClientSidebar';
+import Sidebar from '@/components/Sidebar';
 import styles from '../../styling/ManagerSidebar.module.css';
 import { ClientProvider } from "@/contexts/clientContext";
 import API_ROUTES from "@/app/apiRoutes";
@@ -26,14 +26,10 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
 
   return (
     <ClientProvider userId={userId}>
-      <div style={{ display: 'flex', minHeight: '100vh' }}>
-        <Sidebar />
-        <main style={{ flex: 1 , marginLeft:'300px', paddingRight:'20px'}}>
-          <div className={styles.content}>
-            {children}
-          </div>
-        </main>
-      </div>
+      <div style={{ display: 'flex', height: '100vh' }}>
+      <Sidebar userRole={'User'} userType={'User'} />
+      <main style={{ flex: 1 , paddingRight:'20px', overflow:'auto', padding:'2rem'}}>{children}</main>
+    </div>
     </ClientProvider>
   );
 }
