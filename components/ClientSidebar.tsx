@@ -54,6 +54,7 @@ export default function Sidebar({ className = "" }: SidebarProps) {
     { icon: CalendarIcon, label: "Calendar", href: "/client/calendar" },
     { icon: User, label: "Profile", href: "/client/profile" },
     { icon: Mail, label: "Manager", href: "/client/manager" },
+    { icon: Mail, label: "Requests", href: "/client/requests" },
     { icon: FileText, label: "Notifications", href: "/client/notifications" },
     { icon: Settings, label: "Support", href: "/client/support" },
     { icon: Settings, label: "Settings", href: "/client/settings" },

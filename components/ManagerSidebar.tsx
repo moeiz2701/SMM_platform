@@ -8,6 +8,7 @@ import Link from "next/link"
 import { Home, User, Settings, Mail, FileText, Menu, X, Calendar as CalendarIcon } from "lucide-react"
 import API_ROUTES from "@/app/apiRoutes"
 import { FaLeaf } from "react-icons/fa"
+import Image from "next/image"
 
 
 interface SidebarProps {
@@ -17,24 +18,38 @@ interface SidebarProps {
 export default function Sidebar({ className = "" }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [manager, setManager] = useState<{ profilePhoto?: string; name?: string; email?: string } | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
-    async function fetchUser() {
+    async function fetchUserAndManager() {
       try {
-        const res = await fetch("http://localhost:3000/api/v1/auth/me", { credentials: "include" });
+        // Get user info
+        const res = await fetch(API_ROUTES.AUTH.ME, { credentials: "include" });
         if (res.ok) {
           const data = await res.json();
           setUser({
             name: data.data?.name || "",
             email: data.data?.email || ""
           });
+          // Now fetch manager profile using user._id
+          if (data.data?._id) {
+            const mgrRes = await fetch(API_ROUTES.MANAGERS.GET_BY_USER(data.data._id), { credentials: "include" });
+            if (mgrRes.ok) {
+              const mgrData = await mgrRes.json();
+              setManager({
+                profilePhoto: mgrData.data?.profilePhoto || "",
+                name: mgrData.data?.user?.name || data.data?.name || "",
+                email: mgrData.data?.user?.email || data.data?.email || ""
+              });
+            }
+          }
         }
       } catch (e) {
         // Optionally handle error
       }
     }
-    fetchUser();
+    fetchUserAndManager();
   }, []);
   const menuItems = [
     { icon: Home, label: "Dashboard", href: "/manager" },
@@ -44,6 +59,7 @@ export default function Sidebar({ className = "" }: SidebarProps) {
     { icon: Mail, label: "Messages", href: "/manager/messages" },
     { icon: FileText, label: "Reports", href: "/manager/reports" },
     { icon: FileText, label: "Billing", href: "/manager/billing" },
+    { icon: FileText, label: "Profile", href: "/manager/profile" },
     { icon: Settings, label: "Settings", href: "manager/settings" },
   ];
   return (
@@ -88,11 +104,21 @@ export default function Sidebar({ className = "" }: SidebarProps) {
         <div className={styles["sidebar-footer"]}>
           <div className={styles["user-profile"]}>
             <div className={styles["user-avatar"]}>
-              <User size={24} />
+              {manager?.profilePhoto ? (
+                <Image
+                  src={manager.profilePhoto}
+                  alt="Profile Photo"
+                  width={40}
+                  height={40}
+                  className={styles["profile-photo-img"]}
+                />
+              ) : (
+                <User size={24} />
+              )}
             </div>
             <div className={styles["user-info"]}>
-               <p className={styles["user-name"]}>{user?.name || "Account"}</p>
-              <p className={styles["user-email"]}>{user?.email || "email@example.com"}</p>
+              <p className={styles["user-name"]}>{manager?.name || user?.name || "Account"}</p>
+              <p className={styles["user-email"]}>{manager?.email || user?.email || "email@example.com"}</p>
             </div>
           </div>
         </div>

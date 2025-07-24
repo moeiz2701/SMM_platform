@@ -5,6 +5,7 @@
 const Client = require('../models/Client');
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
+const Manager = require('../models/Manager'); // Add at the top if not already
 
 // @desc    Get all clients
 // @route   GET /api/v1/clients
@@ -181,7 +182,12 @@ exports.sendRequest = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Only managers can send requests', 403));
   }
   const clientId = req.params.id;
-  const managerId = req.user.id;
+  // Find the Manager document for the current user
+  const managerDoc = await Manager.findOne({ user: req.user.id });
+  if (!managerDoc) {
+    return next(new ErrorResponse('Manager profile not found for this user', 404));
+  }
+  const managerId = managerDoc._id;
   try {
     const client = await Client.sendRequest(clientId, managerId);
     res.status(200).json({ success: true, requests: client.requests });
@@ -195,7 +201,7 @@ exports.sendRequest = asyncHandler(async (req, res, next) => {
 // @access  Private/Admin/Manager
 exports.getRequests = asyncHandler(async (req, res, next) => {
   // Only admin or manager can view requests
-  if (req.user.role !== 'admin' && req.user.role !== 'manager') {
+  if (req.user.role !== 'admin' && req.user.role !== 'user') {
     return next(new ErrorResponse('Not authorized to view requests', 403));
   }
   const clientId = req.params.id;
@@ -206,3 +212,48 @@ exports.getRequests = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(err.message, 404));
   }
 });
+
+// @desc    Assign a manager to a client
+// @route   PUT /api/v1/clients/assign-manager/:managerId
+// @access  Private/Client
+exports.assignManagerToClient = asyncHandler(async (req, res, next) => {
+  // Only client can assign a manager to themselves
+  if (req.user.role !== 'user') {
+    return next(new ErrorResponse('Not authorized to assign manager', 403));
+  }
+
+  const userId = req.user.id;
+  const managerId = req.params.managerId;
+
+  if (!managerId) {
+    return next(new ErrorResponse('Manager ID is required', 400));
+  }
+
+  // Check if manager exists
+  const Manager = require('../models/Manager');
+  const manager = await Manager.findById(managerId);
+  if (!manager) {
+    return next(new ErrorResponse('Manager not found', 404));
+  }
+
+  // Find the client by user id
+  const client = await Client.findOneAndUpdate(
+    { user: userId },
+    { manager: managerId },
+    { new: true, runValidators: true }
+  );
+
+  if (!client) {
+    return next(new ErrorResponse('Client not found for this user', 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    data: client
+  });
+});
+
+// @desc    Create new manager
+// @route   POST /api/v1/managers
+// @access  Private/Admin
+

@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const RequestSchema = new mongoose.Schema({
   manager: {
     type: mongoose.Schema.ObjectId,
-    ref: 'User',
+    ref: 'Manager',
     required: true
   },
   date: {
@@ -63,7 +63,7 @@ const ClientSchema = new mongoose.Schema({
 
   manager: {
     type: mongoose.Schema.ObjectId,
-    ref: 'User', // Role: manager
+    ref: 'Manager', // Role: manager
   },
   requests: [RequestSchema]
 });
@@ -79,7 +79,17 @@ ClientSchema.statics.sendRequest = async function(clientId, managerId) {
 
 // Get all requests for a client
 ClientSchema.statics.getRequests = async function(clientId) {
-  const client = await this.findById(clientId).populate('requests.manager', 'name email');
+  const client = await this.findById(clientId)
+    .populate({
+      path: 'requests.manager',
+      model: 'Manager',
+      populate: {
+        path: 'user',
+        model: 'User',
+        select: 'name email'
+      },
+      select: 'profilePhoto user'
+    });
   if (!client) throw new Error('Client not found');
   return client.requests;
 };

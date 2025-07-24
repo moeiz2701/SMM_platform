@@ -1,0 +1,39 @@
+.requestCard {
+ background: var(--component-background);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+ 
+  
+}
+
+.requestCard:hover {
+  box-shadow: 0 2px 20px  rgb(41, 47, 56);
+}
+
+.requestCardImg {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 24px;
+  background: #f5f5f5;
+}
+
+.requestCardName {
+  font-weight: 600;
+  font-size: 20px;
+}
+
+.requestCardEmail {
+  color: #666;
+  font-size: 15px;
+  margin-top: -10px;
+}
+
+.requestCardText {
+  font-weight: 500;
+  margin-top: 10px;
+}

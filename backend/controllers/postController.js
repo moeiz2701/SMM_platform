@@ -1,4 +1,5 @@
 const Post = require('../models/post');
+const Manager = require('../models/Manager');
 const Client = require('../models/Client');
 const SocialAccount = require('../models/SocialAccount');
 const ErrorResponse = require('../utils/errorResponse');
@@ -10,8 +11,17 @@ const { uploadToCloudinary } = require('../utils/cloudinary');
 // @route   GET /api/v1/clients/:clientId/posts
 // @access  Private
 exports.getPosts = asyncHandler(async (req, res, next) => {
+  let isManager = false;
+  if (req.user && req.user.id) {
+    const manager = await Manager.findById(req.user.id);
+    if (manager) isManager = true;
+  }
   if (req.params.clientId) {
-    const posts = await Post.find({ client: req.params.clientId, user: req.user.id })
+    let query = { client: req.params.clientId };
+    if (!isManager && req.user.role !== 'admin') {
+      query.user = req.user.id;
+    }
+    const posts = await Post.find(query)
       .populate('client')
       .populate('platforms.account');
 
@@ -29,17 +39,27 @@ exports.getPosts = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/posts/:id
 // @access  Private
 exports.getPost = asyncHandler(async (req, res, next) => {
-  const post = await Post.findOne({
-    _id: req.params.id,
-    user: req.user.id
-  }).populate('client platforms.account');
-
+  let isManager = false;
+  if (req.user && req.user.id) {
+    const manager = await Manager.findById(req.user.id);
+    if (manager) isManager = true;
+  }
+  const post = await Post.findById(req.params.id).populate('client platforms.account');
   if (!post) {
     return next(
       new ErrorResponse(`No post found with the id of ${req.params.id}`, 404)
     );
   }
-
+  // Only post owner, admin, or manager can access
+  if (
+    post.user.toString() !== req.user.id &&
+    req.user.role !== 'admin' &&
+    !isManager
+  ) {
+    return next(
+      new ErrorResponse(`Not authorized to access this post`, 401)
+    );
+  }
   res.status(200).json({
     success: true,
     data: post
@@ -121,8 +141,13 @@ exports.updatePost = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Make sure user is post owner
-  if (post.user.toString() !== req.user.id && req.user.role !== 'admin') {
+  // Make sure user is post owner, admin, or manager
+  let isManager = false;
+  if (req.user && req.user.id) {
+    const manager = await Manager.findById(req.user.id);
+    if (manager) isManager = true;
+  }
+  if (post.user.toString() !== req.user.id && req.user.role !== 'admin' && !isManager) {
     return next(
       new ErrorResponse(
         `User ${req.user.id} is not authorized to update this post`,
@@ -190,8 +215,13 @@ exports.deletePost = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Make sure user is post owner
-  if (post.user.toString() !== req.user.id && req.user.role !== 'admin') {
+  // Make sure user is post owner, admin, or manager
+  let isManager = false;
+  if (req.user && req.user.id) {
+    const manager = await Manager.findById(req.user.id);
+    if (manager) isManager = true;
+  }
+  if (post.user.toString() !== req.user.id && req.user.role !== 'admin' && !isManager) {
     return next(
       new ErrorResponse(
         `User ${req.user.id} is not authorized to delete this post`,
@@ -227,8 +257,13 @@ exports.simulatePost = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Make sure user is post owner
-  if (post.user.toString() !== req.user.id && req.user.role !== 'admin') {
+  // Make sure user is post owner, admin, or manager
+  let isManager = false;
+  if (req.user && req.user.id) {
+    const manager = await Manager.findById(req.user.id);
+    if (manager) isManager = true;
+  }
+  if (post.user.toString() !== req.user.id && req.user.role !== 'admin' && !isManager) {
     return next(
       new ErrorResponse(
         `User ${req.user.id} is not authorized to simulate this post`,

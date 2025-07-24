@@ -11,11 +11,11 @@
 .content{
   width: 100%;
   margin: 0 auto;
-  background-color: rgb(30, 41, 59, 0.3);
+  
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 0px 20px rgba(95, 87, 132, 0.4);
-  min-height: 100vh;
+ 
+  min-height: fit-content;
   padding: 1.5rem;
   color: #f8fafc;
   margin-block: 1.5rem;
