@@ -72,9 +72,9 @@ const PostSchema = new mongoose.Schema({
     ref: 'Client',
     required: true
   },
-  user: {
+  Manager: {
     type: mongoose.Schema.ObjectId,
-    ref: 'User',
+    ref: 'Manager',
     required: true
   },
   createdAt: {

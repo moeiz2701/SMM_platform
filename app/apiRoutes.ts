@@ -20,12 +20,23 @@ export const API_ROUTES = {
     BY_USER: (userId: string) => `${API_BASE_URL}/clients/user/${userId}`,
     SEND_REQUEST: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/request`,
     GET_REQUESTS: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/requests`,
+    ASSIGN_MANAGER: (managerId: string) => `${API_BASE_URL}/clients/assign-manager/${managerId}`,
   },
 
   SOCIAL_ACCOUNTS: {
     ADD: (platform: string) => `${API_BASE_URL}/social-accounts/${platform}`,
     DELETE: (platform: string) => `${API_BASE_URL}/social-accounts/${platform}`,
     GET_ALL: `${API_BASE_URL}/social-accounts`,
+  },
+
+  MANAGERS: {
+    CREATE: `${API_BASE_URL}/managers`,
+    GET_ALL: `${API_BASE_URL}/managers`,
+    GET_ONE: (id: string) => `${API_BASE_URL}/managers/${id}`,
+    GET_BY_USER: (userId: string) => `${API_BASE_URL}/managers/user/${userId}`,
+    UPDATE: (id: string) => `${API_BASE_URL}/managers/${id}`,
+    DELETE: (id: string) => `${API_BASE_URL}/managers/${id}`,
+    GET_CLIENTS: (id: string) => `${API_BASE_URL}/managers/${id}/clients`,
   },
 };
 

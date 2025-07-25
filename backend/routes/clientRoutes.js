@@ -7,7 +7,8 @@ const {
   deleteClient,
   getClientsByUser,
   sendRequest,
-  getRequests
+  getRequests,
+  assignManagerToClient
 } = require('../controllers/clientController');
 // Send a request to a client (manager only)
 
@@ -25,7 +26,7 @@ router
 router.post('/:id/request', protect, authorize('manager'), sendRequest);
 
 // Get all requests for a client (admin/manager)
-router.get('/:id/requests', protect, authorize('admin', 'manager'), getRequests);
+router.get('/:id/requests', protect, authorize('admin', 'user'), getRequests);
 
 router
   .route('/user/:userId')
@@ -36,4 +37,8 @@ router
   .get(protect, getClient)
   .put(protect, updateClient)
   .delete(protect, deleteClient);
+
+// Assign manager to client (client only)
+router.put('/assign-manager/:managerId', protect, authorize('user'), assignManagerToClient);
+
 module.exports = router;

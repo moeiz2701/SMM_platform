@@ -465,3 +465,99 @@ textarea:focus-visible {
   background-size: 1.25em;
   padding-right: 2.5rem;
 }
+.managerContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: white;
+  padding: 2rem;
+}
+
+.managerCard {
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  background: #f9f9f9;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+  padding: 2rem;
+  max-width: 800px;
+  width: 100%;
+}
+
+.managerImage {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #fff;
+  box-shadow: 0 0 0 4px #e0e0e0;
+}
+
+.managerInfo {
+  flex: 1;
+}
+
+.managerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.managerName {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.managerEditBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.3s;
+}
+
+.managerEditBtn:hover {
+  background-color: #357abd;
+}
+
+.managerRole {
+  color: #777;
+  margin-top: 0.3rem;
+  font-size: 1rem;
+}
+
+.managerDesc {
+  margin-top: 1rem;
+  font-size: 0.95rem;
+  color: #444;
+  line-height: 1.5;
+}
+
+.managerIcons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.managerIcon {
+  color: #333;
+  background: #eee;
+  padding: 0.6rem;
+  border-radius: 50%;
+  transition: background 0.2s, color 0.2s;
+}
+
+.managerIcon:hover {
+  background: #d0d0d0;
+  color: #000;
+}
+

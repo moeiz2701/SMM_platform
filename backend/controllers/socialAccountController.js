@@ -4,18 +4,32 @@
 
 const SocialAccount = require('../models/SocialAccount');
 const Client = require('../models/Client');
+const Manager = require('../models/Manager');
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
 
 // @desc    Add a social account
 // @route   POST /api/v1/social-accounts/:platform
 // @access  Private
+
+
 exports.addSocialAccount = asyncHandler(async (req, res, next) => {
   const { platform } = req.params;
-  // Find client for the current user
-  const client = await Client.findOne({ user: req.user.id });
+  // Allow client owner or manager to add social account
+  let isManager = false;
+  if (req.user && req.user.id) {
+    const manager = await Manager.findById(req.user.id);
+    if (manager) isManager = true;
+  }
+  let client;
+  if (isManager) {
+    // Manager can add for any client they manage (assume manager id is in client.manager)
+    client = await Client.findOne({ manager: req.user.id });
+  } else {
+    client = await Client.findOne({ user: req.user.id });
+  }
   if (!client) {
-    return next(new ErrorResponse('Client not found for user', 404));
+    return next(new ErrorResponse('Client not found for user or manager', 404));
   }
 
   // Use client name as accountName, random string for token
@@ -69,10 +83,20 @@ exports.addSocialAccount = asyncHandler(async (req, res, next) => {
 // @access  Private
 exports.deleteSocialAccount = asyncHandler(async (req, res, next) => {
   const { platform } = req.params;
-  // Find client for the current user
-  const client = await Client.findOne({ user: req.user.id });
+  // Allow client owner or manager to delete social account
+  let isManager = false;
+  if (req.user && req.user.id) {
+    const manager = await Manager.findById(req.user.id);
+    if (manager) isManager = true;
+  }
+  let client;
+  if (isManager) {
+    client = await Client.findOne({ manager: req.user.id });
+  } else {
+    client = await Client.findOne({ user: req.user.id });
+  }
   if (!client) {
-    return next(new ErrorResponse('Client not found for user', 404));
+    return next(new ErrorResponse('Client not found for user or manager', 404));
   }
 
   const deleted = await SocialAccount.findOneAndDelete({
@@ -92,14 +116,24 @@ exports.deleteSocialAccount = asyncHandler(async (req, res, next) => {
 });
 
 exports.getSocialAccounts = asyncHandler(async (req, res, next) => {
-  // Find client for the current user
-  const client = await Client.findOne({ user: req.user.id });
+  // Allow client owner or manager to get social accounts
+  let isManager = false;
+  if (req.user && req.user.id) {
+    const manager = await Manager.findById(req.user.id);
+    if (manager) isManager = true;
+  }
+  let client;
+  if (isManager) {
+    client = await Client.findOne({ manager: req.user.id });
+  } else {
+    client = await Client.findOne({ user: req.user.id });
+  }
   if (!client) {
-    return next(new ErrorResponse('Client not found for user', 404));
+    return next(new ErrorResponse('Client not found for user or manager', 404));
   }
 
   // Find all social accounts for this client
-  const accounts = await SocialAccount.find({ client: client._id, user: req.user.id });
+  const accounts = await SocialAccount.find({ client: client._id });
 
   res.status(200).json({
     success: true,
