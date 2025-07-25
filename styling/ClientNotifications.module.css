@@ -1,0 +1,727 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+
+/* Main Layout */
+.main {
+ flex: 1;
+  margin-left: auto;
+  padding: 2rem;
+  color: var(--theme-text, #fffafa);
+  min-height: 100vh;
+  font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(215, 215, 215, 0.1);
+}
+
+.titleSection {
+  flex: 1;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.025em;
+  font-family: "Poppins", sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.unreadBadge {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  animation: pulse 2s infinite;
+}
+.controlsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.subtitle {
+  color: #9ca3af;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.headerActions {
+  display: flex;
+  gap: 1rem;
+}
+
+.markAllButton {
+  background: #6c82a4;
+  color: #ffffff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.875rem;
+}
+
+.markAllButton:hover {
+  background: #5a6f8a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(108, 130, 164, 0.3);
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.searchContainer {
+  position: relative;
+  max-width: 400px;
+}
+
+.searchInput {
+  width: 100%;
+  background-color: #1f2937;
+  border: 1px solid rgba(215, 215, 215, 0.1);
+  border-radius: 12px;
+  color: #fffafa;
+  padding: 0.75rem 1rem 0.75rem 3rem;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  font-family: "Poppins", sans-serif;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #6c82a4;
+  box-shadow: 0 0 0 3px rgba(108, 130, 164, 0.1);
+}
+
+.searchIcon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  color: #9ca3af;
+}
+
+.filterTabs {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.filterTab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #1f2937;
+  border: 1px solid rgba(215, 215, 215, 0.1);
+  color: #9ca3af;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  font-family: "Poppins", sans-serif;
+  white-space: nowrap;
+  position: relative;
+}
+
+.filterTab:hover {
+  background: #374151;
+  color: #f3f4f6;
+}
+
+.filterTabActive {
+  background: #6c82a4 !important;
+  color: #ffffff !important;
+  border-color: #6c82a4 !important;
+}
+
+.filterIcon {
+  font-size: 1rem;
+}
+
+.filterBadge {
+  background: #6c82a4;
+  color: #ffffff;
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.125rem 0.375rem;
+  border-radius: 8px;
+  margin-left: 0.25rem;
+}
+.tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #374151;
+}
+
+.tab {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  font-family: "Poppins", sans-serif;
+}
+
+.tab:hover {
+  color: #f3f4f6;
+  background-color: #374151;
+}
+
+.tabActive {
+  color: #d2dced !important;
+  border-bottom-color: #6c82a4 !important;
+  background-color: transparent !important;
+}
+
+/* Update the notification card hover effect */
+.notificationCard:hover {
+  border-color: #6c82a4;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(79, 70, 229, 0.1);
+}
+
+/* Remove the red dot from notification title */
+.notificationTitle {
+  display: block;
+}
+
+.newIndicator {
+  display: none;
+}
+
+/* Bulk Actions */
+.bulkActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bulkInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: #f3f4f6;
+  font-size: 0.875rem;
+}
+
+.selectAllButton,
+.clearSelectionButton {
+  background: none;
+  border: none;
+  color: #6c82a4;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: underline;
+  font-family: "Poppins", sans-serif;
+}
+
+.selectAllButton:hover,
+.clearSelectionButton:hover {
+  color: #5a6f8a;
+}
+
+.bulkButtons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.bulkReadButton,
+.bulkDeleteButton {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: "Poppins", sans-serif;
+}
+
+.bulkReadButton {
+  background: #6c82a4;
+  border: none;
+  color: #ffffff;
+}
+
+.bulkReadButton:hover {
+  background: #5a6f8a;
+}
+
+.bulkDeleteButton {
+  background: #ef4444;
+  border: none;
+  color: #ffffff;
+}
+
+.bulkDeleteButton:hover {
+  background: #dc2626;
+}
+
+/* Notifications Container */
+.notificationsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.notificationGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dateHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.dateLabel {
+  color: #6c82a4;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.dateLine {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, #6c82a4 0%, transparent 100%);
+}
+
+.notificationsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Notification Cards */
+.notificationCard {
+  background: #0e0f13;
+  border: 1px solid rgba(215, 215, 215, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* .notificationCard:hover {
+  background: #374151;
+  border-color: rgba(215, 215, 215, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+} */
+
+.unread {
+  border-left: 4px solid #0e0f13;
+  background:#1f2937;
+}
+
+.priorityHigh {
+  border-top: 2px solid #ef4444;
+}
+
+.priorityMedium {
+  border-top: 2px solid #f59e0b;
+}
+
+.priorityLow {
+  border-top: 2px solid #10b981;
+}
+
+.notificationHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.notificationCheckbox {
+  margin-top: 0.25rem;
+  width: 16px;
+  height: 16px;
+  accent-color: #6c82a4;
+  cursor: pointer;
+}
+
+.notificationIcon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #6c82a4 0%, #5a6f8a 100%);
+  margin-top: 0.25rem;
+}
+
+.avatarIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.typeIcon {
+  font-size: 1.25rem;
+}
+
+.notificationContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.notificationTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: "Poppins", sans-serif;
+}
+
+.newIndicator {
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.notificationMessage {
+  color: #d1d5db;
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.senderInfo,
+.amountInfo,
+.meetingInfo {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-bottom: 0.25rem;
+}
+
+.amount {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.notificationMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.timestamp {
+  color: #6b7280;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.notificationActions {
+  display: flex;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.notificationCard:hover .notificationActions {
+  opacity: 1;
+}
+
+.markReadButton,
+.deleteButton {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.markReadButton:hover {
+  background: #374151;
+  color: #10b981;
+}
+
+.deleteButton:hover {
+  background: #374151;
+  color: #ef4444;
+}
+
+.notificationFooter {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(215, 215, 215, 0.1);
+}
+
+.actionButton {
+  background: #6c82a4;
+  color: #ffffff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: "Poppins", sans-serif;
+}
+
+.actionButton:hover {
+  background: #5a6f8a;
+  transform: translateY(-1px);
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #9ca3af;
+}
+
+.emptyIcon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.emptyState h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: #ffffff;
+  font-family: "Poppins", sans-serif;
+}
+
+.emptyState p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .main {
+    margin-left: 0;
+    padding: 1rem;
+  }
+
+  .title {
+    font-size: 1.75rem;
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .controls {
+    gap: 1rem;
+  }
+
+  .searchContainer {
+    max-width: none;
+  }
+
+  .filterTabs {
+    gap: 0.25rem;
+  }
+
+  .filterTab {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .bulkActions {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .bulkInfo {
+    justify-content: center;
+  }
+
+  .bulkButtons {
+    justify-content: center;
+  }
+
+  .notificationCard {
+    padding: 1rem;
+  }
+
+  .notificationHeader {
+    gap: 0.75rem;
+  }
+
+  .notificationIcon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .avatarIcon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .typeIcon {
+    font-size: 1rem;
+  }
+
+  .notificationTitle {
+    font-size: 0.875rem;
+  }
+
+  .notificationMessage {
+    font-size: 0.8125rem;
+  }
+
+  .notificationMeta {
+    align-items: flex-start;
+  }
+
+  .notificationActions {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .main {
+    padding: 0.75rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .filterTabs {
+    flex-wrap: wrap;
+  }
+
+  .notificationHeader {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .notificationMeta {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .dateHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .dateLine {
+    width: 100%;
+  }
+}
+
+/* Smooth animations */
+.notificationCard {
+  animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Custom scrollbar */
+.filterTabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.filterTabs::-webkit-scrollbar-track {
+  background: #1f2937;
+  border-radius: 2px;
+}
+
+.filterTabs::-webkit-scrollbar-thumb {
+  background: #6c82a4;
+  border-radius: 2px;
+}
+
+.filterTabs::-webkit-scrollbar-thumb:hover {
+  background: #5a6f8a;
+}

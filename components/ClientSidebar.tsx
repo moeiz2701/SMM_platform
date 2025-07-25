@@ -53,9 +53,9 @@ export default function Sidebar({ className = "" }: SidebarProps) {
     { icon: User, label: "Social Accounts", href: "/client/accounts" },
     { icon: CalendarIcon, label: "Calendar", href: "/client/calendar" },
     { icon: User, label: "Profile", href: "/client/profile" },
-    { icon: Mail, label: "Manager", href: "/client/manager" },
+    { icon: User, label: "Manager", href: "/client/manager" },
     { icon: FileText, label: "Notifications", href: "/client/notifications" },
-    { icon: Settings, label: "Support", href: "/client/support" },
+    { icon: Mail, label: "Messages", href: "/client/message" },
     { icon: Settings, label: "Settings", href: "/client/settings" },
   ];
   return (
