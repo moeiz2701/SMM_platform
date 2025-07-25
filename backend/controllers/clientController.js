@@ -257,3 +257,27 @@ exports.assignManagerToClient = asyncHandler(async (req, res, next) => {
 // @route   POST /api/v1/managers
 // @access  Private/Admin
 
+// @desc    Delete a request from a client
+// @route   DELETE /api/v1/clients/:clientId/requests/:requestId
+// @access  Private/Admin/Manager/User (client owner)
+exports.deleteRequest = asyncHandler(async (req, res, next) => {
+  const { clientId, requestId } = req.params;
+  const client = await Client.findById(clientId);
+  if (!client) {
+    return next(new ErrorResponse('Client not found', 404));
+  }
+  // Only admin or the client owner can delete a request
+  if (
+    req.user.role !== 'admin' &&
+    client.user.toString() !== req.user.id
+  ) {
+    return next(new ErrorResponse('Not authorized to delete this request', 403));
+  }
+  try {
+    const updatedClient = await Client.deleteRequest(clientId, requestId);
+    res.status(200).json({ success: true, requests: updatedClient.requests });
+  } catch (err) {
+    return next(new ErrorResponse(err.message, 404));
+  }
+});
+

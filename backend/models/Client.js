@@ -17,7 +17,7 @@ const RequestSchema = new mongoose.Schema({
     enum: ['pending', 'approved', 'rejected'],
     default: 'pending'
   }
-}, { _id: false });
+});
 
 const ClientSchema = new mongoose.Schema({
   name: {
@@ -94,7 +94,16 @@ ClientSchema.statics.getRequests = async function(clientId) {
   return client.requests;
 };
 
-module.exports = mongoose.model('Client', ClientSchema);
-
+// Delete a request (by request index or managerId)
+ClientSchema.statics.deleteRequest = async function(clientId, requestId) {
+  const client = await this.findById(clientId);
+  if (!client) throw new Error('Client not found');
+  // requestId can be the request's _id (ObjectId)
+  const initialLength = client.requests.length;
+  client.requests = client.requests.filter(r => r._id.toString() !== requestId);
+  if (client.requests.length === initialLength) throw new Error('Request not found');
+  await client.save();
+  return client;
+};
 
 module.exports = mongoose.model('Client', ClientSchema);

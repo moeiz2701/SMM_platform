@@ -19,6 +19,7 @@ interface Request {
   manager: Manager;
   date?: string;
   status?: string;
+  _id?: string; // Add _id for request identification
 }
 
 const RequestCard = ({ manager, onAccept, disabled }: { manager: Manager; onAccept: () => void; disabled: boolean; }) => {
@@ -86,11 +87,18 @@ const RequestsPage = () => {
     fetchRequests();
   }, []);
 
-  const handleAccept = async (managerId: string) => {
-    if (!clientId) return;
+  const handleAccept = async (managerId: string, requestId?: string) => {
+    if (!clientId || !requestId) return;
     setAccepting(managerId);
     setError('');
     try {
+      // Delete the request first
+      const delRes = await fetch(API_ROUTES.CLIENTS.DELETE_REQUEST(clientId, requestId), {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!delRes.ok) throw new Error('Failed to delete request');
+      // Assign the manager
       const res = await fetch(API_ROUTES.CLIENTS.ASSIGN_MANAGER(managerId), {
         method: 'PUT',
         credentials: 'include',
@@ -98,7 +106,7 @@ const RequestsPage = () => {
       });
       if (!res.ok) throw new Error('Failed to assign manager');
       // Remove the accepted request from the list
-      setRequests((prev) => prev.filter((req) => req.manager && req.manager._id !== managerId));
+      setRequests((prev) => prev.filter((req) => req._id !== requestId));
     } catch (e: any) {
       setError(e.message || 'Error accepting request');
     } finally {
@@ -118,7 +126,7 @@ const RequestsPage = () => {
           <RequestCard
             key={idx}
             manager={req.manager}
-            onAccept={() => req.manager && req.manager._id && handleAccept(req.manager._id)}
+            onAccept={() => req.manager && req.manager._id && handleAccept(req.manager._id, req._id)}
             disabled={accepting === req.manager._id}
           />
         ))}

@@ -21,6 +21,7 @@ export const API_ROUTES = {
     SEND_REQUEST: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/request`,
     GET_REQUESTS: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/requests`,
     ASSIGN_MANAGER: (managerId: string) => `${API_BASE_URL}/clients/assign-manager/${managerId}`,
+    DELETE_REQUEST: (clientId: string, requestId: string) => `${API_BASE_URL}/clients/${clientId}/requests/${requestId}`,
   },
 
   SOCIAL_ACCOUNTS: {
