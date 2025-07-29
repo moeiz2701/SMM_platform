@@ -1,34 +1,55 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useMemo } from "react"
+import { useState, useEffect, useMemo } from "react"
 import ReusableTable, { type TableColumn, type TableAction } from "../../../components/table"
 import type { ContentItem, FilterTab } from "../../../components/content"
 import type { CreateContentFormData, ValidationErrors } from "../../../components/create-content"
 import styles from "@/styling/content.module.css"
 import SearchBar from "../../../components/searchbar"
+import API_ROUTES from "@/app/apiRoutes"
+import { useManager } from "@/contexts/managerContext"
 
-interface CreateContentModalProps {
-  currentStep: number
-  formData: CreateContentFormData
-  validationErrors: ValidationErrors
-  isGeneratingAI: boolean
-  currentTag: string
-  currentLink: { text: string; url: string }
-  onClose: () => void
-  onNext: () => void
-  onPrevious: () => void
-  onSave: () => void
-  onFormDataChange: (updates: Partial<CreateContentFormData>) => void
-  onTagChange: (tag: string) => void
-  onLinkChange: (link: { text: string; url: string }) => void
-  onAddTag: () => void
-  onRemoveTag: (index: number) => void
-  onAddLink: () => void
-  onRemoveLink: (index: number) => void
-  onGenerateAI: () => void
+interface Platform {
+  platform: string
+  account: string
+  postId?: string
+  status?: string
+  publishedAt?: string
+  url?: string
+  analytics?: {
+    likes?: number
+    comments?: number
+    shares?: number
+    reach?: number
+    impressions?: number
+    engagementRate?: number
+  }
 }
+
+interface Media {
+  url: string
+  publicId: string
+  mediaType: string
+  caption?: string
+}
+
+interface PostItem {
+  _id: string
+  title: string
+  content: string
+  media: Media[]
+  hashtags: string[]
+  scheduledTime: string
+  status: string
+  platforms: Platform[]
+  isSimulated: boolean
+  client: string
+  Manager: string
+  createdAt: string
+  updatedAt: string
+}
+
+const filterTabs: FilterTab[] = ["all", "draft", "scheduled", "published", "failed"]
 
 function CreateContentModal({
   currentStep,
@@ -37,6 +58,7 @@ function CreateContentModal({
   isGeneratingAI,
   currentTag,
   currentLink,
+  managerClients,
   onClose,
   onNext,
   onPrevious,
@@ -49,19 +71,44 @@ function CreateContentModal({
   onAddLink,
   onRemoveLink,
   onGenerateAI,
-}: CreateContentModalProps) {
-  const contentTypes = [
-    "Social Media Post",
-    "Blog Post",
-    "Email Newsletter",
-    "Press Release",
-    "Website Content",
-    "Advertisement",
-  ]
-  const platforms = ["Instagram", "Facebook", "LinkedIn", "Twitter", "TikTok"]
-  const clients = ["ABC Corporation", "XYZ Company", "123 Industries", "Tech Solutions", "Global Marketing"]
-  const teamMembers = ["Alex Morgan", "Jamie Wilson", "Taylor Reed"]
-  const statuses = ["Draft", "Pending Approval", "Scheduled"]
+  onFileUpload,
+}: {
+  currentStep: number
+  formData: CreateContentFormData
+  validationErrors: ValidationErrors
+  isGeneratingAI: boolean
+  currentTag: string
+  currentLink: { text: string; url: string }
+  managerClients: {id: string, name: string}[]
+  onClose: () => void
+  onNext: () => void
+  onPrevious: () => void
+  onSave: () => void
+  onFormDataChange: (updates: Partial<CreateContentFormData>) => void
+  onTagChange: (tag: string) => void
+  onLinkChange: (link: { text: string; url: string }) => void
+  onAddTag: () => void
+  onRemoveTag: (index: number) => void
+  onAddLink: () => void
+  onRemoveLink: (index: number) => void
+  onGenerateAI: () => void
+  onFileUpload: (files: File[]) => void
+  
+}) {
+  const platformOptions = ["Instagram", "Facebook", "LinkedIn"]
+  const statuses = ["Draft", "Scheduled", "Published", "Failed"]
+
+  const handleClientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const options = Array.from(e.target.selectedOptions, option => option.value)
+    onFormDataChange({ clients: options })
+  }
+
+  const togglePlatform = (platform: string) => {
+    const updatedPlatforms = formData.platforms.includes(platform)
+      ? formData.platforms.filter(p => p !== platform)
+      : [...formData.platforms, platform]
+    onFormDataChange({ platforms: updatedPlatforms })
+  }
 
   const renderStep1 = () => (
     <div className={styles.stepContent}>
@@ -81,63 +128,47 @@ function CreateContentModal({
       </div>
 
       <div className={styles.formGroup}>
-        <label htmlFor="type" className={styles.formLabel}>
-          Content Type <span className={styles.required}>*</span>
+        <label className={styles.formLabel}>
+          Platforms <span className={styles.required}>*</span>
         </label>
-        <select
-          id="type"
-          value={formData.type}
-          onChange={(e) => onFormDataChange({ type: e.target.value })}
-          className={`${styles.formSelect} ${validationErrors.type ? styles.inputError : ""}`}
-        >
-          <option value="">Select Content Type</option>
-          {contentTypes.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>
-        {validationErrors.type && <span className={styles.errorMessage}>{validationErrors.type}</span>}
-      </div>
-
-      <div className={styles.formGroup}>
-        <label htmlFor="platform" className={styles.formLabel}>
-          Platform <span className={styles.required}>*</span>
-        </label>
-        <select
-          id="platform"
-          value={formData.platform}
-          onChange={(e) => onFormDataChange({ platform: e.target.value })}
-          className={`${styles.formSelect} ${validationErrors.platform ? styles.inputError : ""}`}
-        >
-          <option value="">Select Platform</option>
-          {platforms.map((platform) => (
-            <option key={platform} value={platform}>
+        <div className={styles.platformSelection}>
+          {platformOptions.map((platform) => (
+            <button
+              key={platform}
+              type="button"
+              className={`${styles.platformButton} ${
+                formData.platforms.includes(platform) ? styles.selected : ""
+              }`}
+              onClick={() => togglePlatform(platform)}
+            >
               {platform}
-            </option>
+            </button>
           ))}
-        </select>
-        {validationErrors.platform && <span className={styles.errorMessage}>{validationErrors.platform}</span>}
+        </div>
+        {validationErrors.platforms && (
+          <span className={styles.errorMessage}>{validationErrors.platforms}</span>
+        )}
       </div>
 
       <div className={styles.formGroup}>
-        <label htmlFor="client" className={styles.formLabel}>
-          Client <span className={styles.required}>*</span>
+        <label htmlFor="clients" className={styles.formLabel}>
+          Clients <span className={styles.required}>*</span>
         </label>
         <select
-          id="client"
-          value={formData.client}
-          onChange={(e) => onFormDataChange({ client: e.target.value })}
-          className={`${styles.formSelect} ${validationErrors.client ? styles.inputError : ""}`}
-        >
-          <option value="">Select Client</option>
-          {clients.map((client) => (
-            <option key={client} value={client}>
-              {client}
-            </option>
-          ))}
-        </select>
-        {validationErrors.client && <span className={styles.errorMessage}>{validationErrors.client}</span>}
+  id="clients"
+  multiple
+  value={formData.clients}
+  onChange={handleClientChange}
+  className={`${styles.formSelect} ${validationErrors.clients ? styles.inputError : ""}`}
+  required
+>
+  {managerClients.map((client) => (
+    <option key={client.id} value={client.id}>
+      {client.name}
+    </option>
+  ))}
+</select>
+        {validationErrors.clients && <span className={styles.errorMessage}>{validationErrors.clients}</span>}
       </div>
     </div>
   )
@@ -233,7 +264,7 @@ function CreateContentModal({
         )}
       </div>
 
-      <div className={styles.formGroup}>
+      {/* <div className={styles.formGroup}>
         <label className={styles.formLabel}>Links</label>
         <div className={styles.linkInput}>
           <input
@@ -266,75 +297,125 @@ function CreateContentModal({
             ))}
           </div>
         )}
-      </div>
+      </div> */}
 
       <div className={styles.formGroup}>
         <label className={styles.formLabel}>Attachments</label>
-        <div className={styles.fileUpload}>
-          <div className={styles.fileDropZone}>
-            <p>Drag and drop files here, or click to select files</p>
-            <button type="button" className={styles.fileSelectButton}>
-              Select Files
-            </button>
+        <div className={styles.fileUploadContainer}>
+          <div className={styles.fileUploadBox}>
+            <svg className={styles.uploadIcon} viewBox="0 0 24 24">
+              <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
+            </svg>
+            <input
+              type="file"
+              id="file-upload"
+              multiple
+              onChange={(e) => {
+                if (e.target.files) {
+                  onFileUpload(Array.from(e.target.files))
+                }
+              }}
+              className={styles.fileInput}
+            />
+            <label htmlFor="file-upload" className={styles.fileUploadLabel}>
+              <div className={styles.uploadText}>
+                <p className={styles.uploadTitle}>Drag and drop files here</p>
+                <p className={styles.uploadSubtitle}>or click to browse</p>
+              </div>
+            </label>
           </div>
-        </div>
+           {/* Existing Media */}
+        {formData.existingMedia.length > 0 && (
+          <div className={styles.attachmentsList}>
+            <h4>Existing Media</h4>
+            {formData.existingMedia.map((file, index) => (
+              <div key={`existing-${index}`} className={styles.attachmentItem}>
+                <div className={styles.fileIcon}>
+                  {file.type.startsWith('image/') ? '🖼️' : '🎬'}
+                </div>
+                <div className={styles.fileInfo}>
+                  <span className={styles.fileName}>{file.name}</span>
+                  <span className={styles.fileUrl}>{file.url.substring(0, 30)}...</span>
+                </div>
+               <button
+                  type="button"
+                  onClick={() => {
+                 const updatedExisting = [...formData.existingMedia];
+                 updatedExisting.splice(index, 1);
+                 onFormDataChange({ existingMedia: updatedExisting });
+                }}
+                 className={styles.attachmentRemove}
+                >
+                 ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* New Media */}
+        {formData.attachments.length > 0 && (
+          <div className={styles.attachmentsList}>
+            <h4>New Uploads</h4>
+            {formData.attachments.map((file, index) => (
+              <div key={`new-${index}`} className={styles.attachmentItem}>
+                <div className={styles.fileIcon}>
+                  {file.type.startsWith('image/') ? '🖼️' : '🎬'}
+                </div>
+                <div className={styles.fileInfo}>
+                  <span className={styles.fileName}>{file.name}</span>
+                  <span className={styles.fileSize}>
+                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updatedAttachments = [...formData.attachments];
+                    updatedAttachments.splice(index, 1);
+                    onFormDataChange({ attachments: updatedAttachments });
+                  }}
+                  className={styles.attachmentRemove}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
-  )
+  </div>
+);
 
-  const renderStep3 = () => (
+const renderStep3 = () => {
+  // Get current date/time in the correct format for datetime-local input
+  const now = new Date();
+  // Adjust for timezone offset and convert to ISO string without milliseconds
+  const localISOTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 16);
+
+  return (
     <div className={styles.stepContent}>
       <div className={styles.formGroup}>
-        <label htmlFor="assignedTo" className={styles.formLabel}>
-          Assigned To <span className={styles.required}>*</span>
-        </label>
-        <select
-          id="assignedTo"
-          value={formData.assignedTo}
-          onChange={(e) => onFormDataChange({ assignedTo: e.target.value })}
-          className={`${styles.formSelect} ${validationErrors.assignedTo ? styles.inputError : ""}`}
-        >
-          <option value="">Select Team Member</option>
-          {teamMembers.map((member) => (
-            <option key={member} value={member}>
-              {member}
-            </option>
-          ))}
-        </select>
-        {validationErrors.assignedTo && <span className={styles.errorMessage}>{validationErrors.assignedTo}</span>}
-      </div>
-
-      <div className={styles.formGroup}>
-        <label htmlFor="dueDate" className={styles.formLabel}>
-          Due Date <span className={styles.required}>*</span>
+        <label htmlFor="scheduledTime" className={styles.formLabel}>
+          Scheduled Time <span className={styles.required}>*</span>
         </label>
         <div className={styles.inputWithIcon}>
           <input
-            type="date"
-            id="dueDate"
+            type="datetime-local"
+            id="scheduledTime"
             value={formData.dueDate}
             onChange={(e) => onFormDataChange({ dueDate: e.target.value })}
+            min={localISOTime} // This prevents selecting past dates/times
             className={`${styles.formInput} ${validationErrors.dueDate ? styles.inputError : ""}`}
           />
           <span className={styles.inputIcon}>📅</span>
         </div>
-        {validationErrors.dueDate && <span className={styles.errorMessage}>{validationErrors.dueDate}</span>}
-      </div>
-
-      <div className={styles.formGroup}>
-        <label htmlFor="time" className={styles.formLabel}>
-          Time (optional)
-        </label>
-        <div className={styles.inputWithIcon}>
-          <input
-            type="time"
-            id="time"
-            value={formData.time}
-            onChange={(e) => onFormDataChange({ time: e.target.value })}
-            className={styles.formInput}
-          />
-          <span className={styles.inputIcon}>🕐</span>
-        </div>
+        {validationErrors.dueDate && (
+          <span className={styles.errorMessage}>{validationErrors.dueDate}</span>
+        )}
       </div>
 
       <div className={styles.formGroup}>
@@ -362,10 +443,7 @@ function CreateContentModal({
             <strong>Title:</strong> {formData.title}
           </p>
           <p>
-            <strong>Type:</strong> {formData.type} ({formData.platform})
-          </p>
-          <p>
-            <strong>Client:</strong> {formData.client}
+            <strong>Platforms:</strong> {formData.platforms.join(", ")}
           </p>
           <p>
             <strong>Content:</strong> {formData.content.substring(0, 100)}
@@ -375,6 +453,7 @@ function CreateContentModal({
       </div>
     </div>
   )
+}
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
@@ -424,82 +503,34 @@ function CreateContentModal({
   )
 }
 
-const sampleData: ContentItem[] = [
-  {
-    id: "1",
-    title: "Q3 Social Media Campaign for ABC Corp",
-    type: "Social Media",
-    client: "ABC Corporation",
-    status: "Approved",
-    dueDate: "Jul 15, 2023",
-    assignedTo: "Taylor",
-  },
-  {
-    id: "2",
-    title: "Weekly Newsletter - Tech Updates",
-    type: "Email",
-    client: "XYZ Company",
-    status: "Pending Approval",
-    dueDate: "Jul 10, 2023",
-    assignedTo: "Jamie V",
-  },
-  {
-    id: "3",
-    title: 'Blog Post: "10 Marketing Trends for 2023"',
-    type: "Blog",
-    client: "123 Industries",
-    status: "Draft",
-    dueDate: "Jul 20, 2023",
-    assignedTo: "Alex M",
-  },
-  {
-    id: "4",
-    title: "Product Launch Press Release",
-    type: "PR",
-    client: "ABC Corporation",
-    status: "Rejected",
-    dueDate: "Jul 5, 2023",
-    assignedTo: "Taylor",
-  },
-  {
-    id: "5",
-    title: "Instagram Story Series - Summer Collection",
-    type: "Social Media",
-    client: "XYZ Company",
-    status: "Draft",
-    dueDate: "Jul 25, 2023",
-    assignedTo: "Jamie V",
-  },
-]
-
-const filterTabs: FilterTab[] = ["All Content", "Drafts", "Pending Approval", "Approved", "Rejected"]
-
 export default function ContentPage() {
+  const { manager, loading: managerLoading } = useManager()
+  const [clientsData, setClientsData] = useState<{id: string, name: string}[]>([]);
+  const [clientsError, setClientsError] = useState('');
+  const [posts, setPosts] = useState<PostItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  // Add this state variable
+const [editingPost, setEditingPost] = useState<PostItem | null>(null);
+  
   const [searchTerm, setSearchTerm] = useState("")
-  const [activeTab, setActiveTab] = useState<FilterTab>("All Content")
+  const [activeTab, setActiveTab] = useState<FilterTab>("all")
   const [showFilters, setShowFilters] = useState(false)
-  const [filters, setFilters] = useState({
-    contentType: "All Types",
-    client: "All Clients",
-    assignedTo: "All Team Members",
-  })
-
-  // Modal state
+  
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [currentStep, setCurrentStep] = useState(1)
   const [isGeneratingAI, setIsGeneratingAI] = useState(false)
   const [formData, setFormData] = useState<CreateContentFormData>({
     title: "",
-    type: "",
-    platform: "",
-    client: "",
+    platforms: [],
+    clients: [],
     content: "",
     tags: [],
     links: [],
     attachments: [],
+    existingMedia: [],
     aiEnabled: false,
     aiInstructions: "",
-    assignedTo: "",
     dueDate: "",
     time: "",
     status: "Draft",
@@ -507,77 +538,95 @@ export default function ContentPage() {
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
   const [currentTag, setCurrentTag] = useState("")
   const [currentLink, setCurrentLink] = useState({ text: "", url: "" })
+const [platformFilter, setPlatformFilter] = useState<string[]>([])
+const [statusFilter, setStatusFilter] = useState<string[]>([])
 
-  // Get all unique values for filter dropdowns
-  const contentTypes = useMemo(() => {
-    const types = new Set(sampleData.map((item) => item.type))
-    return ["All Types", ...Array.from(types)]
-  }, [])
+// Add these constants for filter options
+const platformOptions = ["Instagram", "Facebook", "LinkedIn"]
+const statusOptions = ["Draft", "Scheduled", "Published", "Failed"]
 
-  const clients = useMemo(() => {
-    const clientList = new Set(sampleData.map((item) => item.client))
-    return ["All Clients", ...Array.from(clientList)]
-  }, [])
+async function fetchClientNames(clientIds: string[]): Promise<{id: string, name: string}[]> {
+  try {
+    if (!clientIds?.length) return [];
+    
+    const response = await fetch(API_ROUTES.CLIENTS.GET_BY_IDS, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ ids: clientIds }),
+      credentials: 'include'
+    });
 
-  const teamMembers = useMemo(() => {
-    const members = new Set(sampleData.map((item) => item.assignedTo))
-    return ["All Team Members", ...Array.from(members)]
-  }, [])
+    // First check if response is HTML
+    const responseText = await response.text();
+    if (responseText.startsWith('<!DOCTYPE html>')) {
+      console.error('Received HTML response:', responseText.substring(0, 500));
+      throw new Error('Server returned HTML instead of JSON');
+    }
 
-  const filteredData = useMemo(() => {
-    let filtered = [...sampleData]
+    // Try to parse as JSON
+    const data = JSON.parse(responseText);
+    
+    if (!response.ok) {
+      throw new Error(data.message || `HTTP error! status: ${response.status}`);
+    }
+    
+    return data.data.map((client: any) => ({ 
+      id: client._id, 
+      name: client.name 
+    }));
+  } catch (error) {
+    console.error('Fetch error:', error);
+    return clientIds.map(id => ({ id, name: id })); // Fallback
+  }
+}
+useEffect(() => {
+  if (manager?.managedClients?.length) {
+    // Fetch client names - you'll need to implement this API endpoint
+    fetchClientNames(manager.managedClients).then(data => {
+      setClientsData(data);
+    });
+  }
+}, [manager?.managedClients]);
 
-    // First filter by tab if not "All Content"
-    if (activeTab !== "All Content") {
-      const statusMap: Record<string, ContentItem["status"]> = {
-        Drafts: "Draft",
-        "Pending Approval": "Pending Approval",
-        Approved: "Approved",
-        Rejected: "Rejected",
+  useEffect(() => {
+    const fetchManagerPosts = async () => {
+      if (!manager?._id) {
+        setLoading(false)
+        return
       }
-      filtered = filtered.filter((item) => item.status === statusMap[activeTab])
+
+      setLoading(true)
+      try {
+        const url = API_ROUTES.POSTS.BY_MANAGER(manager._id)
+        const response = await fetch(url, {
+          credentials: "include",
+          headers: {
+            'Accept': 'application/json',
+          }
+        })
+
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`)
+        }
+
+        const data = await response.json()
+        setPosts(data.data || [])
+        setError("")
+      } catch (err) {
+        console.error("Fetch error:", err)
+        setError(err instanceof Error ? err.message : "Failed to load posts")
+        setPosts([])
+      } finally {
+        setLoading(false)
+      }
     }
 
-    // Then filter by search term if exists
-    if (searchTerm) {
-      const searchTermLower = searchTerm.toLowerCase()
-      filtered = filtered.filter(
-        (item) =>
-          item.title.toLowerCase().includes(searchTermLower) || item.client.toLowerCase().includes(searchTermLower),
-      )
-    }
+    fetchManagerPosts()
+  }, [manager?._id])
 
-    // Then apply additional filters
-    if (filters.contentType !== "All Types") {
-      filtered = filtered.filter((item) => item.type === filters.contentType)
-    }
-    if (filters.client !== "All Clients") {
-      filtered = filtered.filter((item) => item.client === filters.client)
-    }
-    if (filters.assignedTo !== "All Team Members") {
-      filtered = filtered.filter((item) => item.assignedTo === filters.assignedTo)
-    }
-
-    return filtered
-  }, [searchTerm, activeTab, filters])
-
-  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFilters((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
-
-  const resetFilters = () => {
-    setFilters({
-      contentType: "All Types",
-      client: "All Clients",
-      assignedTo: "All Team Members",
-    })
-  }
-
-  // Define columns for content table
   const contentColumns: TableColumn[] = [
     {
       key: "title",
@@ -586,231 +635,624 @@ export default function ContentPage() {
       sortable: true,
       render: (value) => <span className={styles.titleCell}>{value}</span>,
     },
-    { key: "type", label: "TYPE", type: "string", sortable: true },
-    { key: "client", label: "CLIENT", type: "string", sortable: true },
-    { key: "status", label: "STATUS", type: "status", sortable: true },
-    { key: "dueDate", label: "DUE DATE", type: "date", sortable: true },
-    {
-      key: "assignedTo",
-      label: "ASSIGNED TO",
-      type: "string",
+    { 
+      key: "content", 
+      label: "CONTENT", 
+      type: "string", 
+      sortable: false,
+      render: (value) => <span>{value.substring(0, 50)}{value.length > 50 ? "..." : ""}</span>
+    },
+    { 
+      key: "hashtags", 
+      label: "TAGS", 
+      type: "string", 
+      sortable: false,
+      render: (value) => value.join(", ")
+    },
+    { 
+      key: "scheduledTime", 
+      label: "SCHEDULED", 
+      type: "date", 
       sortable: true,
-      render: (value) => (
-        <div className={styles.assignedUser}>
-          <div className={styles.userAvatar}>{value.charAt(0)}</div>
-          <span>{value}</span>
+      render: (value) => new Date(value).toLocaleString()
+    },
+    { 
+      key: "status", 
+      label: "STATUS", 
+      type: "status", 
+      sortable: true,
+      render: (value) => value.charAt(0).toUpperCase() + value.slice(1)
+    },
+    {
+      key: "platforms",
+      label: "PLATFORMS",
+      type: "string",
+      sortable: false,
+      render: (value) => value.map((p: Platform) => p.platform).join(", ")
+    },
+   {
+  key: "client",
+  label: "CLIENT",
+  type: "string",
+  sortable: true,
+  render: (value) => {
+    if (typeof value === 'string') {
+      // Find the client name in clientsData
+      const client = clientsData.find(c => c.id === value);
+      return client ? client.name : value;
+    }
+    if (value && typeof value === 'object') return value.name;
+    return '';
+  }},
+    {
+      key: "actions",
+      label: "ACTIONS",
+      type: "actions",
+      sortable: false,
+      render: (_, row) => (
+        <div className={styles.actionButtons}>
+          <button 
+            onClick={() => handleEditPost(row)}
+            className={styles.editButton}
+          >
+            Edit
+          </button>
+          <button 
+            onClick={() => handleDeletePost(row._id)}
+            className={styles.deleteButton}
+          >
+            Delete
+          </button>
         </div>
-      ),
+      )
     },
   ]
 
-  // Define actions for content
-  const contentActions: TableAction[] = [
-    { label: "Edit", onClick: (row) => console.log("Edit", row) },
-    { label: "View", onClick: (row) => console.log("View", row) },
-    { label: "Delete", onClick: (row) => console.log("Delete", row), className: styles.deleteLink },
-  ]
+const handleEditPost = async (post: PostItem) => {
+  setEditingPost(post);
+
+   const existingMedia = post.media.map(mediaItem => ({
+    url: mediaItem.url,
+    publicId: mediaItem.publicId,
+    name: mediaItem.caption || 'media',
+    type: mediaItem.mediaType === 'image' ? 'image/jpeg' : 
+          mediaItem.mediaType === 'video' ? 'video/mp4' : 'application/octet-stream'
+  }));
+  setFormData({
+    title: post.title,
+    platforms: post.platforms.map((p: Platform) => p.platform),
+    clients: [post.client], // This should already be the correct client ID
+    content: post.content,
+    tags: [...post.hashtags],
+    links: [], // Initialize empty array
+    attachments: [], // Initialize empty array
+    existingMedia,
+    aiEnabled: false,
+    aiInstructions: "",
+    dueDate: post.scheduledTime,
+    time: "", // You might want to extract time from scheduledTime
+    status: post.status.charAt(0).toUpperCase() + post.status.slice(1),
+  });
+  setShowCreateModal(true);
+};
+
+  const handleDeletePost = async (postId: string) => {
+    if (window.confirm("Are you sure you want to delete this post?")) {
+      try {
+        const response = await fetch(API_ROUTES.POSTS.DELETE(postId), {
+          method: "DELETE",
+          credentials: "include"
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to delete post")
+        }
+
+        setPosts(posts.filter(post => post._id !== postId))
+      } catch (err) {
+        setError("Failed to delete post")
+        console.error("Delete error:", err)
+      }
+    }
+  }
+
+const handleUpdatePost = async () => {
+  if (!editingPost?._id || !manager?._id) {
+    console.error('Missing IDs - editingPost:', editingPost, 'manager:', manager);
+    setError('Missing required IDs');
+    return;
+  }
+
+  try {
+    setLoading(true);
+    setError('');
+    
+    // Validation
+    const validationErrors: string[] = [];
+    if (!formData.title.trim()) validationErrors.push('Title is required');
+    if (formData.platforms.length === 0) validationErrors.push('At least one platform is required');
+    if (formData.clients.length === 0) validationErrors.push('Please select at least one client');
+    if (!formData.content.trim()) validationErrors.push('Content is required');
+    if (!formData.dueDate) validationErrors.push('Scheduled time is required');
+    
+    if (validationErrors.length > 0) {
+      console.error('Validation errors:', validationErrors);
+      throw new Error(validationErrors.join(', '));
+    }
+
+    const scheduledTime = new Date(formData.dueDate).toISOString();
+    const clientId = formData.clients[0] || editingPost?.client;
+    if (!clientId) {
+      throw new Error('Client ID is required');
+    }
+
+    // Create FormData for the update
+    const formDataToSend = new FormData();
+    
+    // Append simple fields
+    formDataToSend.append('title', formData.title);
+    formDataToSend.append('content', formData.content);
+    formDataToSend.append('status', formData.status.toLowerCase());
+    formDataToSend.append('scheduledTime', scheduledTime);
+    formDataToSend.append('Manager', manager._id);
+    formDataToSend.append('client', clientId);
+
+    // Append platforms
+    const platformsData = formData.platforms.map(platform => ({
+      platform: platform.toLowerCase(),
+      status: "pending"
+    }));
+    
+    platformsData.forEach((platform, index) => {
+      formDataToSend.append(`platforms[${index}][platform]`, platform.platform);
+      formDataToSend.append(`platforms[${index}][status]`, platform.status);
+    });
+
+    formData.tags.forEach(tag => {
+    formDataToSend.append('hashtags', tag); // Simple array format
+  });
+
+    // Append existing media
+    if (formData.existingMedia.length > 0) {
+      formDataToSend.append('existingMedia', JSON.stringify(formData.existingMedia));
+    }
+
+    // Append files if they exist
+    if (formData.attachments && formData.attachments.length > 0) {
+      formData.attachments.forEach((file) => {
+        formDataToSend.append(`attachments`, file);
+      });
+    }
+
+    const response = await fetch(API_ROUTES.POSTS.UPDATE(editingPost._id), {
+      method: "PUT",
+      credentials: "include",
+      body: formDataToSend,
+    });
+
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        console.error('Failed to parse error response:', e);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      throw new Error(errorData.message || errorData.error || 'Failed to update post');
+    }
+
+    const responseData = await response.json();
+    console.log('Update successful:', responseData);
+
+    setPosts(prevPosts => 
+      prevPosts.map(post => 
+        post._id === editingPost._id ? responseData.data : post
+      )
+    );
+    
+    setShowCreateModal(false);
+    setEditingPost(null);
+    resetModal();
+  } catch (err) {
+    console.error('Update error:', err);
+    setError(err instanceof Error ? err.message : 'Failed to update post');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleSearch = (query: string) => {
     setSearchTerm(query)
   }
 
-  // Modal functions
-  const validateCurrentStep = () => {
-    const errors: ValidationErrors = {}
-
-    if (currentStep === 1) {
-      if (!formData.title.trim()) errors.title = "Title is required"
-      if (!formData.type) errors.type = "Content type is required"
-      if (!formData.platform) errors.platform = "Platform is required"
-      if (!formData.client) errors.client = "Client is required"
-    } else if (currentStep === 2) {
-      if (!formData.content.trim()) errors.content = "Content is required"
-    } else if (currentStep === 3) {
-      if (!formData.assignedTo) errors.assignedTo = "Assigned to is required"
-      if (!formData.dueDate) errors.dueDate = "Due date is required"
-    }
-
-    setValidationErrors(errors)
-    return Object.keys(errors).length === 0
+// Update your filteredPosts useMemo to this:
+const filteredPosts = useMemo(() => {
+  let filtered = [...posts]
+  
+  // Apply tab filter
+  if (activeTab !== "all") {
+    filtered = filtered.filter(post => 
+      post.status.toLowerCase() === activeTab.toLowerCase()
+    )
   }
+  
+  // Apply search filter
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase()
+    filtered = filtered.filter(post => 
+      post.title.toLowerCase().includes(term) || 
+      post.content.toLowerCase().includes(term)
+    )
+  }
+  
+  // Apply platform filter - fixed comparison
+  if (platformFilter.length > 0) {
+    filtered = filtered.filter(post =>
+      post.platforms.some(platform => 
+        platformFilter.some(filterPlatform => 
+          platform.platform.toLowerCase() === filterPlatform.toLowerCase()
+        )
+      )
+    )
+  }
+  
+  // Apply status filter - fixed case sensitivity
+  if (statusFilter.length > 0) {
+    filtered = filtered.filter(post =>
+      statusFilter.some(filterStatus => 
+        post.status.toLowerCase() === filterStatus.toLowerCase()
+      )
+    )
+  }
+  
+  return filtered
+}, [posts, activeTab, searchTerm, platformFilter, statusFilter])
+const resetFilters = () => {
+  setPlatformFilter([])
+  setStatusFilter([])
+  setActiveTab("all")
+  setSearchTerm("")
+}
 
-  const handleGenerateAI = async () => {
-    if (!formData.aiInstructions.trim()) {
-      setValidationErrors((prev) => ({ ...prev, aiInstructions: "AI instructions are required" }))
-      return
-    }
+// Add this function to handle platform filter toggling
+// Update your toggle functions to maintain consistent case
+const togglePlatformFilter = (platform: string) => {
+  setPlatformFilter(prev => 
+    prev.some(p => p.toLowerCase() === platform.toLowerCase())
+      ? prev.filter(p => p.toLowerCase() !== platform.toLowerCase())
+      : [...prev, platform]
+  )
+}
 
-    setIsGeneratingAI(true)
+const toggleStatusFilter = (status: string) => {
+  setStatusFilter(prev => 
+    prev.some(s => s.toLowerCase() === status.toLowerCase())
+      ? prev.filter(s => s.toLowerCase() !== status.toLowerCase())
+      : [...prev, status]
+  )
+}
 
-    try {
-      const chatHistory = []
-      const userPrompt = `Generate a ${formData.type} for ${formData.platform} titled "${formData.title}". Additional instructions: ${formData.aiInstructions}`
+ const validateCurrentStep = () => {
+  const errors: ValidationErrors = {}
 
-      chatHistory.push({ role: "user", parts: [{ text: userPrompt }] })
-
-      const payload = { contents: chatHistory }
-      const apiKey = "" // Canvas will provide this
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`
-
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-
-      const result = await response.json()
-
-      if (
-        result.candidates &&
-        result.candidates.length > 0 &&
-        result.candidates[0].content &&
-        result.candidates[0].content.parts &&
-        result.candidates[0].content.parts.length > 0
-      ) {
-        const generatedText = result.candidates[0].content.parts[0].text
-        setFormData((prev) => ({ ...prev, content: generatedText }))
-      } else {
-        console.error("AI generation failed or returned unexpected structure.")
-        setValidationErrors((prev) => ({ ...prev, ai: "AI generation failed. Please try again." }))
+  if (currentStep === 1) {
+    if (!formData.title.trim()) errors.title = "Title is required"
+    if (formData.platforms.length === 0) errors.platforms = "At least one platform is required"
+    if (formData.clients.length === 0) errors.clients = "At least one client is required"
+  } else if (currentStep === 2) {
+    if (!formData.content.trim()) errors.content = "Content is required"
+  } else if (currentStep === 3) {
+    if (!formData.dueDate) {
+      errors.dueDate = "Scheduled time is required"
+    } else {
+      const selectedDate = new Date(formData.dueDate)
+      const now = new Date()
+      if (selectedDate < now) {
+        errors.dueDate = "Cannot schedule for past date/time"
       }
-    } catch (error) {
-      console.error("AI generation error:", error)
-      setValidationErrors((prev) => ({ ...prev, ai: "AI generation failed. Please try again." }))
-    } finally {
-      setIsGeneratingAI(false)
     }
   }
 
-  const resetModal = () => {
-    setCurrentStep(1)
-    setFormData({
-      title: "",
-      type: "",
-      platform: "",
-      client: "",
-      content: "",
-      tags: [],
-      links: [],
-      attachments: [],
-      aiEnabled: false,
-      aiInstructions: "",
-      assignedTo: "",
-      dueDate: "",
-      time: "",
-      status: "Draft",
-    })
-    setValidationErrors({})
-    setCurrentTag("")
-    setCurrentLink({ text: "", url: "" })
+  setValidationErrors(errors)
+  return Object.keys(errors).length === 0
+}
+
+const handleGenerateAI = async () => {
+  if (!formData.aiInstructions.trim()) {
+    setValidationErrors((prev) => ({ ...prev, aiInstructions: "AI instructions are required" }))
+    return
   }
 
-  return (
-    <div className={styles.layout}>
-      <main className={styles.main}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>Content Management</h1>
+  setIsGeneratingAI(true)
 
-          <div className={styles.topControls}>
-            <div className={styles.actionButtons}>
-              <button className={styles.createButton} onClick={() => setShowCreateModal(true)}>
-                <span className={styles.plusIcon}>+</span>
-                Create Content
+  try {
+    const chatHistory = []
+    const userPrompt = `Generate content for ${formData.platforms} titled "${formData.title}". 
+      Please format your response with:
+      - Content description first
+      - Then a line with just "Tags:"
+      - Then a comma-separated list of relevant hashtags
+      Additional instructions: ${formData.aiInstructions}`
+
+    chatHistory.push({ role: "user", parts: [{ text: userPrompt }] })
+
+    const payload = { contents: chatHistory }
+    const apiKey = "AIzaSyCIgNNIcKic4HKKl1vseBNpjKTO5dLM6Lw"
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+
+    const result = await response.json()
+
+    if (
+      result.candidates &&
+      result.candidates.length > 0 &&
+      result.candidates[0].content &&
+      result.candidates[0].content.parts &&
+      result.candidates[0].content.parts.length > 0
+    ) {
+const generatedText: string = result.candidates[0].content.parts[0].text;
+      
+// Parse the response to separate content and tags
+const tagsIndex: number = generatedText.indexOf("Tags:");
+let content: string = generatedText;
+let tags: string[] = [];
+      
+if (tagsIndex !== -1) {
+  // Split into content and tags sections
+  content = generatedText.substring(0, tagsIndex).trim();
+  const tagsSection: string = generatedText.substring(tagsIndex + 5).trim();
+        
+  // Extract tags (comma-separated, remove # if present)
+  tags = tagsSection.split(',')
+    .map((tag: string) => tag.trim().replace(/^#/, ''))
+    .filter((tag: string) => tag.length > 0);
+}
+
+setFormData((prev) => ({ 
+  ...prev, 
+  content: content,
+  tags: [...prev.tags, ...tags] // Append new tags to existing ones
+}));
+    } else {
+      console.error("AI generation failed or returned unexpected structure.")
+      setValidationErrors((prev) => ({ ...prev, ai: "AI generation failed. Please try again." }))
+    }
+  } catch (error) {
+    console.error("AI generation error:", error)
+    setValidationErrors((prev) => ({ ...prev, ai: "AI generation failed. Please try again." }))
+  } finally {
+    setIsGeneratingAI(false)
+  }
+}
+
+const resetModal = () => {
+  setCurrentStep(1);
+  setFormData({
+    title: "",
+    platforms: [],
+    clients: [],
+    content: "",
+    tags: [],
+    links: [],
+    attachments: [],
+    existingMedia: [],
+    aiEnabled: false,
+    aiInstructions: "",
+    dueDate: "",
+    time: "",
+    status: "Draft",
+  });
+  setValidationErrors({});
+  setCurrentTag("");
+  setCurrentLink({ text: "", url: "" });
+  setEditingPost(null); // Add this line
+};
+
+const handleSavePost = async () => {
+  if (!validateCurrentStep()) return;
+
+  try {
+    setLoading(true);
+    setError('');
+
+    const scheduledTime = new Date(formData.dueDate).toISOString();
+    const clientId = formData.clients[0];
+    const status = formData.status.toLowerCase();
+    //const scheduledTime = formData.dueDate ? new Date(formData.dueDate).toISOString() : null;
+    // Create FormData object to handle file uploads
+    const formDataToSend = new FormData();
+    formDataToSend.append('title', formData.title);
+    formDataToSend.append('platforms', JSON.stringify(
+      formData.platforms.map(platform => ({
+        platform: platform.toLowerCase(),
+        status: "pending"
+      }))
+    ));
+    formDataToSend.append('client', clientId);
+    formDataToSend.append('content', formData.content);
+     formDataToSend.append('status', formData.status.toLowerCase());
+    formDataToSend.append('scheduledTime', scheduledTime);
+    
+    if (manager?._id) {
+      formDataToSend.append('Manager', manager._id);
+    }
+
+    // Append tags
+    formData.tags.forEach(tag => {
+      formDataToSend.append('hashtags', tag);
+    });
+
+    // Append files if any
+    if (formData.attachments.length > 0) {
+      formData.attachments.forEach((file, index) => {
+        formDataToSend.append(`attachments`, file);
+      });
+    }
+
+    const response = await fetch(API_ROUTES.POSTS.CREATE, {
+      method: "POST",
+      credentials: "include",
+      body: formDataToSend,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to save post");
+    }
+    
+    const responseData = await response.json();
+    setPosts(prevPosts => [responseData.data, ...prevPosts]);
+    setShowCreateModal(false);
+    resetModal();
+  } catch (err) {
+    setError(err instanceof Error ? err.message : "Failed to save post");
+  } finally {
+    setLoading(false);
+  }
+};
+
+  if (managerLoading) {
+    return <div className={styles.loading}>Loading manager data...</div>
+  }
+
+  if (!manager || !manager.managedClients || manager.managedClients.length === 0) {
+    return <div className={styles.error}>No manager data found. Please log in.</div>
+  }
+
+return (
+  <div className={styles.layout}>
+    <main className={styles.main}>
+      <div className={styles.header}>
+        <h1 className={styles.title}>Content Management</h1>
+
+        <div className={styles.topControls}>
+          <div className={styles.actionButtons}>
+            <button 
+              className={styles.createButton} 
+              onClick={() => setShowCreateModal(true)}
+              disabled={!manager}
+            >
+              <span className={styles.plusIcon}>+</span>
+              Create Content
+            </button>
+
+            {/* Filter button with dropdown container */}
+            <div className={styles.filterWrapper}>
+              <button 
+                className={styles.actionButton} 
+                onClick={() => setShowFilters(!showFilters)}
+                disabled={!manager}
+              >
+                <span className={styles.actionIcon}>⚙</span>
+                Filter
+                <span className={`${styles.chevronIcon} ${showFilters ? styles.chevronUp : ""}`}>▼</span>
               </button>
 
-              <div className={styles.filterWrapper}>
-                <button className={styles.actionButton} onClick={() => setShowFilters(!showFilters)}>
-                  <span className={styles.actionIcon}>⚙</span>
-                  Filter
-                  <span className={`${styles.chevronIcon} ${showFilters ? styles.chevronUp : ""}`}>▼</span>
-                </button>
-
-                {showFilters && (
-                  <div className={styles.filterDropdown}>
-                    <div className={styles.filterGroup}>
-                      <label htmlFor="contentType">Content Type</label>
-                      <select
-                        id="contentType"
-                        name="contentType"
-                        value={filters.contentType}
-                        onChange={handleFilterChange}
-                      >
-                        {contentTypes.map((type) => (
-                          <option key={type} value={type}>
-                            {type}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className={styles.filterGroup}>
-                      <label htmlFor="client">Client</label>
-                      <select id="client" name="client" value={filters.client} onChange={handleFilterChange}>
-                        {clients.map((client) => (
-                          <option key={client} value={client}>
-                            {client}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className={styles.filterGroup}>
-                      <label htmlFor="assignedTo">Assigned To</label>
-                      <select
-                        id="assignedTo"
-                        name="assignedTo"
-                        value={filters.assignedTo}
-                        onChange={handleFilterChange}
-                      >
-                        {teamMembers.map((member) => (
-                          <option key={member} value={member}>
-                            {member}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className={styles.filterActions}>
-                      <button className={styles.resetButton} onClick={resetFilters}>
-                        Reset
-                      </button>
-                      <button className={styles.applyButton} onClick={() => setShowFilters(false)}>
-                        Apply Filters
-                      </button>
+              {/* Filter dropdown - positioned relative to the filter button */}
+              {showFilters && (
+                <div className={styles.filterDropdown}>
+                  <div className={styles.filterGroup}>
+                    <label className={styles.filterLabel}>Platforms</label>
+                    <div className={styles.platformSelection}>
+                      {platformOptions.map(platform => (
+                        <button
+                          key={platform}
+                          type="button"
+                          className={`${styles.platformButton} ${
+                            platformFilter.includes(platform) ? styles.selected : ""
+                          }`}
+                          onClick={() => togglePlatformFilter(platform)}
+                        >
+                          {platform}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                )}
-              </div>
-            </div>
 
-            <SearchBar placeholder="Search content..." onSearch={handleSearch} className={styles.searchContainer} />
+                  <div className={styles.filterGroup}>
+                    <label className={styles.filterLabel}>Status</label>
+                    <div className={styles.platformSelection}>
+                      {statusOptions.map(status => (
+                        <button
+                          key={status}
+                          type="button"
+                          className={`${styles.platformButton} ${
+                            statusFilter.includes(status) ? styles.selected : ""
+                          }`}
+                          onClick={() => toggleStatusFilter(status)}
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className={styles.tabs}>
-            {filterTabs.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`${styles.tab} ${activeTab === tab ? styles.tabActive : ""}`}
-              >
-                {tab}
-              </button>
-            ))}
+          <div className={styles.searchContainer}>
+            <input
+              type="text"
+              placeholder="Search content..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              disabled={!manager}
+              className={styles.searchInput}
+            />
           </div>
         </div>
+
+        <div className={styles.tabs}>
+          {filterTabs.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`${styles.tab} ${activeTab === tab ? styles.tabActive : ""}`}
+              disabled={!manager}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
 
         <div className={styles.tabContent}>
-          <ReusableTable
-            data={filteredData}
-            columns={contentColumns}
-            actions={contentActions}
-            pageSize={5}
-            searchable={true}
-            searchPlaceholder="Search content..."
-            onRowClick={(row) => console.log("Row clicked:", row)}
-          />
+          {managerLoading ? (
+            <div className={styles.loading}>Loading...</div>
+          ) : !manager ? (
+            <div className={styles.emptyState}>
+              <p>Please log in to view content</p>
+              <ReusableTable
+                data={[]}
+                columns={contentColumns}
+                actions={[]}
+                pageSize={5}
+                searchable={false}
+                emptyMessage="No content available"
+              />
+            </div>
+          ) : loading ? (
+            <div className={styles.loading}>Loading content...</div>
+          ) : (
+            <ReusableTable
+              data={filteredPosts}
+              columns={contentColumns}
+              actions={[]}
+              pageSize={5}
+              searchable={false}
+              emptyMessage="No content found"
+              onRowClick={(row) => console.log("Row clicked:", row)}
+            />
+          )}
         </div>
-
         {showCreateModal && (
           <CreateContentModal
             currentStep={currentStep}
@@ -819,42 +1261,39 @@ export default function ContentPage() {
             isGeneratingAI={isGeneratingAI}
             currentTag={currentTag}
             currentLink={currentLink}
-            onClose={() => {
-              setShowCreateModal(false)
-              resetModal()
-            }}
+            managerClients={clientsData}
+           onClose={() => {
+           setShowCreateModal(false);
+           setEditingPost(null); // Ensure editingPost is reset
+           resetModal();
+          }}
             onNext={() => {
               if (validateCurrentStep()) {
                 setCurrentStep((prev) => prev + 1)
               }
             }}
             onPrevious={() => setCurrentStep((prev) => prev - 1)}
-            onSave={() => {
-              if (validateCurrentStep()) {
-                console.log("Saving content:", formData)
-                setShowCreateModal(false)
-                resetModal()
-                // Here you would typically save to your backend
-              }
-            }}
+            onSave={editingPost ? handleUpdatePost : handleSavePost}
             onFormDataChange={(updates) => setFormData((prev) => ({ ...prev, ...updates }))}
             onTagChange={setCurrentTag}
             onLinkChange={setCurrentLink}
             onAddTag={() => {
-              if (currentTag.trim()) {
-                setFormData((prev) => ({
-                  ...prev,
-                  tags: [...prev.tags, currentTag.trim()],
-                }))
-                setCurrentTag("")
-              }
+                  if (currentTag.trim()) {
+                    setFormData((prev) => ({
+                      ...prev,
+                      tags: [...prev.tags, currentTag.trim()],
+                    }));
+                    setCurrentTag("");
+                  }
             }}
             onRemoveTag={(index) => {
-              setFormData((prev) => ({
-                ...prev,
-                tags: prev.tags.filter((_, i) => i !== index),
-              }))
-            }}
+                  const updatedTags = [...formData.tags];
+                  updatedTags.splice(index, 1);
+                  setFormData((prev) => ({
+                    ...prev,
+                    tags: updatedTags,
+                  }));
+                }}
             onAddLink={() => {
               if (currentLink.url.trim()) {
                 setFormData((prev) => ({
@@ -871,6 +1310,12 @@ export default function ContentPage() {
               }))
             }}
             onGenerateAI={handleGenerateAI}
+            onFileUpload={(files) => {
+              setFormData((prev) => ({
+                ...prev,
+                attachments: [...prev.attachments, ...files],
+              }))
+            }}
           />
         )}
       </main>

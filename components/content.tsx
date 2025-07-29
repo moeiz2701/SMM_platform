@@ -8,4 +8,4 @@ export interface ContentItem {
   assignedTo: string
 }
 
-export type FilterTab = "All Content" | "Drafts" | "Pending Approval" | "Approved" | "Rejected"
+export type FilterTab = "all" | "draft" | "scheduled" | "published" | "failed"

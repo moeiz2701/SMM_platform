@@ -964,3 +964,232 @@
     width: 0.75rem;
   }
 }
+
+/* Platform selection styles */
+.platformSelection {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.platformButton {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: capitalize;
+}
+
+.platformButton.selected {
+  background: #0070f3;
+  color: white;
+  border-color: #0070f3;
+}
+
+/* Add these to your content.module.css */
+
+/* Action buttons */
+.actionButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.editButton {
+  padding: 4px 8px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.deleteButton {
+  padding: 4px 8px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Improved file upload section */
+.fileUploadContainer {
+  margin-top: 16px;
+}
+
+.fileUploadBox {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  position: relative;
+}
+
+.fileUploadBox:hover {
+  border-color: #888;
+}
+
+.uploadIcon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 16px;
+  fill: #666;
+}
+
+.uploadText {
+  margin-top: 8px;
+}
+
+.uploadTitle {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.uploadSubtitle {
+  color: #666;
+  font-size: 0.9em;
+}
+
+.fileInput {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+}
+
+/* Attachment list styles */
+.attachmentsList {
+  margin-top: 16px;
+}
+
+.attachmentItem {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.fileIcon {
+  margin-right: 12px;
+  font-size: 1.2em;
+}
+
+.fileInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.fileName {
+  font-weight: 500;
+}
+
+.fileSize {
+  font-size: 0.8em;
+  color: #666;
+}
+
+.attachmentRemove {
+  background: none;
+  border: none;
+  color: #f44336;
+  font-size: 1.2em;
+  cursor: pointer;
+  margin-left: 8px;
+}
+
+/* Filter Dropdown Styles */
+.filterDropdown {
+  position: absolute;
+  right: 0;
+  background-color: var(--component-background, #1b202a);
+  border: 1px solid rgba(215, 215, 215, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  width: 280px;
+  z-index: 10;
+  margin-top: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.filterGroup {
+  margin-bottom: 1rem;
+}
+
+.filterLabel {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: #d1d5db;
+  font-family: "Poppins", sans-serif;
+}
+
+.filterActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.resetButton {
+  padding: 0.5rem 1rem;
+  background-color: transparent;
+  border: 1px solid #4b5563;
+  color: #f3f4f6;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-family: "Poppins", sans-serif;
+}
+
+.resetButton:hover {
+  background-color: #374151;
+}
+
+.applyButton {
+  padding: 0.5rem 1rem;
+  background-color: #6c82a4;
+  border: none;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-family: "Poppins", sans-serif;
+}
+
+.applyButton:hover {
+  background: #5a6f8a;
+}
+
+/* Platform selection styles for filters */
+.platformSelection {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.platformButton {
+  padding: 6px 12px;
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+  background: #1f2937;
+  color: #f3f4f6;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.8125rem;
+  font-family: "Poppins", sans-serif;
+}
+
+.platformButton.selected {
+  background: #6c82a4;
+  color: white;
+  border-color: #6c82a4;
+}
+

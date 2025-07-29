@@ -119,3 +119,30 @@ exports.getClientsForManager = asyncHandler(async (req, res, next) => {
   const clients = await Client.find({ _id: { $in: manager.managedClients } });
   res.status(200).json({ success: true, count: clients.length, data: clients });
 });
+
+
+// @desc    Add clients to a manager
+// @route   PUT /api/v1/managers/:id/add-clients
+// @access  Private/Admin/Manager
+exports.addClientsToManager = asyncHandler(async (req, res, next) => {
+  const manager = await Manager.findById(req.params.id);
+  if (!manager) {
+    return next(new ErrorResponse(`Manager not found with id of ${req.params.id}`, 404));
+  }
+  // Only admin or the manager themself can update
+  if (req.user.role !== 'admin') {
+    const selfManager = await Manager.findOne({ user: req.user._id });
+    if (!selfManager || String(selfManager._id) !== String(req.params.id)) {
+      return next(new ErrorResponse('Not authorized to update this manager', 401));
+    }
+  }
+  // Expect req.body.clients to be an array of client IDs
+  const { clients } = req.body;
+  if (!Array.isArray(clients) || clients.length === 0) {
+    return next(new ErrorResponse('Please provide an array of client IDs', 400));
+  }
+  // Add unique client IDs
+  manager.managedClients = Array.from(new Set([...(manager.managedClients || []), ...clients]));
+  await manager.save();
+  res.status(200).json({ success: true, data: manager });
+});

@@ -43,7 +43,7 @@ const PostSchema = new mongoose.Schema({
       account: {
         type: mongoose.Schema.ObjectId,
         ref: 'SocialAccount',
-        required: true
+        required: false
       },
       postId: String, // ID returned by platform after posting
       status: {
@@ -92,5 +92,18 @@ PostSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   next();
 });
-
+// Add a static method to check for overdue posts
+PostSchema.statics.checkOverduePosts = async function() {
+  const now = new Date();
+  const result = await this.updateMany(
+    {
+      status: 'scheduled',
+      scheduledTime: { $lt: now }
+    },
+    {
+      $set: { status: 'failed' }
+    }
+  );
+  return result;
+};
 module.exports = mongoose.model('Post', PostSchema);

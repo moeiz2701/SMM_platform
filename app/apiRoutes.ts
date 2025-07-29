@@ -22,6 +22,8 @@ export const API_ROUTES = {
     GET_REQUESTS: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/requests`,
     ASSIGN_MANAGER: (managerId: string) => `${API_BASE_URL}/clients/assign-manager/${managerId}`,
     DELETE_REQUEST: (clientId: string, requestId: string) => `${API_BASE_URL}/clients/${clientId}/requests/${requestId}`,
+    GET_ONE: (id: string) => `${API_BASE_URL}/clients/${id}`,
+    GET_BY_IDS: `${API_BASE_URL}/clients/by-ids`,
   },
 
   SOCIAL_ACCOUNTS: {
@@ -39,6 +41,16 @@ export const API_ROUTES = {
     DELETE: (id: string) => `${API_BASE_URL}/managers/${id}`,
     GET_CLIENTS: (id: string) => `${API_BASE_URL}/managers/${id}/clients`,
   },
+
+POSTS: {
+  CREATE: `${API_BASE_URL}/posts`,
+  GET_ALL: `${API_BASE_URL}/posts`,
+  GET_ONE: (id: string) => `${API_BASE_URL}/posts/${id}`,
+  UPDATE: (id: string) => `${API_BASE_URL}/posts/${id}`,
+  DELETE: (id: string) => `${API_BASE_URL}/posts/${id}`,
+  BY_CLIENT: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/posts`,
+  BY_MANAGER: (managerId: string) => `${API_BASE_URL}/posts/by-manager/${managerId}`,
+},
 };
 
 export default API_ROUTES;
