@@ -38,6 +38,22 @@ const ClientSchema = new mongoose.Schema({
     zipCode: String,
     country: String
   },
+  paymentInfo: {
+    stripePaymentMethodId: String, // Stripe Payment Method ID
+    cardLast4: String, // Last 4 digits for display
+    cardBrand: String, // visa, mastercard, etc.
+    cardExpMonth: Number,
+    cardExpYear: Number,
+    cardHolderName: String,
+    isDefault: {
+      type: Boolean,
+      default: true
+    }
+  },
+  stripeCustomerId: {
+    type: String,
+    default: ''
+  },
   status: {
     type: String,
     enum: ['active', 'inactive'],

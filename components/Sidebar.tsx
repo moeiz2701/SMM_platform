@@ -11,6 +11,7 @@ import { Home, User, Settings, Mail, FileText, Menu, X, Calendar as CalendarIcon
 interface SidebarProps {
   userRole: string;
   userType: string;
+  clientExists?: boolean;
 }
 
 interface NavItem {
@@ -132,16 +133,28 @@ const navItems: NavItem[] = [
   }
 ];
 
-export default function Sidebar({ userRole, userType }: SidebarProps) {
+export default function Sidebar({ userRole, userType, clientExists }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [manager, setManager] = useState<{ profilePhoto?: string; name?: string; email?: string } | null>(null);
 
-  const filteredNavItems = navItems.filter(item => 
-    item.allowedRoles.includes(userRole)
-  );
+  let filteredNavItems: NavItem[];
+  if (userRole === 'User' && clientExists === false) {
+    filteredNavItems = [
+      {
+        label: 'Complete Profile',
+        href: '/client/profileCompletion',
+        icon: <User className="w-5 h-5" />, 
+        allowedRoles: ['User']
+      }
+    ];
+  } else {
+    filteredNavItems = navItems.filter(item => 
+      item.allowedRoles.includes(userRole)
+    );
+  }
 
   const handleNavigation = (href: string) => {
     router.push(href);

@@ -17,6 +17,8 @@ export default function ClientsPage() {
   const [loading, setLoading] = useState(true)
   const [showSearchClient, setShowSearchClient] = useState(false)
 
+
+
   useEffect(() => {
     async function fetchClients() {
       setLoading(true)

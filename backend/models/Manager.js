@@ -1,5 +1,27 @@
 const mongoose = require('mongoose');
 
+const ReviewSchema = new mongoose.Schema({
+  reviewer: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'Client',
+    required: true
+  },
+  comment: {
+    type: String,
+    default: ''
+  },
+  rating: {
+    type: Number,
+    min: 0,
+    max: 5,
+    default: 0
+  },
+  date: {
+    type: Date,
+    default: Date.now
+  }
+}, { _id: false });
+
 const RequestSchema = new mongoose.Schema({
   manager: {
     type: mongoose.Schema.ObjectId,
@@ -24,7 +46,7 @@ const ManagerSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
-    phone: String,
+  phone: String,
   department: String,
   status: {
     type: String,
@@ -50,6 +72,20 @@ const ManagerSchema = new mongoose.Schema({
     ref: 'Client'
   }],
   requests: [RequestSchema],
+
+  // ✅ New fields
+  experience: {
+    type: Number,
+    default: 0 // in years
+  },
+  rating: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 5
+  },
+  reviews: [ReviewSchema],
+
   createdAt: {
     type: Date,
     default: Date.now

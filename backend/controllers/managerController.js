@@ -52,6 +52,34 @@ exports.getManager = asyncHandler(async (req, res, next) => {
   }
   res.status(200).json({ success: true, data: manager });
 });
+// @desc    Get manager profile by authenticated user ID
+// @route   GET /api/v1/managers/me
+// @access  Private
+exports.getMyManager = asyncHandler(async (req, res, next) => {
+  console.log("getMyManager called for user:", req.user.id);
+
+  // Find the manager document where user field matches the current user's id
+  const manager = await Manager.findOne({ user: req.user.id }).populate('user', 'name email');
+
+  console.log("Manager found:", manager ? "YES" : "NO");
+
+  if (!manager) {
+    console.log("No manager found, returning null");
+    return res.status(200).json({ success: true, data: null });
+  }
+
+  console.log("Manager data:", {
+    id: manager._id,
+    name: manager.user?.name || 'N/A',
+    email: manager.user?.email || 'N/A',
+  });
+
+  res.status(200).json({
+    success: true,
+    data: manager
+  });
+});
+
 
 // @desc    Create new manager
 // @route   POST /api/v1/managers
@@ -61,9 +89,15 @@ exports.createManager = asyncHandler(async (req, res, next) => {
   if (req.user.role !== 'admin' && req.user.role !== 'manager') {
     return next(new ErrorResponse('Only admin or manager can create managers', 403));
   }
+
+  // Attach the current user's ID to the manager data
+  req.body.user = req.user._id;
+
   const manager = await Manager.create(req.body);
+
   res.status(201).json({ success: true, data: manager });
 });
+
 
 // @desc    Update manager
 // @route   PUT /api/v1/managers/:id
@@ -118,6 +152,46 @@ exports.getClientsForManager = asyncHandler(async (req, res, next) => {
   // Option 1: Use managedClients array
   const clients = await Client.find({ _id: { $in: manager.managedClients } });
   res.status(200).json({ success: true, count: clients.length, data: clients });
+});
+
+// @desc    Add a client to a manager
+// @route   POST /api/v1/managers/:id/clients
+// @access  Private/Admin/Manager
+exports.addClientToManager = asyncHandler(async (req, res, next) => {
+  const managerId = req.params.id;
+  const { clientId } = req.body;
+
+  // Only admin or the manager themself can add clients
+  if (req.user.role !== 'admin') {
+    const selfManager = await Manager.findOne({ user: req.user._id });
+    if (!selfManager || String(selfManager._id) !== String(managerId)) {
+      return next(new ErrorResponse('Not authorized to add clients to this manager', 401));
+    }
+  }
+
+  const manager = await Manager.findById(managerId);
+  if (!manager) {
+    return next(new ErrorResponse(`Manager not found with id of ${managerId}`, 404));
+  }
+
+  const client = await Client.findById(clientId);
+  if (!client) {
+    return next(new ErrorResponse(`Client not found with id of ${clientId}`, 404));
+  }
+
+  // Add client to manager's managedClients if not already present
+  if (!manager.managedClients.includes(client._id)) {
+    manager.managedClients.push(client._id);
+    await manager.save();
+  }
+
+  // Set the manager field on the client
+  if (!client.manager || String(client.manager) !== String(manager._id)) {
+    client.manager = manager._id;
+    await client.save();
+  }
+
+  res.status(200).json({ success: true, data: { manager, client } });
 });
 
 

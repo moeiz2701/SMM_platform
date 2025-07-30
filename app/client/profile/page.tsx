@@ -22,6 +22,16 @@ interface BillingInfo {
   country: string
 }
 
+interface PaymentInfo {
+  stripePaymentMethodId: string
+  cardLast4: string
+  cardBrand: string
+  cardExpMonth: number
+  cardExpYear: number
+  cardHolderName: string
+  isDefault: boolean
+}
+
 interface Client {
   _id: string
   name: string
@@ -29,6 +39,7 @@ interface Client {
   industry: string
   contactPerson: ContactPerson
   billingInfo: BillingInfo
+  paymentInfo: PaymentInfo
   status: "active" | "inactive"
   tags: string[]
   profilePhoto: string
@@ -86,6 +97,15 @@ export default function ClientProfile({ params }: { params: { id: string } }) {
       state: "",
       zipCode: "",
       country: "",
+    },
+    paymentInfo: {
+      stripePaymentMethodId: "",
+      cardLast4: "",
+      cardBrand: "",
+      cardExpMonth: 0,
+      cardExpYear: 0,
+      cardHolderName: "",
+      isDefault: true,
     },
     status: "active",
     tags: [],
@@ -452,6 +472,77 @@ export default function ClientProfile({ params }: { params: { id: string } }) {
             {renderEditableField("billingInfo.state", "State", client.billingInfo.state)}
             {renderEditableField("billingInfo.zipCode", "ZIP Code", client.billingInfo.zipCode)}
             {renderEditableField("billingInfo.country", "Country", client.billingInfo.country)}
+          </div>
+
+          {/* Payment Information */}
+          <div className={styles.section}>
+            <h2 className={styles.sectionTitle}>Payment Information</h2>
+            {renderEditableField("paymentInfo.cardHolderName", "Card Holder Name", client.paymentInfo.cardHolderName)}
+            
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabel}>Payment Method</label>
+              <div className={styles.fieldContainer}>
+                <span className={styles.valueText}>
+                  {client.paymentInfo.cardLast4 ?
+                    `**** **** **** ${client.paymentInfo.cardLast4}` :
+                    "No payment method added"
+                  }
+                </span>
+                {client.paymentInfo.cardBrand && (
+                  <span className={styles.cardBrand} style={{ marginLeft: '8px', fontSize: '12px', color: '#666' }}>
+                    {client.paymentInfo.cardBrand.toUpperCase()}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {client.paymentInfo.cardExpMonth && client.paymentInfo.cardExpYear && (
+              <div className={styles.fieldGroup}>
+                <label className={styles.fieldLabel}>Card Expiry</label>
+                <div className={styles.fieldContainer}>
+                  <span className={styles.valueText}>
+                    {String(client.paymentInfo.cardExpMonth).padStart(2, '0')}/{client.paymentInfo.cardExpYear}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabel}>Stripe Payment Method ID</label>
+              <div className={styles.fieldContainer}>
+                <span className={styles.valueText} style={{ fontSize: '12px', color: '#666' }}>
+                  {client.paymentInfo.stripePaymentMethodId || "Not configured"}
+                </span>
+              </div>
+            </div>
+
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabel}>Default Payment Method</label>
+              <div className={styles.fieldContainer}>
+                <span className={styles.valueText}>
+                  {client.paymentInfo.isDefault ? "Yes" : "No"}
+                </span>
+              </div>
+            </div>
+
+            <div className={styles.fieldGroup}>
+              <button
+                onClick={() => {
+                  // This would open a Stripe payment method update modal
+                  alert("Stripe payment method update would be implemented here");
+                }}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#635bff',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                Update Payment Method
+              </button>
+            </div>
           </div>
 
           {/* Metadata */}

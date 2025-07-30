@@ -59,9 +59,9 @@ const AdBudgetSchema = new mongoose.Schema({
     ref: 'Client',
     required: true
   },
-  user: {
+  manager: {
     type: mongoose.Schema.ObjectId,
-    ref: 'User',
+    ref: 'Manager',
     required: true
   },
   createdAt: {

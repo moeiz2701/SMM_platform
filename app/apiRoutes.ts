@@ -22,8 +22,9 @@ export const API_ROUTES = {
     GET_REQUESTS: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/requests`,
     ASSIGN_MANAGER: (managerId: string) => `${API_BASE_URL}/clients/assign-manager/${managerId}`,
     DELETE_REQUEST: (clientId: string, requestId: string) => `${API_BASE_URL}/clients/${clientId}/requests/${requestId}`,
-    GET_ONE: (id: string) => `${API_BASE_URL}/clients/${id}`,
-    GET_BY_IDS: `${API_BASE_URL}/clients/by-ids`,
+    ADD_OR_UPDATE_BILLING: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/billing`,
+    ADD_PAYMENT_METHOD: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/payment-method`,
+    ME: `${API_BASE_URL}/clients/me`,
   },
 
   SOCIAL_ACCOUNTS: {
@@ -50,7 +51,11 @@ POSTS: {
   DELETE: (id: string) => `${API_BASE_URL}/posts/${id}`,
   BY_CLIENT: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/posts`,
   BY_MANAGER: (managerId: string) => `${API_BASE_URL}/posts/by-manager/${managerId}`,
+    ADD_CLIENT: (id: string) => `${API_BASE_URL}/managers/${id}/clients`,
+    ME:`${API_BASE_URL}/managers/MyManager`
 },
+
+  
 };
 
 export default API_ROUTES;
