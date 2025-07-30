@@ -22,6 +22,9 @@ export const API_ROUTES = {
     GET_REQUESTS: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/requests`,
     ASSIGN_MANAGER: (managerId: string) => `${API_BASE_URL}/clients/assign-manager/${managerId}`,
     DELETE_REQUEST: (clientId: string, requestId: string) => `${API_BASE_URL}/clients/${clientId}/requests/${requestId}`,
+    ADD_OR_UPDATE_BILLING: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/billing`,
+    ADD_PAYMENT_METHOD: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/payment-method`,
+    ME: `${API_BASE_URL}/clients/me`,
   },
 
   SOCIAL_ACCOUNTS: {
@@ -38,7 +41,11 @@ export const API_ROUTES = {
     UPDATE: (id: string) => `${API_BASE_URL}/managers/${id}`,
     DELETE: (id: string) => `${API_BASE_URL}/managers/${id}`,
     GET_CLIENTS: (id: string) => `${API_BASE_URL}/managers/${id}/clients`,
+    ADD_CLIENT: (id: string) => `${API_BASE_URL}/managers/${id}/clients`,
+    ME:`${API_BASE_URL}/managers/MyManager`
   },
+
+  
 };
 
 export default API_ROUTES;

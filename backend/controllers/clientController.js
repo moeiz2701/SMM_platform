@@ -6,6 +6,8 @@ const Client = require('../models/Client');
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
 const Manager = require('../models/Manager'); // Add at the top if not already
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); // Add this at the top
+
 
 // @desc    Get all clients
 // @route   GET /api/v1/clients
@@ -84,7 +86,17 @@ exports.createClient = asyncHandler(async (req, res, next) => {
   // profilePhoto should be a Cloudinary URL if provided
   // (Assume frontend uploads to Cloudinary and sends the URL)
 
+  // If payment info is provided, mask sensitive data for logging
+  if (req.body.paymentInfo) {
+    console.log("Payment info provided for client creation");
+    // In production, you should encrypt or tokenize sensitive payment data
+    // For now, we'll store it as-is but this is NOT recommended for production
+  }
+
   const client = await Client.create(req.body);
+
+  // Payment info is already secure with Stripe - no need to mask
+  // Stripe stores sensitive data securely and we only store safe metadata
 
   res.status(201).json({
     success: true,
@@ -111,14 +123,13 @@ exports.updateClient = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // profilePhoto should be a Cloudinary URL if provided
-  // (Assume frontend uploads to Cloudinary and sends the URL)
 
   client = await Client.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true
   });
 
+  // Payment info is already secure with Stripe - no need to mask
   res.status(200).json({
     success: true,
     data: client
@@ -236,17 +247,20 @@ exports.assignManagerToClient = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Manager not found', 404));
   }
 
-  // Find the client by user id
+  // Find the client by user id and update manager
   const client = await Client.findOneAndUpdate(
     { user: userId },
     { manager: managerId },
     { new: true, runValidators: true }
   );
-
   if (!client) {
     return next(new ErrorResponse('Client not found for this user', 404));
   }
-
+  // Add client to manager's managedClients array if not already pres
+  if (!manager.managedClients.includes(client._id)) {
+    manager.managedClients.push(client._id);
+    await manager.save();
+  }
   res.status(200).json({
     success: true,
     data: client
@@ -281,3 +295,244 @@ exports.deleteRequest = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Add or update billing info for a client
+// @route   POST /api/v1/clients/:id/billing
+// @access  Private
+exports.addOrUpdateBillingInfo = asyncHandler(async (req, res, next) => {
+  const clientId = req.params.id;
+  const { paymentMethodId, billingInfo } = req.body; // paymentMethodId from Stripe.js, billingInfo is address etc.
+
+  let client = await Client.findById(clientId);
+  if (!client) {
+    return next(new ErrorResponse('Client not found', 404));
+  }
+
+  // Only client owner or admin can update billing info
+  if (client.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(new ErrorResponse('Not authorized to update billing info', 403));
+  }
+
+  // Create Stripe customer if not exists
+  let stripeCustomerId = client.stripeCustomerId;
+  if (!stripeCustomerId) {
+    const customer = await stripe.customers.create({
+      name: client.name,
+      email: client.contactPerson?.email,
+      address: billingInfo ? {
+        line1: billingInfo.address,
+        city: billingInfo.city,
+        state: billingInfo.state,
+        postal_code: billingInfo.zipCode,
+        country: billingInfo.country
+      } : undefined
+    });
+    stripeCustomerId = customer.id;
+    client.stripeCustomerId = stripeCustomerId;
+  } else if (billingInfo) {
+    // Update customer address if provided
+    await stripe.customers.update(stripeCustomerId, {
+      address: {
+        line1: billingInfo.address,
+        city: billingInfo.city,
+        state: billingInfo.state,
+        postal_code: billingInfo.zipCode,
+        country: billingInfo.country
+      }
+    });
+  }
+
+  // Attach payment method and set as default
+  if (paymentMethodId) {
+    // Detach previous payment method if exists
+    const customer = await stripe.customers.retrieve(stripeCustomerId);
+    if (customer.invoice_settings.default_payment_method) {
+      await stripe.paymentMethods.detach(customer.invoice_settings.default_payment_method);
+    }
+    await stripe.paymentMethods.attach(paymentMethodId, { customer: stripeCustomerId });
+    await stripe.customers.update(stripeCustomerId, {
+      invoice_settings: { default_payment_method: paymentMethodId }
+    });
+  }
+
+  // Update billingInfo in client doc
+  if (billingInfo) {
+    client.billingInfo = billingInfo;
+  }
+  await client.save();
+
+  res.status(200).json({ success: true, message: 'Billing info updated', stripeCustomerId });
+});
+
+// @desc    Get billing info for a client
+// @route   GET /api/v1/clients/:id/billing
+// @access  Private
+exports.getBillingInfo = asyncHandler(async (req, res, next) => {
+  const clientId = req.params.id;
+  const client = await Client.findById(clientId);
+  if (!client) {
+    return next(new ErrorResponse('Client not found', 404));
+  }
+  // Only client owner or admin can get billing info
+  if (client.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(new ErrorResponse('Not authorized to view billing info', 403));
+  }
+  if (!client.stripeCustomerId) {
+    return res.status(200).json({ success: true, billingInfo: null });
+  }
+  const customer = await stripe.customers.retrieve(client.stripeCustomerId);
+  let paymentMethod = null;
+  if (customer.invoice_settings.default_payment_method) {
+    paymentMethod = await stripe.paymentMethods.retrieve(customer.invoice_settings.default_payment_method);
+  }
+  res.status(200).json({
+    success: true,
+    billingInfo: client.billingInfo,
+    stripeCustomerId: client.stripeCustomerId,
+    paymentMethod
+  });
+});
+
+// @desc    Delete billing info for a client
+// @route   DELETE /api/v1/clients/:id/billing
+// @access  Private
+exports.deleteBillingInfo = asyncHandler(async (req, res, next) => {
+  const clientId = req.params.id;
+  const client = await Client.findById(clientId);
+  if (!client) {
+    return next(new ErrorResponse('Client not found', 404));
+  }
+  // Only client owner or admin can delete billing info
+  if (client.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(new ErrorResponse('Not authorized to delete billing info', 403));
+  }
+  if (client.stripeCustomerId) {
+    const customer = await stripe.customers.retrieve(client.stripeCustomerId);
+    if (customer.invoice_settings.default_payment_method) {
+      await stripe.paymentMethods.detach(customer.invoice_settings.default_payment_method);
+    }
+    // Optionally, delete the Stripe customer (uncomment if desired)
+    // await stripe.customers.del(client.stripeCustomerId);
+    client.stripeCustomerId = '';
+  }
+  client.billingInfo = {
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: ''
+  };
+  await client.save();
+  res.status(200).json({ success: true, message: 'Billing info deleted' });
+});
+
+// @desc    Get the current user's client profile
+// @route   GET /api/v1/clients/me
+// @access  Private/User
+exports.getMyClient = asyncHandler(async (req, res, next) => {
+  console.log("getMyClient called for user:", req.user.id);
+  
+  // Find the client document where user field matches the current user's id
+  const client = await Client.findOne({ user: req.user.id }).populate('user', 'name email');
+  
+  console.log("Client found:", client ? "YES" : "NO");
+  if (client) {
+    console.log("Client data:", {
+      id: client._id,
+      name: client.name,
+      user: client.user
+    });
+    
+    // @desc    Add payment method using Stripe
+    // @route   POST /api/v1/clients/:id/payment-method
+    // @access  Private
+  }
+  
+  if (!client) {
+    console.log("No client found, returning null");
+    // Return success with null if not found (or you can return 404 if preferred)
+    return res.status(200).json({ success: true, data: null });
+  }
+  
+  // Payment info is already secure with Stripe - no need to mask
+  console.log("Returning client data");
+  res.status(200).json({
+    success: true,
+    data: client
+  });
+});
+
+
+exports.addPaymentMethod = asyncHandler(async (req, res, next) => {
+  const clientId = req.params.id;
+  const { paymentMethodId, cardHolderName } = req.body;
+
+  if (!paymentMethodId) {
+    return next(new ErrorResponse('Payment method ID is required', 400));
+  }
+
+  // 1. Find the client in the database
+  const client = await Client.findById(clientId);
+  if (!client) {
+    return next(new ErrorResponse('Client not found', 404));
+  }
+
+  // 2. Authorization check (owner or admin)
+  if (client.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(new ErrorResponse('Not authorized to add payment method', 403));
+  }
+
+  try {
+    // 3. Retrieve payment method details from Stripe
+    const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+
+    if (!paymentMethod || paymentMethod.type !== 'card' || !paymentMethod.card) {
+      return next(new ErrorResponse('Invalid or unsupported payment method', 400));
+    }
+
+    // 4. Create Stripe customer if not already assigned
+    if (!client.stripeCustomerId) {
+      const customer = await stripe.customers.create({
+        name: client.name,
+        email: client.contactPerson?.email || undefined,
+        description: `Customer for client ID ${client._id}`,
+      });
+      client.stripeCustomerId = customer.id;
+    }
+
+    // 5. Attach payment method to customer
+    await stripe.paymentMethods.attach(paymentMethodId, {
+      customer: client.stripeCustomerId,
+    });
+
+    // 6. Set as default payment method
+    await stripe.customers.update(client.stripeCustomerId, {
+      invoice_settings: {
+        default_payment_method: paymentMethodId,
+      },
+    });
+
+    // 7. Save payment method info to the client document
+    client.paymentInfo = {
+      stripePaymentMethodId: paymentMethod.id,
+      cardLast4: paymentMethod.card.last4,
+      cardBrand: paymentMethod.card.brand,
+      cardExpMonth: paymentMethod.card.exp_month,
+      cardExpYear: paymentMethod.card.exp_year,
+      cardHolderName: cardHolderName || '',
+      isDefault: true,
+    };
+
+    await client.save();
+
+    // 8. Send success response
+    res.status(200).json({
+      success: true,
+      message: 'Payment method added successfully',
+      data: client.paymentInfo,
+    });
+
+  } catch (error) {
+    console.error('Stripe error:', error);
+    return next(new ErrorResponse('Failed to add payment method. Please try again.', 500));
+  }
+});

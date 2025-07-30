@@ -35,9 +35,17 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Enable CORS
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001'];
+
 app.use(cors({
-  origin: 'http://localhost:3001', // your actual frontend domain
-  credentials: true,               // allow cookies / sessions
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
 }));
 
 // Mount routers
