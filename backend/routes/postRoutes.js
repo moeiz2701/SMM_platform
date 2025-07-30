@@ -8,7 +8,8 @@ const {
   updatePost,
   deletePost,
   simulatePost,
-  getPostsByManager
+  getPostsByManager,
+  getPostsByClient
 } = require('../controllers/postController');
 const { protect, authorize, checkOwnership } = require('../middleware/auth');
 const Post = require('../models/post');
@@ -22,6 +23,7 @@ const uploadRoutes = require('./uploadRoutes');
 
 // Re-route into other resource routers
 router.use('/:postId/upload', uploadRoutes);
+router.get('/client/:clientId', getPostsByClient);
 router.get('/by-manager/:managerId', protect, getPostsByManager);
 router
   .route('/')

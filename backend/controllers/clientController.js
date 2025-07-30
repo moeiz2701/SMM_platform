@@ -80,7 +80,9 @@ exports.getClient = asyncHandler(async (req, res, next) => {
 exports.createClient = asyncHandler(async (req, res, next) => {
   // Add user to req.body
   req.body.user = req.user.id;
-
+const user = await User.findById(userId);
+user.role = 'client';
+await user.save();
   // profilePhoto should be a Cloudinary URL if provided
   // (Assume frontend uploads to Cloudinary and sends the URL)
 
