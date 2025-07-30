@@ -14,7 +14,7 @@ interface ManagerContextType {
   manager: Manager | null;
   loading: boolean;
   setManager: React.Dispatch<React.SetStateAction<Manager | null>>;
-  refreshManager: () => void;
+  refreshManager: () => Promise<void>;
 }
 
 const ManagerContext = createContext<ManagerContextType | undefined>(undefined);
@@ -31,12 +31,14 @@ export const ManagerProvider = ({
 
   const fetchManager = async () => {
     try {
+      setLoading(true);
       const res = await fetch(API_ROUTES.MANAGERS.GET_BY_USER(userId), {
         credentials: "include",
       });
-      if (res.ok) {
-        const data = await res.json();
-        setManager(data.manager); // adapt to actual response shape if needed
+      const data = await res.json();
+      
+      if (res.ok && data.data) {
+        setManager(data.data); // Changed from data.manager to data.data
       } else {
         setManager(null);
       }
@@ -51,12 +53,19 @@ export const ManagerProvider = ({
   useEffect(() => {
     if (userId) {
       fetchManager();
+    } else {
+      setLoading(false);
     }
   }, [userId]);
 
   return (
     <ManagerContext.Provider
-      value={{ manager, loading, setManager, refreshManager: fetchManager }}
+      value={{ 
+        manager, 
+        loading, 
+        setManager, 
+        refreshManager: fetchManager 
+      }}
     >
       {children}
     </ManagerContext.Provider>
@@ -69,4 +78,4 @@ export const useManager = () => {
     throw new Error("useManager must be used within a ManagerProvider");
   }
   return context;
-}; 
+};

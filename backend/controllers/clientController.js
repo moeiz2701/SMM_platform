@@ -8,7 +8,7 @@ const asyncHandler = require('../middleware/async');
 const Manager = require('../models/Manager'); // Add at the top if not already
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); // Add this at the top
 
-
+const mongoose = require('mongoose');
 // @desc    Get all clients
 // @route   GET /api/v1/clients
 // @access  Private
@@ -534,5 +534,42 @@ exports.addPaymentMethod = asyncHandler(async (req, res, next) => {
   } catch (error) {
     console.error('Stripe error:', error);
     return next(new ErrorResponse('Failed to add payment method. Please try again.', 500));
+  }
+});
+
+// @desc    Get clients by IDs
+// @route   POST /api/v1/clients/by-ids
+// @access  Private
+
+exports.getClientsByIds = asyncHandler(async (req, res, next) => {
+  try {
+    // Validate input
+    if (!req.body.ids || !Array.isArray(req.body.ids)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Please provide an array of client IDs' 
+      });
+    }
+
+    // Filter valid MongoDB IDs
+    const validIds = req.body.ids.filter(id => mongoose.Types.ObjectId.isValid(id));
+    
+    // Find clients and only return _id and name
+    const clients = await Client.find(
+      { _id: { $in: validIds } },
+      '_id name'  // Projection - only return these fields
+    );
+
+    res.status(200).json({
+      success: true,
+      count: clients.length,
+      data: clients
+    });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error'
+    });
   }
 });

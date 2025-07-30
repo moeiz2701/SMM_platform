@@ -41,9 +41,19 @@ export const API_ROUTES = {
     UPDATE: (id: string) => `${API_BASE_URL}/managers/${id}`,
     DELETE: (id: string) => `${API_BASE_URL}/managers/${id}`,
     GET_CLIENTS: (id: string) => `${API_BASE_URL}/managers/${id}/clients`,
+  },
+
+POSTS: {
+  CREATE: `${API_BASE_URL}/posts`,
+  GET_ALL: `${API_BASE_URL}/posts`,
+  GET_ONE: (id: string) => `${API_BASE_URL}/posts/${id}`,
+  UPDATE: (id: string) => `${API_BASE_URL}/posts/${id}`,
+  DELETE: (id: string) => `${API_BASE_URL}/posts/${id}`,
+  BY_CLIENT: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/posts`,
+  BY_MANAGER: (managerId: string) => `${API_BASE_URL}/posts/by-manager/${managerId}`,
     ADD_CLIENT: (id: string) => `${API_BASE_URL}/managers/${id}/clients`,
     ME:`${API_BASE_URL}/managers/MyManager`
-  },
+},
 
   
 };

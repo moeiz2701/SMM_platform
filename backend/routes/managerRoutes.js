@@ -9,7 +9,9 @@ const {
   deleteManager,
   getClientsForManager,
   addClientToManager,
-  getMyManager
+  getMyManager,
+  addClientsToManager
+  
 } = require('../controllers/managerController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -19,7 +21,7 @@ router.get('/MyManager', protect, getMyManager);
 // Get all managers, create manager
 router
   .route('/')
-  .get(protect, authorize('admin', 'user'), getManagers)
+  .get(protect, authorize('admin' , 'manager'), getManagers)
   .post(protect, authorize('admin', 'manager'), createManager);
 
 
@@ -36,5 +38,5 @@ router.get('/:id/clients', protect, authorize('admin', 'manager'), getClientsFor
 // Add a client to a manager
 router.post('/:id/clients', protect, authorize('admin', 'user'), addClientToManager);
 
-
+router.put('/:id/add-clients', protect, authorize('admin', 'manager'), addClientsToManager);
 module.exports = router;

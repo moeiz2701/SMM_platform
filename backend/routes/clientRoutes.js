@@ -10,6 +10,7 @@ const {
   getRequests,
   assignManagerToClient,
   deleteRequest,
+  getClientsByIds,
   addOrUpdateBillingInfo,
   getBillingInfo,
   deleteBillingInfo,
@@ -60,5 +61,5 @@ router
 
 // Payment method route
 router.post('/:id/payment-method', protect, addPaymentMethod);
-
+router.post('/by-ids', getClientsByIds);
 module.exports = router;

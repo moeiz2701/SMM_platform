@@ -15,6 +15,11 @@ dotenv.config();
 // Connect to database
 connectDB();
 
+if (process.env.NODE_ENV !== 'test') { // Don't run in test environment
+  const initScheduler = require('./utils/scheduler');
+  initScheduler();
+}
+
 // Route files
 const authRoutes = require('./routes/authRoutes');
 const postRoutes = require('./routes/postRoutes');
