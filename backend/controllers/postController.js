@@ -423,3 +423,105 @@ exports.getPostsByManager = async (req, res, next) => {
     next(err);
   }
 };
+
+// @desc    Get all posts for a specific client with filtering options
+// @route   GET /api/v1/posts/client/:clientId
+// @access  Private (Client, Manager, or Admin)
+exports.getPostsByClient = asyncHandler(async (req, res, next) => {
+  const { clientId } = req.params;
+  console.log('Received request for client ID:', clientId); // Debug log
+
+  // Verify client exists
+  const client = await Client.findById(clientId);
+  if (!client) {
+    console.log('Client not found:', clientId); // Debug log
+    return next(new ErrorResponse(`Client not found with id ${clientId}`, 404));
+  }
+
+  // Check authorization
+  let isAuthorized = false;
+  
+  // Admin has full access
+  if (req.user.role === 'admin') {
+    isAuthorized = true;
+  } 
+  // Manager must have this client in their managedClients
+  else if (req.user.role === 'manager') {
+    const manager = await Manager.findOne({ user: req.user.id });
+    isAuthorized = manager?.managedClients.includes(clientId);
+  }
+  // Client must either have role 'client' or 'user' and match the client's user ID
+  else if (
+    (req.user.role === 'client' || req.user.role === 'user') && 
+    client.user.toString() === req.user.id.toString()
+  ) {
+    isAuthorized = true;
+  }
+
+  if (!isAuthorized) {
+    return next(new ErrorResponse('Not authorized to access these posts', 403));
+  }
+
+  // Extract query parameters
+  const { 
+    status, 
+    startDate, 
+    endDate, 
+    platform,
+    search,
+    sort = '-scheduledTime',
+    limit = 100,
+    page = 1
+  } = req.query;
+
+  const query = { client: clientId };
+  
+  if (status) {
+    query.status = { $in: status.split(',') };
+  }
+  
+  if (startDate && endDate) {
+    query.scheduledTime = {
+      $gte: new Date(startDate),
+      $lte: new Date(endDate)
+    };
+  } else if (startDate) {
+    query.scheduledTime = { $gte: new Date(startDate) };
+  } else if (endDate) {
+    query.scheduledTime = { $lte: new Date(endDate) };
+  }
+  
+  if (platform) {
+    query['platforms.platform'] = { $in: platform.split(',') };
+  }
+  
+  if (search) {
+    query.$or = [
+      { title: { $regex: search, $options: 'i' } },
+      { content: { $regex: search, $options: 'i' } }
+    ];
+  }
+
+  const pageInt = parseInt(page);
+  const limitInt = parseInt(limit);
+  const skip = (pageInt - 1) * limitInt;
+
+  const posts = await Post.find(query)
+    .populate('client', 'name email')
+    .populate('platforms.account', 'username platform')
+    .populate('Manager', 'firstName lastName')
+    .sort(sort)
+    .skip(skip)
+    .limit(limitInt);
+
+  const total = await Post.countDocuments(query);
+
+  res.status(200).json({
+    success: true,
+    count: posts.length,
+    total,
+    page: pageInt,
+    pages: Math.ceil(total / limitInt),
+    data: posts
+  });
+});
