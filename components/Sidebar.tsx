@@ -59,8 +59,20 @@ const navItems: NavItem[] = [
     allowedRoles: ['Manager']
   },
   {
-    label: 'Billing',
-    href: '/manager/billing',
+    label: 'Campaigns',
+    href: '/manager/campaigns',
+    icon: <IconFileText className="w-5 h-5" />,
+    allowedRoles: ['Manager']
+  },
+  {
+    label: 'Invoices',
+    href: '/manager/invoices',
+    icon: <IconFileText className="w-5 h-5" />,
+    allowedRoles: ['Manager']
+  },
+  {
+    label: 'Budgets',
+    href: '/manager/budgets',
     icon: <IconFileText className="w-5 h-5" />,
     allowedRoles: ['Manager']
   },
@@ -120,8 +132,8 @@ const navItems: NavItem[] = [
     allowedRoles: ['User']
   },
   {
-    label: 'Support',
-    href: '/client/support',
+    label: 'Invoices',
+    href: '/client/invoices',
     icon: <Settings className="w-5 h-5" />, 
     allowedRoles: ['User']
   },

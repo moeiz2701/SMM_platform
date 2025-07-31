@@ -1,6 +1,6 @@
 
 const express = require('express');
-const { addSocialAccount, deleteSocialAccount, getSocialAccounts } = require('../controllers/socialAccountController');
+const { addSocialAccount, deleteSocialAccount, getSocialAccounts, getSocialAccountsByClient } = require('../controllers/socialAccountController');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
@@ -14,5 +14,7 @@ router.post('/:platform', protect, addSocialAccount);
 
 // Delete a social account
 router.delete('/:platform', protect, deleteSocialAccount);
+
+router.get('/client/:clientId', protect, getSocialAccountsByClient);
 
 module.exports = router;

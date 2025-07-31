@@ -3,10 +3,137 @@ const AdCampaign = require('../models/AdCampaign');
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
 
+function getWeekOfYear(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+function getMonthAndYear(date) {
+  return {
+    month: date.getMonth() + 1, // Jan = 0 in JS
+    year: date.getFullYear(),
+  };
+}
+
+
 // @desc    Get all budgets
 // @route   GET /api/v1/budgets
 // @route   GET /api/v1/campaigns/:campaignId/budgets
 // @access  Private
+
+exports.updateMonthlyBreakdown = async (budgetId) => {
+  const budget = await AdBudget.findById(budgetId);
+  if (!budget) throw new Error("Budget not found");
+
+  const map = new Map();
+
+  for (const alloc of budget.budgetAllocation) {
+    const duration = alloc.allocatedAmount / alloc.dailyLimit;
+    let current = new Date();
+    for (let i = 0; i < duration; i++) {
+      const date = new Date(current);
+      date.setDate(current.getDate() + i);
+      const { month, year } = getMonthAndYear(date);
+      const key = `${month}-${year}`;
+      const daily = alloc.dailyLimit;
+
+      if (!map.has(key)) {
+        map.set(key, { month, year, allocatedAmount: 0, spentAmount: 0 });
+      }
+
+      map.get(key).allocatedAmount += daily;
+    }
+  }
+
+  budget.monthlyBreakdown = Array.from(map.values());
+  await budget.save();
+  return budget.monthlyBreakdown;
+};
+exports.checkAndNotifyThresholds = async (budgetId) => {
+  const budget = await AdBudget.findById(budgetId);
+  if (!budget) throw new Error(`Budget ${budgetId} not found`);
+
+  // Calculate total spent
+  const totalSpent = budget.budgetAllocation.reduce((sum, allocation) => sum + allocation.spentAmount, 0);
+  const utilization = (totalSpent / budget.totalBudget) * 100;
+
+  let updated = false;
+
+  for (const threshold of budget.thresholds) {
+    if (!threshold.notified && utilization >= threshold.percentage) {
+      // Mark as notified
+      threshold.notified = true;
+      updated = true;
+
+      // Here you could trigger a notification
+      console.log(
+        `[THRESHOLD] Budget ${budget._id} reached ${threshold.percentage}% utilization.`
+      );
+    }
+  }
+
+  if (updated) {
+    await budget.save();
+  }
+};
+
+exports.updateWeeklyBreakdown = async (budgetId) => {
+  const budget = await AdBudget.findById(budgetId);
+  if (!budget) throw new Error("Budget not found");
+
+  const map = new Map();
+
+  for (const alloc of budget.budgetAllocation) {
+    const duration = alloc.allocatedAmount / alloc.dailyLimit;
+    let current = new Date();
+    for (let i = 0; i < duration; i++) {
+      const date = new Date(current);
+      date.setDate(current.getDate() + i);
+      const week = getWeekOfYear(date);
+      const year = date.getFullYear();
+      const key = `${week}-${year}`;
+      const daily = alloc.dailyLimit;
+
+      if (!map.has(key)) {
+        map.set(key, { week, year, allocatedAmount: 0, spentAmount: 0 });
+      }
+
+      map.get(key).allocatedAmount += daily;
+    }
+  }
+
+  budget.weeklyBreakdown = Array.from(map.values());
+  await budget.save();
+  return budget.weeklyBreakdown;
+};
+
+exports.checkAndUpdateThresholds = async (budgetId) => {
+  const budget = await AdBudget.findById(budgetId);
+  if (!budget) throw new Error("Budget not found");
+
+  const totalSpent = budget.budgetAllocation.reduce((sum, alloc) => sum + alloc.spentAmount, 0);
+  const utilization = (totalSpent / budget.totalBudget) * 100;
+
+  const triggered = [];
+
+  for (let threshold of budget.thresholds) {
+    if (!threshold.notified && utilization >= threshold.percentage) {
+      threshold.notified = true;
+      triggered.push(threshold.percentage);
+
+      // OPTIONAL: Trigger alert (email/SMS/push)
+      console.log(`[ALERT] Campaign ${budget.campaign} crossed ${threshold.percentage}% of budget.`);
+    }
+  }
+
+  await budget.save();
+  return triggered; // Returns array of triggered percentages
+};
+
+
 exports.getBudgets = asyncHandler(async (req, res, next) => {
   if (req.params.campaignId) {
     const budgets = await AdBudget.find({ 
@@ -24,13 +151,13 @@ exports.getBudgets = asyncHandler(async (req, res, next) => {
   }
 });
 
+
 // @desc    Get single budget
 // @route   GET /api/v1/budgets/:id
 // @access  Private
 exports.getBudget = asyncHandler(async (req, res, next) => {
   const budget = await AdBudget.findOne({
     _id: req.params.id,
-    user: req.user.id
   }).populate('campaign');
 
   if (!budget) {

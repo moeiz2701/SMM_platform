@@ -31,6 +31,7 @@ export const API_ROUTES = {
     ADD: (platform: string) => `${API_BASE_URL}/social-accounts/${platform}`,
     DELETE: (platform: string) => `${API_BASE_URL}/social-accounts/${platform}`,
     GET_ALL: `${API_BASE_URL}/social-accounts`,
+    CLIENT:(clientId: string) => `${API_BASE_URL}/social-accounts/client/${clientId}`
   },
 
   MANAGERS: {
@@ -41,6 +42,7 @@ export const API_ROUTES = {
     UPDATE: (id: string) => `${API_BASE_URL}/managers/${id}`,
     DELETE: (id: string) => `${API_BASE_URL}/managers/${id}`,
     GET_CLIENTS: (id: string) => `${API_BASE_URL}/managers/${id}/clients`,
+    ME:`${API_BASE_URL}/managers/MyManager`
   },
 
 POSTS: {
@@ -51,9 +53,31 @@ POSTS: {
   DELETE: (id: string) => `${API_BASE_URL}/posts/${id}`,
   BY_CLIENT: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/posts`,
   BY_MANAGER: (managerId: string) => `${API_BASE_URL}/posts/by-manager/${managerId}`,
-    ADD_CLIENT: (id: string) => `${API_BASE_URL}/managers/${id}/clients`,
-    ME:`${API_BASE_URL}/managers/MyManager`
+  ADD_CLIENT: (id: string) => `${API_BASE_URL}/managers/${id}/clients`,
+    
 },
+ AD_CAMPAIGNS: {
+    CREATE: `${API_BASE_URL}/ad-campaigns`,
+    GET_ALL: `${API_BASE_URL}/ad-campaigns`,
+    GET_ONE: (id: string) => `${API_BASE_URL}/ad-campaigns/${id}`,
+    UPDATE: (id: string) => `${API_BASE_URL}/ad-campaigns/${id}`,
+    DELETE: (id: string) => `${API_BASE_URL}/ad-campaigns/${id}`,
+    PAUSE: (id: string) => `${API_BASE_URL}/ad-campaigns/${id}/pause`,
+    RESUME: (id: string) => `${API_BASE_URL}/ad-campaigns/${id}/resume`,
+    ARCHIVE: (id: string) => `${API_BASE_URL}/ad-campaigns/${id}/archive`,
+  },
+
+  AD_BUDGET:{
+    GET_ALL: `${API_BASE_URL}/budgets`,
+    GET: (id: string) => `${API_BASE_URL}/budgets/${id}`
+  },
+
+  INVOICES:{
+    GET_ALL: `${API_BASE_URL}/invoices`,
+    GET_BY_MANAGER: `${API_BASE_URL}/invoices/manager`,
+    GET_BY_CLIENT: `${API_BASE_URL}/invoices/client`,
+    GET: (id: string) =>`${API_BASE_URL}/invoices/invoiceDetails/${id}`,
+  }
 
   
 };

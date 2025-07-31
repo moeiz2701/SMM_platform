@@ -549,8 +549,8 @@ async function fetchClientNames(clientIds: string[]): Promise<{id: string, name:
   try {
     if (!clientIds?.length) return [];
     
-    const response = await fetch(API_ROUTES.CLIENTS.GET_BY_IDS, {
-      method: 'POST',
+    const response = await fetch(API_ROUTES.CLIENTS.GET_ALL, {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('token')}`

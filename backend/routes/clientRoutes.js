@@ -34,7 +34,7 @@ router
 router.post('/:id/request', protect, authorize('manager'), sendRequest);
 
 // Get all requests for a client (admin/manager)
-router.get('/:id/requests', protect, authorize('admin', 'user'), getRequests);
+router.get('/:id/requests', protect, authorize('admin', 'client'), getRequests);
 
 router
   .route('/user/:userId')
@@ -47,10 +47,10 @@ router
   .delete(protect, deleteClient);
 
 // Assign manager to client (client only)
-router.put('/assign-manager/:managerId', protect, authorize('user'), assignManagerToClient);
+router.put('/assign-manager/:managerId', protect, authorize('user', 'client'), assignManagerToClient);
 
 // Delete a request from a client (admin or client owner only)
-router.delete('/:clientId/requests/:requestId', protect, authorize('admin', 'user'), deleteRequest);
+router.delete('/:clientId/requests/:requestId', protect, authorize('admin', 'user', 'client'), deleteRequest);
 
 // Billing info routes
 router
