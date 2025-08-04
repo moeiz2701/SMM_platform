@@ -141,3 +141,21 @@ exports.getSocialAccounts = asyncHandler(async (req, res, next) => {
     data: accounts
   });
 });
+exports.getSocialAccountsByClient = async (req, res) => {
+  try {
+    const { clientId } = req.params;
+
+    const accounts = await SocialAccount.find({ client: clientId }).select(
+      'platform accountName accountId profilePicture status followersCount postCount description createdAt'
+    );
+
+    if (!accounts || accounts.length === 0) {
+      return res.status(404).json({ success: false, message: 'No social accounts found for this client.' });
+    }
+
+    return res.status(200).json({ success: true, count: accounts.length, data: accounts });
+  } catch (error) {
+    console.error('Error fetching social accounts:', error);
+    return res.status(500).json({ success: false, message: 'Server error while fetching social accounts.' });
+  }
+};

@@ -17,6 +17,7 @@ connectDB();
 
 if (process.env.NODE_ENV !== 'test') { // Don't run in test environment
   const initScheduler = require('./utils/scheduler');
+  require ('./utils/budgetJobs');
   initScheduler();
 }
 
@@ -33,7 +34,11 @@ const managerRoutes = require('./routes/managerRoutes');
 const oauthRoutes = require('./routes/oauthRoutes');
 const socialAccountRoutes = require('./routes/socialAccountRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
-const userRoutes = require('./routes/userRoutes');
+const userRoutes = require('./routes/userRoutes');const campaignRoutes = require('./routes/campaignRoutes')
+const invoiceRoutes = require('./routes/invoiceRoutes')
+const campaignRoutes = require('./routes/campaignRoutes')
+
+
 const app = express();
 
 // Body parser
@@ -68,6 +73,9 @@ app.use('/api/v1/oauth', oauthRoutes);
 app.use('/api/v1/social-accounts', socialAccountRoutes);
 app.use('/api/v1/managers/:managerId/reviews', reviewRoutes);
 app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/ad-campaigns', campaignRoutes);
+app.use('/api/v1/invoices', invoiceRoutes);
+
 
 const PORT = process.env.PORT || 3000;
 

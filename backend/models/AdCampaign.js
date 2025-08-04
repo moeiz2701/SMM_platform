@@ -37,7 +37,7 @@ const AdCampaignSchema = new mongoose.Schema({
     {
       platform: {
         type: String,
-        enum: ['instagram', 'linkedin', 'facebook', 'twitter', 'tiktok'],
+        enum: ['instagram', 'linkedin', 'facebook', 'twitter'],
         required: true
       },
       account: {
@@ -55,9 +55,9 @@ const AdCampaignSchema = new mongoose.Schema({
     ref: 'Client',
     required: true
   },
-  user: {
+  manager: {
     type: mongoose.Schema.ObjectId,
-    ref: 'User',
+    ref: 'Manager',
     required: true
   },
   createdAt: {

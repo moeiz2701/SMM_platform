@@ -1,0 +1,177 @@
+.campaignsPage {
+  max-width: 1400px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #f0f0f0;
+}
+
+.createButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #3b82f6;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.createButton:hover {
+  background-color: #2563eb;
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.searchBox {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+}
+
+.searchBox svg {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+}
+
+.searchBox input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 3rem;
+  background-color: #2a2a2a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #f0f0f0;
+  font-size: 0.875rem;
+}
+
+.searchBox input::placeholder {
+  color: #6b7280;
+}
+
+.statusFilter {
+  padding: 0.75rem 1rem;
+  background-color: #2a2a2a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #f0f0f0;
+  font-size: 0.875rem;
+}
+
+.tableContainer {
+  background-color: #2a2a2a;
+  border-radius: 8px;
+  border: 1px solid #333;
+  overflow: hidden;
+}
+
+.campaignsTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.campaignsTable th {
+  background-color: #1a1a1a;
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #f0f0f0;
+  border-bottom: 1px solid #333;
+}
+
+.campaignsTable td {
+  padding: 1rem;
+  border-bottom: 1px solid #333;
+  color: #f0f0f0;
+}
+
+.campaignsTable tbody tr:hover {
+  background-color: #333;
+}
+
+.campaignName {
+  font-weight: 600;
+}
+
+.platforms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.platformTag {
+  background-color: #374151;
+  color: #d1d5db;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.statusBadge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  text-transform: capitalize;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background-color: #374151;
+  color: #d1d5db;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.actionButton:hover {
+  background-color: #4b5563;
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .filters {
+    flex-direction: column;
+  }
+
+  .tableContainer {
+    overflow-x: auto;
+  }
+
+  .campaignsTable {
+    min-width: 800px;
+  }
+}

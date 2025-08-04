@@ -5,6 +5,7 @@ import API_ROUTES from "@/app/apiRoutes"
 import Image from "next/image"
 import { Search, Mail, Phone } from "lucide-react"
 import "../styling/searchClient.css"
+
 // Define the Client type based on your schema
 interface Client {
   _id: string
@@ -22,7 +23,11 @@ interface Client {
   _sendingRequest?: boolean // UI state only
 }
 
-export default function SearchClients() {
+interface SearchClientsProps {
+  onClientSelect?: (client: Client) => void
+}
+
+export default function SearchClients({ onClientSelect }: SearchClientsProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [clients, setClients] = useState<Client[]>([])
   const [filteredClients, setFilteredClients] = useState<Client[]>([])
@@ -77,6 +82,35 @@ export default function SearchClients() {
     setFilteredClients(filtered)
   }, [searchTerm, clients])
 
+  const handleClientClick = (client: Client) => {
+    if (onClientSelect) {
+      onClientSelect(client)
+    }
+  }
+
+  const handleSendRequest = async (client: Client, e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent triggering client selection
+    
+    // Optimistic UI: set sending state
+    setFilteredClients((prev) => prev.map(c => c._id === client._id ? { ...c, _sendingRequest: true } : c));
+    try {
+      const res = await fetch(API_ROUTES.CLIENTS.SEND_REQUEST(client._id), {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (res.ok) {
+        alert('Request sent successfully!');
+      } else {
+        const data = await res.json();
+        alert(data.message || 'Failed to send request');
+      }
+    } catch (err) {
+      alert('Failed to send request');
+    }
+    setFilteredClients((prev) => prev.map(c => c._id === client._id ? { ...c, _sendingRequest: false } : c));
+  }
+
   return (
     <div className="search-clients-container">
       <div className="search-bar">
@@ -96,7 +130,12 @@ export default function SearchClients() {
         <div className="clients-grid">
           {filteredClients.length > 0 ? (
             filteredClients.map((client) => (
-              <div key={client._id} className="client-card" style={{ position: 'relative' }}>
+              <div 
+                key={client._id} 
+                className="client-card" 
+                style={{ position: 'relative', cursor: onClientSelect ? 'pointer' : 'default' }}
+                onClick={() => handleClientClick(client)}
+              >
                 <div className="client-header" style={{ position: 'relative' }}>
                   <div className="client-avatar">
                     {client.profilePhoto ? (
@@ -116,33 +155,16 @@ export default function SearchClients() {
                     <h3 className="client-name">{client.name}</h3>
                     {client.industry && <p className="client-industry">{client.industry}</p>}
                   </div>
-                  <button
-                    className="button2"
-                    style={{ position: 'absolute', top: 0, right: 0, backgroundColor:'white', color:'black', padding:'5px'}}
-                    disabled={client._sendingRequest}
-                    onClick={async () => {
-                      // Optimistic UI: set sending state
-                      setFilteredClients((prev) => prev.map(c => c._id === client._id ? { ...c, _sendingRequest: true } : c));
-                      try {
-                        const res = await fetch(API_ROUTES.CLIENTS.SEND_REQUEST(client._id), {
-                          method: 'POST',
-                          credentials: 'include',
-                          headers: { 'Content-Type': 'application/json' },
-                        });
-                        if (res.ok) {
-                          alert('Request sent successfully!');
-                        } else {
-                          const data = await res.json();
-                          alert(data.message || 'Failed to send request');
-                        }
-                      } catch (err) {
-                        alert('Failed to send request');
-                      }
-                      setFilteredClients((prev) => prev.map(c => c._id === client._id ? { ...c, _sendingRequest: false } : c));
-                    }}
-                  >
-                    {client._sendingRequest ? 'Sending...' : 'Send Request'}
-                  </button>
+                  {!onClientSelect && (
+                    <button
+                      className="button2"
+                      style={{ position: 'absolute', top: 0, right: 0, backgroundColor:'white', color:'black', padding:'5px'}}
+                      disabled={client._sendingRequest}
+                      onClick={(e) => handleSendRequest(client, e)}
+                    >
+                      {client._sendingRequest ? 'Sending...' : 'Send Request'}
+                    </button>
+                  )}
                 </div>
 
                 <div className="client-footer">

@@ -2,11 +2,13 @@
 // @route   POST /api/v1/clients/:id/request
 // @access  Private/Manager
 const User = require('../models/User');
+
 const Client = require('../models/Client');
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
 const Manager = require('../models/Manager'); // Add at the top if not already
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); // Add this at the top
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const User = require ('../models/User') // Add this at the top
 
 const mongoose = require('mongoose');
 // @desc    Get all clients
@@ -91,20 +93,21 @@ await user.save();
   // If payment info is provided, mask sensitive data for logging
   if (req.body.paymentInfo) {
     console.log("Payment info provided for client creation");
-    // In production, you should encrypt or tokenize sensitive payment data
-    // For now, we'll store it as-is but this is NOT recommended for production
+    // NOTE: In production, handle payment data securely
   }
 
+  // Create the client document
   const client = await Client.create(req.body);
 
-  // Payment info is already secure with Stripe - no need to mask
-  // Stripe stores sensitive data securely and we only store safe metadata
+  // Update user's role to 'client'
+  await User.findByIdAndUpdate(userId, { role: 'client' });
 
   res.status(201).json({
     success: true,
     data: client
   });
 });
+
 
 // @desc    Update client
 // @route   PUT /api/v1/clients/:id
@@ -214,7 +217,7 @@ exports.sendRequest = asyncHandler(async (req, res, next) => {
 // @access  Private/Admin/Manager
 exports.getRequests = asyncHandler(async (req, res, next) => {
   // Only admin or manager can view requests
-  if (req.user.role !== 'admin' && req.user.role !== 'user' && req.user.role !== 'client') {
+  if (req.user.role !== 'admin' && req.user.role !== 'client' && req.user.role !== 'client') {
     return next(new ErrorResponse('Not authorized to view requests', 403));
   }
   const clientId = req.params.id;

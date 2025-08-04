@@ -27,7 +27,7 @@ router
 
 router
   .route('/:id')
-  .get(protect, checkOwnership(AdBudget), getBudget)
+  .get(protect, protect, getBudget)
   .put(protect, checkOwnership(AdBudget), updateBudget)
   .delete(protect, checkOwnership(AdBudget), deleteBudget);
 

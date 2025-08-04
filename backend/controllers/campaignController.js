@@ -1,4 +1,7 @@
 const AdCampaign = require('../models/AdCampaign');
+const Manager = require('../models/Manager')
+const AdBudget= require('../models/AdBudget')
+const Invoice= require('../models/Invoice')
 
 // Utility to determine campaign status
 function computeCampaignStatus(startDate, endDate) {
@@ -19,32 +22,97 @@ const attachComputedStatus = (campaign) => {
 };
 
 // @desc    Create new ad campaign
+
+function getCampaignDurationInDays(startDateStr, endDateStr) {
+  const start = new Date(startDateStr);
+  const end = new Date(endDateStr);
+  const diffTime = Math.abs(end - start);
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // include both start and end day
+}
 exports.createAdCampaign = async (req, res) => {
   try {
     const body = req.body;
 
+    const manager = await Manager.findOne({ user: req.user.id });
+
+    if (!manager) {
+      return res.status(404).json({
+        success: false,
+        message: "Manager not found for the current user.",
+      });
+    }
+
     const newCampaign = await AdCampaign.create({
       ...body,
-      user: req.user.id,
+      manager: manager._id,
       status: computeCampaignStatus(new Date(body.startDate), new Date(body.endDate)),
     });
+    console.log("Campaign is created");
 
-    res.status(201).json({ success: true, data: newCampaign });
+    // === Automatically create budget ===
+    if (!body.platforms || !Array.isArray(body.platforms)) {
+      return res.status(400).json({
+        success: false,
+        message: "Platforms must be provided as an array.",
+      });
+    }
+
+    // Create budgetAllocation from platform info
+    const budgetAllocation = body.platforms.map((p) => ({
+      platform: p.platform, // Already lowercased and formatted
+      allocatedAmount: p.dailyBudget * getCampaignDurationInDays(body.startDate, body.endDate),
+      dailyLimit: p.dailyBudget,
+      spentAmount: 0, // Initialize to 0
+    }));
+
+    const totalBudget = budgetAllocation.reduce((sum, entry) => sum + entry.allocatedAmount, 0);
+
+    const budgetData = {
+      user: req.user.id,
+      campaign: newCampaign._id,
+      manager: manager._id,
+      client: body.client,
+      totalBudget,
+      budgetAllocation,
+    };
+
+    const createdBudget = await AdBudget.create(budgetData);
+    const invoiceData = {
+      campaign: newCampaign._id,
+      budget: createdBudget._id,
+      manager: manager._id,
+      client: body.client,
+      amount: totalBudget,
+      status: 'pending', // or 'unpaid'
+      issuedDate: new Date(),
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days later
+    };
+
+    const createdInvoice = await Invoice.create(invoiceData);
+
+    res.status(201).json({
+      success: true,
+      data: {
+        campaign: newCampaign,
+        budget: createdBudget,
+        invoice: createdInvoice,
+      },
+    });
   } catch (err) {
+    console.error(err);
     res.status(400).json({ success: false, error: err.message });
   }
 };
+
+// Utility to calculate number of campaign days (inclusive
+
 
 // @desc    Get all ad campaigns with updated status
 exports.getAdCampaigns = async (req, res) => {
   try {
     const campaigns = await AdCampaign.find()
-      .populate('client user platforms.account');
-
-    // Auto-update statuses
-    const updatedCampaigns = campaigns.map((campaign) => attachComputedStatus(campaign));
-
-    res.status(200).json({ success: true, data: updatedCampaigns });
+     
+    res.status(200).json({ success: true, data: campaigns });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -54,7 +122,7 @@ exports.getAdCampaigns = async (req, res) => {
 exports.getAdCampaign = async (req, res) => {
   try {
     const campaign = await AdCampaign.findById(req.params.id)
-      .populate('client user platforms.account');
+      
 
     if (!campaign) {
       return res.status(404).json({ success: false, error: 'Campaign not found' });
