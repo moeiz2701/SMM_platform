@@ -8,7 +8,7 @@ const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
 const Manager = require('../models/Manager'); // Add at the top if not already
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const User = require ('../models/User') // Add this at the top
+
 
 const mongoose = require('mongoose');
 // @desc    Get all clients

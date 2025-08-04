@@ -34,7 +34,7 @@ const managerRoutes = require('./routes/managerRoutes');
 const oauthRoutes = require('./routes/oauthRoutes');
 const socialAccountRoutes = require('./routes/socialAccountRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
-const userRoutes = require('./routes/userRoutes');const campaignRoutes = require('./routes/campaignRoutes')
+const userRoutes = require('./routes/userRoutes');
 const invoiceRoutes = require('./routes/invoiceRoutes')
 const campaignRoutes = require('./routes/campaignRoutes')
 
