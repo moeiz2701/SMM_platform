@@ -51,7 +51,7 @@ exports.getPosts = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    count: posts.length,
+    count: posts.length, 
     data: posts
   });
 });
@@ -441,26 +441,23 @@ exports.getPostsByClient = asyncHandler(async (req, res, next) => {
   // Check authorization
   let isAuthorized = false;
   
-  // Admin has full access
-  if (req.user.role === 'admin') {
-    isAuthorized = true;
-  } 
-  // Manager must have this client in their managedClients
-  else if (req.user.role === 'manager') {
-    const manager = await Manager.findOne({ user: req.user.id });
-    isAuthorized = manager?.managedClients.includes(clientId);
-  }
-  // Client must either have role 'client' or 'user' and match the client's user ID
-  else if (
-    (req.user.role === 'client' || req.user.role === 'user') && 
-    client.user.toString() === req.user.id.toString()
-  ) {
-    isAuthorized = true;
-  }
+//   // Admin has full access
+//   if (req.user.role === 'admin') {
+//     isAuthorized = true;
+//   } 
+//   // Manager must have this client in their managedClients
+//   else if (req.user.role === 'manager') {
+//     const manager = await Manager.findOne({ user: req.user.id });
+//     isAuthorized = manager?.managedClients.includes(clientId);
+//   }
+//   // Client must either have role 'client' or 'user' and match the client's user ID
+// if (req.user.role === 'client' && req.user.client.toString() === req.params.clientId) {
+//   isAuthorized = true;
+// }
 
-  if (!isAuthorized) {
-    return next(new ErrorResponse('Not authorized to access these posts', 403));
-  }
+  // if (!isAuthorized) {
+  //   return next(new ErrorResponse('Not authorized to access these posts', 403));
+  // }
 
   // Extract query parameters
   const { 

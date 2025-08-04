@@ -1,11 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Image from "next/image"
 import styles from "../../../styling/ClientManager.module.css"
 import API_ROUTES from '../../apiRoutes'
+import ManagerProfile from './managerProfile'
 
-// Mock data - replace with actual API calls
 type Manager = {
   _id: string;
   user: {
@@ -26,44 +25,76 @@ type Manager = {
   };
   experience: number;
   rating: number;
-  managedClients: string[]; // or populated array of Client objects
+  managedClients: string[];
   createdAt: string;
 };
 
-
-// Mock data - replace with actual API calls
+type Client = {
+  _id: string;
+  user: string;
+  manager?: string;
+};
 
 export default function ClientManagerPage() {
   const [currentManager, setCurrentManager] = useState<Manager | null>(null)
-  const [managers, setManagers] = useState<Manager[]>([]);
+  const [managers, setManagers] = useState<Manager[]>([])
   const [showManagerDetails, setShowManagerDetails] = useState(false)
   const [selectedManager, setSelectedManager] = useState<Manager | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [clientData, setClientData] = useState<Client | null>(null)
 
-  // Simulate checking if client has a manager
-   useEffect(() => {
-    const fetchManagers = async () => {
-      try {
-        const res = await fetch(API_ROUTES.MANAGERS.GET_ALL, {
-          credentials: 'include'
-        });
 
-        const data = await res.json();
+useEffect(() => {
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      // 1. Get client data first
+      const clientRes = await fetch(API_ROUTES.CLIENTS.ME, {
+        credentials: 'include'
+      });
+      
+      if (!clientRes.ok) throw new Error("Client data failed");
+      
+      const clientData = await clientRes.json();
+      setClientData(clientData.data);
 
-        if (res.ok && data.success) {
-          setManagers(data.data);
-        } else {
-          console.error("Failed to fetch managers:", data.message);
+      // 2. Use the NEW endpoint to get manager for this client
+      if (clientData.data?._id) {
+        const managerRes = await fetch(
+          API_ROUTES.MANAGERS.GET_FOR_CLIENT(clientData.data._id), 
+          {
+            credentials: 'include'
+          }
+        );
+        
+        if (!managerRes.ok) throw new Error("Manager fetch failed");
+        
+        const managerData = await managerRes.json();
+        if (managerData.data) {
+          setCurrentManager(managerData.data);
         }
-      } catch (err) {
-        console.error("Error fetching managers:", err);
-      } finally {
-        setIsLoading(false);
       }
-    };
 
-    fetchManagers();
-  }, []);
+      // 3. Get all managers for selection
+      const allManagersRes = await fetch(API_ROUTES.MANAGERS.GET_ALL, {
+        credentials: 'include'
+      });
+      
+      if (!allManagersRes.ok) throw new Error("Managers list failed");
+      
+      const allManagersData = await allManagersRes.json();
+      setManagers(allManagersData.data);
+
+    } catch (err) {
+      console.error("Data loading error:", err);
+      // Handle error state
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  fetchData();
+}, []);
 
   const handleSelectManager = (manager: Manager) => {
     setSelectedManager(manager)
@@ -72,115 +103,110 @@ export default function ClientManagerPage() {
 
   const handleAssignManager = async (managerId: string) => {
     setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      const manager = managers.find((m) => m._id === managerId)
-      if (manager) {
-        setCurrentManager(manager)
+    try {
+      const res = await fetch(API_ROUTES.CLIENTS.ASSIGN_MANAGER(managerId), {
+        method: 'PUT',
+        credentials: 'include'
+      })
+      
+      const data = await res.json()
+      
+      if (res.ok && data.success) {
+        // Update local state with the new manager
+        const manager = managers.find(m => m._id === managerId)
+        if (manager) {
+          setCurrentManager(manager)
+          if (clientData) {
+            setClientData({...clientData, manager: managerId})
+          }
+        }
       }
+    } catch (err) {
+      console.error("Error assigning manager:", err)
+    } finally {
       setShowManagerDetails(false)
       setSelectedManager(null)
       setIsLoading(false)
-    }, 1500)
+    }
   }
 
-  const handleChangeManager = () => {
-    setCurrentManager(null)
-    setShowManagerDetails(false)
+const handleChangeManager = async () => {
+  if (!currentManager || !clientData) {
+    console.error("Current manager or client data is missing");
+    return;
   }
-  /*if (currentManager) {
+
+  const confirmed = window.confirm(
+    "Are you sure you want to change your manager? You'll need to select a new one."
+  );
+  if (!confirmed) return;
+
+  setIsLoading(true);
+  try {
+    const url = API_ROUTES.MANAGERS.REMOVE_CLIENT(currentManager._id, clientData._id);
+    console.log('Making request to:', url);
+
+    const res = await fetch(url, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // Check response content type
+    const contentType = res.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await res.text();
+      throw new Error(`Server returned ${res.status}: ${text.substring(0, 100)}`);
+    }
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || `Request failed with status ${res.status}`);
+    }
+
+    // Update local state
+    setCurrentManager(null);
+    setClientData({...clientData, manager: undefined});
+    
+  } catch (err: unknown) {  // Proper TypeScript typing
+    let errorMessage = "Failed to change manager";
+    if (err instanceof Error) {
+      errorMessage = err.message;
+    } else if (typeof err === 'string') {
+      errorMessage = err;
+    }
+    console.error("Error changing manager:", errorMessage);
+    alert(`Error: ${errorMessage}`);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+  if (isLoading) {
+    return <div className={styles.main}>Loading...</div>
+  }
+
+  // If client has a manager assigned, show their profile
+  if (currentManager && clientData?.manager) {
     return (
       <div className={styles.main}>
         <div className={styles.header}>
           <h1 className={styles.title}>Your Manager</h1>
           <div className={styles.headerContent}>
-            <p>Manage your assigned account manager and communication preferences.</p>
             <button className={styles.changeButton} onClick={handleChangeManager}>
               Change Manager
             </button>
           </div>
         </div>
-
-        <div className={styles.currentManagerCard}>
-          <div className={styles.managerHeader}>
-            { <div className={styles.managerAvatar}>
-              <Image
-                src={currentManager.avatar || "/placeholder.svg"}
-                alt={currentManager.name}
-                width={120}
-                height={120}
-                className={styles.avatarImage}
-              />
-            </div>
-            <div className={styles.managerInfo}>
-              <h2 className={styles.managerName}>{currentManager.name}</h2>
-              <p className={styles.specialization}>{currentManager.specialization}</p>
-              <div className={styles.managerStats}>
-                <div className={styles.stat}>
-                  <span className={styles.statValue}>{currentManager.rating}</span>
-                  <span className={styles.statLabel}>Rating</span>
-                </div>
-                <div className={styles.stat}>
-                  <span className={styles.statValue}>{currentManager.completedProjects}</span>
-                  <span className={styles.statLabel}>Projects</span>
-                </div>
-                <div className={styles.stat}>
-                  <span className={styles.statValue}>{currentManager.responseTime}</span>
-                  <span className={styles.statLabel}>Response</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.managerDetails}>
-            <div className={styles.detailSection}>
-              <h3>About</h3>
-              <p>{currentManager.bio}</p>
-            </div>
-
-            <div className={styles.detailSection}>
-              <h3>Contact Information</h3>
-              <div className={styles.contactInfo}>
-                <div className={styles.contactItem}>
-                  <span className={styles.contactLabel}>Email:</span>
-                  <span className={styles.contactValue}>{currentManager.email}</span>
-                </div>
-                <div className={styles.contactItem}>
-                  <span className={styles.contactLabel}>Phone:</span>
-                  <span className={styles.contactValue}>{currentManager.phone}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.detailSection}>
-              <h3>Expertise</h3>
-              <div className={styles.expertiseGrid}>
-                <div className={styles.expertiseItem}>
-                  <span className={styles.expertiseLabel}>Experience:</span>
-                  <span className={styles.expertiseValue}>{currentManager.experience}</span>
-                </div>
-                <div className={styles.expertiseItem}>
-                  <span className={styles.expertiseLabel}>Languages:</span>
-                  <span className={styles.expertiseValue}>{currentManager.languages.join(", ")}</span>
-                </div>
-              </div>
-              <div className={styles.certifications}>
-                <span className={styles.expertiseLabel}>Certifications:</span>
-                <div className={styles.certificationTags}>
-                  {currentManager.certifications.map((cert, index) => (
-                    <span key={index} className={styles.certificationTag}>
-                      {cert}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ManagerProfile id={currentManager._id} />
       </div>
     )
-  } */
+  }
 
+  // Otherwise, show the manager selection UI
   return (
     <div className={styles.main}>
       <div className={styles.header}>
@@ -193,174 +219,151 @@ export default function ClientManagerPage() {
       <div className={styles.managersGrid}>
         {managers.map((manager) => (
           <div key={manager._id} className={styles.managerCard}>
-            <div className={styles.cardHeader}>
-              {/* <div className={styles.managerAvatar}>
-                <Image
-                  src={manager.avatar || "/placeholder.svg"}
-                  alt={manager.name}
-                  width={80}
-                  height={80}
-                  className={styles.avatarImage}
-                />
-              </div> */}
-              {/*<div className={styles.availabilityBadge}>
-                <span
-                  className={`${styles.statusBadge} ${
-                    manager.availability === "Available" ? styles.statusAvailable : styles.statusBusy
-                  }`}
-                >
-                  {manager.availability}
-                </span>
-              </div>*/}
-            </div>
-
             <div className={styles.cardContent}>
-                <h3 className={styles.managerName}>{manager.user.name}</h3>
-                <p className={styles.specialization}>{manager.department}</p>
+              <h3 className={styles.managerName}>{manager.user.name}</h3>
+              <p className={styles.specialization}>{manager.department}</p>
 
-                {manager.website && (
-                  <p className={styles.bio}>
-                    <strong>Website:</strong>{" "}
-                    <a href={manager.website} target="_blank" rel="noopener noreferrer">
-                      {manager.website}
-                    </a>
-                  </p>
-                )}
+              {manager.website && (
+                <p className={styles.bio}>
+                  <strong>Website:</strong>{" "}
+                  <a href={manager.website} target="_blank" rel="noopener noreferrer">
+                    {manager.website}
+                  </a>
+                </p>
+              )}
 
-                <div className={styles.managerMetrics}>
-                  <div className={styles.metric}>
-                    <span className={styles.metricIcon}>⭐</span>
-                    <span className={styles.metricValue}>{manager.rating.toFixed(1)}</span>
-                    <span className={styles.metricLabel}>Rating</span>
-                  </div>
-
-                  <div className={styles.metric}>
-                    <span className={styles.metricIcon}>📞</span>
-                    <span className={styles.metricValue}>{manager.phone || "N/A"}</span>
-                    <span className={styles.metricLabel}>Phone</span>
-                  </div>
-
-                  <div className={styles.metric}>
-                    <span className={styles.metricIcon}>🧑‍💼</span>
-                    <span className={styles.metricValue}>{manager.experience}</span>
-                    <span className={styles.metricLabel}>Years Exp.</span>
-                  </div>
+              <div className={styles.managerMetrics}>
+                <div className={styles.metric}>
+                  <span className={styles.metricIcon}>⭐</span>
+                  <span className={styles.metricValue}>{manager.rating.toFixed(1)}</span>
+                  <span className={styles.metricLabel}>Rating</span>
                 </div>
 
-                <div className={styles.cardActions}>
-                  <button
-                    className={styles.viewDetailsButton}
-                    onClick={() => handleSelectManager(manager)}
-                  >
-                    View Details
-                  </button>
+                <div className={styles.metric}>
+                  <span className={styles.metricIcon}>📞</span>
+                  <span className={styles.metricValue}>{manager.phone || "N/A"}</span>
+                  <span className={styles.metricLabel}>Phone</span>
+                </div>
 
-                  <button
-                    className={styles.selectButton}
-                    onClick={() => handleAssignManager(manager._id)}
-                    disabled={isLoading || manager.status === "inactive"}
-                  >
-                    {isLoading ? "Assigning..." : "Select Manager"}
-                  </button>
+                <div className={styles.metric}>
+                  <span className={styles.metricIcon}>🧑‍💼</span>
+                  <span className={styles.metricValue}>{manager.experience}</span>
+                  <span className={styles.metricLabel}>Years Exp.</span>
                 </div>
               </div>
 
+              <div className={styles.cardActions}>
+                <button
+                  className={styles.viewDetailsButton}
+                  onClick={() => handleSelectManager(manager)}
+                >
+                  View Details
+                </button>
+
+                <button
+                  className={styles.selectButton}
+                  onClick={() => handleAssignManager(manager._id)}
+                  disabled={isLoading || manager.status === "inactive"}
+                >
+                  {isLoading ? "Assigning..." : "Select Manager"}
+                </button>
+              </div>
+            </div>
           </div>
         ))}
       </div>
 
-     {showManagerDetails && selectedManager && (
-  <div className={styles.modalOverlay} onClick={() => setShowManagerDetails(false)}>
-    <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
-      <div className={styles.modalHeader}>
-        <h2 className={styles.modalTitle}>Manager Details</h2>
-        <button className={styles.closeButton} onClick={() => setShowManagerDetails(false)}>
-          ×
-        </button>
-      </div>
+      {showManagerDetails && selectedManager && (
+        <div className={styles.modalOverlay} onClick={() => setShowManagerDetails(false)}>
+          <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>Manager Details</h2>
+              <button className={styles.closeButton} onClick={() => setShowManagerDetails(false)}>
+                ×
+              </button>
+            </div>
 
-      <div className={styles.modalBody}>
-        <div className={styles.modalManagerInfo}>
-          <div className={styles.managerAvatar}>
-            <img
-              src={selectedManager.profilePhoto || "/placeholder.svg"}
-              alt={selectedManager.user.name}
-              width={100}
-              height={100}
-              className={styles.avatarImage}
-            />
-          </div>
-          <div className={styles.managerDetails}>
-            <h3>{selectedManager.user.name}</h3>
-            <p className={styles.specialization}>{selectedManager.department}</p>
-            <p className={styles.experience}>{selectedManager.experience} years experience</p>
+            <div className={styles.modalBody}>
+              <div className={styles.modalManagerInfo}>
+                <div className={styles.managerAvatar}>
+                  <img
+                    src={selectedManager.profilePhoto || "/placeholder.svg"}
+                    alt={selectedManager.user.name}
+                    width={100}
+                    height={100}
+                    className={styles.avatarImage}
+                  />
+                </div>
+                <div className={styles.managerDetails}>
+                  <h3>{selectedManager.user.name}</h3>
+                  <p className={styles.specialization}>{selectedManager.department}</p>
+                  <p className={styles.experience}>{selectedManager.experience} years experience</p>
+                </div>
+              </div>
+
+              <div className={styles.modalContent}>
+                <div className={styles.detailSection}>
+                  <h4>Rating</h4>
+                  <p>⭐ {selectedManager.rating} / 5</p>
+                </div>
+
+                <div className={styles.detailSection}>
+                  <h4>Contact</h4>
+                  <p>
+                    <strong>Email:</strong> {selectedManager.user.email}
+                  </p>
+                  <p>
+                    <strong>Phone:</strong> {selectedManager.phone || "N/A"}
+                  </p>
+                  <p>
+                    <strong>Website:</strong>{" "}
+                    {selectedManager.website ? (
+                      <a href={selectedManager.website} target="_blank" rel="noopener noreferrer">
+                        {selectedManager.website}
+                      </a>
+                    ) : (
+                      "N/A"
+                    )}
+                  </p>
+                </div>
+
+                <div className={styles.detailSection}>
+                  <h4>Social Media</h4>
+                  <ul className={styles.socialLinks}>
+                    {Object.entries(selectedManager.socialMedia || {}).map(([platform, url]) =>
+                      url ? (
+                        <li key={platform}>
+                          <a href={url} target="_blank" rel="noopener noreferrer">
+                            {platform.charAt(0).toUpperCase() + platform.slice(1)}
+                          </a>
+                        </li>
+                      ) : null
+                    )}
+                  </ul>
+                </div>
+
+                <div className={styles.detailSection}>
+                  <h4>Status</h4>
+                  <p>{selectedManager.status === "active" ? "✅ Active" : "❌ Inactive"}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button className={styles.cancelButton} onClick={() => setShowManagerDetails(false)}>
+                Cancel
+              </button>
+              <button
+                className={styles.selectButton}
+                onClick={() => handleAssignManager(selectedManager._id)}
+                disabled={isLoading || selectedManager.status === "inactive"}
+              >
+                {isLoading ? "Assigning..." : "Select This Manager"}
+              </button>
+            </div>
           </div>
         </div>
-
-        <div className={styles.modalContent}>
-          <div className={styles.detailSection}>
-            <h4>Rating</h4>
-            <p>⭐ {selectedManager.rating} / 5</p>
-          </div>
-
-          <div className={styles.detailSection}>
-            <h4>Contact</h4>
-            <p>
-              <strong>Email:</strong> {selectedManager.user.email}
-            </p>
-            <p>
-              <strong>Phone:</strong> {selectedManager.phone || "N/A"}
-            </p>
-            <p>
-              <strong>Website:</strong>{" "}
-              {selectedManager.website ? (
-                <a href={selectedManager.website} target="_blank" rel="noopener noreferrer">
-                  {selectedManager.website}
-                </a>
-              ) : (
-                "N/A"
-              )}
-            </p>
-          </div>
-
-          <div className={styles.detailSection}>
-            <h4>Social Media</h4>
-            <ul className={styles.socialLinks}>
-              {Object.entries(selectedManager.socialMedia || {}).map(([platform, url]) =>
-                url ? (
-                  <li key={platform}>
-                    <a href={url} target="_blank" rel="noopener noreferrer">
-                      {platform.charAt(0).toUpperCase() + platform.slice(1)}
-                    </a>
-                  </li>
-                ) : null
-              )}
-            </ul>
-          </div>
-
-          <div className={styles.detailSection}>
-            <h4>Status</h4>
-            <p>{selectedManager.status === "active" ? "✅ Active" : "❌ Inactive"}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className={styles.modalFooter}>
-        <button className={styles.cancelButton} onClick={() => setShowManagerDetails(false)}>
-          Cancel
-        </button>
-        <button
-          className={styles.selectButton}
-          onClick={() => handleAssignManager(selectedManager._id)}
-          disabled={isLoading || selectedManager.status === "inactive"}
-        >
-          {isLoading ? "Assigning..." : "Select This Manager"}
-        </button>
-      </div>
+      )}
     </div>
-  </div>
-)}
-</div>
-
-  )}
-
+  )
+}

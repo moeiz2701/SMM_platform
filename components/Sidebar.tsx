@@ -59,8 +59,20 @@ const navItems: NavItem[] = [
     allowedRoles: ['Manager']
   },
   {
-    label: 'Billing',
-    href: '/manager/billing',
+    label: 'Campaigns',
+    href: '/manager/campaigns',
+    icon: <IconFileText className="w-5 h-5" />,
+    allowedRoles: ['Manager']
+  },
+  {
+    label: 'Invoices',
+    href: '/manager/invoices',
+    icon: <IconFileText className="w-5 h-5" />,
+    allowedRoles: ['Manager']
+  },
+  {
+    label: 'Budgets',
+    href: '/manager/budgets',
     icon: <IconFileText className="w-5 h-5" />,
     allowedRoles: ['Manager']
   },
@@ -81,55 +93,55 @@ const navItems: NavItem[] = [
     label: 'Dashboard',
     href: '/client',
     icon: <Home className="w-5 h-5" />, 
-    allowedRoles: ['User']
+    allowedRoles: ['user', 'client']
   },
   {
     label: 'Social Accounts',
     href: '/client/accounts',
     icon: <User className="w-5 h-5" />, 
-    allowedRoles: ['User']
+    allowedRoles: ['user', 'client']
   },
   {
     label: 'Calendar',
     href: '/client/calendar',
     icon: <CalendarIcon className="w-5 h-5" />, 
-    allowedRoles: ['User']
+    allowedRoles: ['user', 'client']
   },
   {
     label: 'Profile',
     href: '/client/profile',
     icon: <User className="w-5 h-5" />, 
-    allowedRoles: ['User']
+    allowedRoles: ['user', 'client']
   },
   {
     label: 'Manager',
     href: '/client/manager',
     icon: <Mail className="w-5 h-5" />, 
-    allowedRoles: ['User']
+    allowedRoles: ['user', 'client']
   },
   {
     label: 'Requests',
     href: '/client/requests',
     icon: <Mail className="w-5 h-5" />, 
-    allowedRoles: ['User']
+    allowedRoles: ['user', 'client']
   },
   {
     label: 'Notifications',
     href: '/client/notifications',
     icon: <FileText className="w-5 h-5" />, 
-    allowedRoles: ['User']
+    allowedRoles: ['user', 'client']
   },
   {
-    label: 'Support',
-    href: '/client/support',
+    label: 'Invoices',
+    href: '/client/invoices',
     icon: <Settings className="w-5 h-5" />, 
-    allowedRoles: ['User']
+    allowedRoles: ['user', 'client']
   },
   {
     label: 'Settings',
     href: '/client/settings',
     icon: <Settings className="w-5 h-5" />, 
-    allowedRoles: ['User']
+    allowedRoles: ['user', 'client']
   }
 ];
 

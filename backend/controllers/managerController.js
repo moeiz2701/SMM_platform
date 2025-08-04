@@ -6,6 +6,7 @@ const Manager = require('../models/Manager');
 const Client = require('../models/Client');
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
+const mongoose = require('mongoose');
 
 // @desc    Get all managers
 // @route   GET /api/v1/managers
@@ -18,7 +19,7 @@ exports.getManagerByUserId = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Manager not found for user id ${req.params.userId}`, 404));
   }
   // Only admin or the manager themself can access
-  if (req.user.role !== 'admin') {
+  if (req.user.role !== 'admin' && req.user.role !== 'client') {
     const selfManager = await Manager.findOne({ user: req.user._id });
     if (!selfManager || String(selfManager.user) !== String(req.params.userId)) {
       return next(new ErrorResponse('Not authorized to access this manager', 401));
@@ -44,7 +45,7 @@ exports.getManager = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Manager not found with id of ${req.params.id}`, 404));
   }
   // Only admin or the manager themself can access
-  if (req.user.role !== 'admin') {
+  if (req.user.role !== 'admin' && req.user.role !== 'client') {
     const selfManager = await Manager.findOne({ user: req.user._id });
     if (!selfManager || String(selfManager._id) !== String(req.params.id)) {
       return next(new ErrorResponse('Not authorized to access this manager', 401));
@@ -79,7 +80,6 @@ exports.getMyManager = asyncHandler(async (req, res, next) => {
     data: manager
   });
 });
-
 
 // @desc    Create new manager
 // @route   POST /api/v1/managers
@@ -219,4 +219,151 @@ exports.addClientsToManager = asyncHandler(async (req, res, next) => {
   manager.managedClients = Array.from(new Set([...(manager.managedClients || []), ...clients]));
   await manager.save();
   res.status(200).json({ success: true, data: manager });
+});
+
+
+// @desc    Get manager for a specific client (using client ID)
+// @route   GET /api/v1/managers/for-client/:clientId
+// @access  Private (client, manager, admin)
+exports.getManagerForClient = asyncHandler(async (req, res, next) => {
+  // 1. Find the client document
+  const client = await Client.findById(req.params.clientId);
+  
+  if (!client) {
+    return next(new ErrorResponse(`Client not found`, 404));
+  }
+
+  // 2. Authorization check
+  // Allow if: admin, manager, or the client themselves
+  if (req.user.role !== 'admin') {
+    if (req.user.role === 'manager') {
+      // Check if this manager is assigned to the client
+      const manager = await Manager.findOne({ user: req.user._id });
+      if (!manager || !manager.managedClients.includes(client._id)) {
+        return next(new ErrorResponse('Not authorized', 401));
+      }
+    } else if (req.user.role === 'client') {
+      // Check if this is the client's own data
+      if (String(client.user) !== String(req.user._id)) {
+        return next(new ErrorResponse('Not authorized', 401));
+      }
+    } else {
+      return next(new ErrorResponse('Not authorized', 401));
+    }
+  }
+
+  // 3. If client has no manager, return null
+  if (!client.manager) {
+    return res.status(200).json({ success: true, data: null });
+  }
+
+  // 4. Get and return the manager
+  const manager = await Manager.findById(client.manager)
+    .populate('user', 'name email')
+    .populate('managedClients', 'name');
+
+  if (!manager) {
+    return next(new ErrorResponse('Manager not found', 404));
+  }
+
+  res.status(200).json({ success: true, data: manager });
+});
+
+
+// controllers/managerController.js
+
+// @desc    Get manager for current client (using client's own data)
+// @route   GET /api/v1/managers/my-manager
+// @access  Private (client)
+exports.getmyManager = asyncHandler(async (req, res, next) => {
+  console.log("getMyManager called for user:", req.user.id);
+
+  // 1. Find the client document for the current user
+  const client = await Client.findOne({ user: req.user.id });
+  
+  if (!client) {
+    console.log("No client found for user");
+    return next(new ErrorResponse('Client profile not found', 404));
+  }
+
+  console.log("Client found with ID:", client._id);
+
+  // 2. If client has no manager assigned
+  if (!client.manager) {
+    console.log("Client has no manager assigned");
+    return res.status(200).json({ success: true, data: null });
+  }
+
+  // 3. Find and return the manager
+  const manager = await Manager.findById(client.manager)
+    .populate('user', 'name email')
+    .populate('managedClients', 'name');
+
+  if (!manager) {
+    console.log("Manager not found for client");
+    return next(new ErrorResponse('Manager not found', 404));
+  }
+
+  console.log("Returning manager data for client");
+  res.status(200).json({ success: true, data: manager });
+});
+
+exports.removeClientFromManager = asyncHandler(async (req, res, next) => {
+  const { managerId, clientId } = req.params;
+
+  // Validate IDs
+  if (!mongoose.Types.ObjectId.isValid(managerId) || 
+      !mongoose.Types.ObjectId.isValid(clientId)) {
+    return next(new ErrorResponse('Invalid ID format', 400));
+  }
+
+  const [manager, client] = await Promise.all([
+    Manager.findById(managerId),
+    Client.findById(clientId)
+  ]);
+
+  if (!manager) {
+    return next(new ErrorResponse(`Manager not found`, 404));
+  }
+  if (!client) {
+    return next(new ErrorResponse(`Client not found`, 404));
+  }
+
+  // Authorization check
+  if (req.user.role !== 'admin') {
+    if (req.user.role === 'manager') {
+      if (String(manager.user) !== String(req.user._id)) {
+        return next(new ErrorResponse('Not authorized', 401));
+      }
+    } else if (req.user.role === 'client') {
+      if (String(client.user) !== String(req.user._id)) {
+        return next(new ErrorResponse('Not authorized', 401));
+      }
+    } else {
+      return next(new ErrorResponse('Not authorized', 401));
+    }
+  }
+
+   // Remove client from manager
+  manager.managedClients = manager.managedClients.filter(
+    id => String(id) !== clientId
+  );
+
+  // Remove manager from client if it matches
+  if (client.manager && String(client.manager) === managerId) {
+    client.manager = undefined;
+  }
+
+  // Save both without transaction
+  await manager.save();
+  await client.save();
+
+  res.status(200).json({ 
+    success: true,
+    message: 'Manager assignment removed successfully',
+    data: {
+      managerId: manager._id,
+      clientId: client._id
+    }
+  });
 });

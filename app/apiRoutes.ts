@@ -17,7 +17,9 @@ export const API_ROUTES = {
   CLIENTS: {
     CREATE: `${API_BASE_URL}/clients`,
     GET_ALL: `${API_BASE_URL}/clients`,
+    GET_BY_IDS: `${API_BASE_URL}/clients/by-ids`,
     BY_USER: (userId: string) => `${API_BASE_URL}/clients/user/${userId}`,
+    BY_MANAGER: `${API_BASE_URL}/clients/manager/clients`,
     SEND_REQUEST: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/request`,
     GET_REQUESTS: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/requests`,
     ASSIGN_MANAGER: (managerId: string) => `${API_BASE_URL}/clients/assign-manager/${managerId}`,
@@ -41,6 +43,18 @@ export const API_ROUTES = {
     UPDATE: (id: string) => `${API_BASE_URL}/managers/${id}`,
     DELETE: (id: string) => `${API_BASE_URL}/managers/${id}`,
     GET_CLIENTS: (id: string) => `${API_BASE_URL}/managers/${id}/clients`,
+    ME:`${API_BASE_URL}/managers/MyManager`,
+    GET_FOR_CLIENT: (clientId: string) => `${API_BASE_URL}/managers/for-client/${clientId}`,
+    GET_MY_MANAGER: `${API_BASE_URL}/managers/my-manager`,
+    REMOVE_CLIENT: (managerId: string, clientId: string) => 
+    `${API_BASE_URL}/managers/${managerId}/clients/${clientId}`,
+        GET_REVIEWS: (managerId: string) => `${API_BASE_URL}/managers/${managerId}/reviews`,
+  ADD_OR_UPDATE_REVIEW: (managerId: string, reviewId?: string) => 
+  reviewId 
+    ? `${API_BASE_URL}/managers/${managerId}/reviews/${reviewId}`
+    : `${API_BASE_URL}/managers/${managerId}/reviews`,
+  DELETE_REVIEW: (managerId: string, reviewId: string) => 
+    `${API_BASE_URL}/managers/${managerId}/reviews/${reviewId}`,
   },
 
 POSTS: {
@@ -49,12 +63,16 @@ POSTS: {
   GET_ONE: (id: string) => `${API_BASE_URL}/posts/${id}`,
   UPDATE: (id: string) => `${API_BASE_URL}/posts/${id}`,
   DELETE: (id: string) => `${API_BASE_URL}/posts/${id}`,
-  BY_CLIENT: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/posts`,
+  BY_CLIENT: (clientId: string) => `${API_BASE_URL}/posts/client/${clientId}`,
   BY_MANAGER: (managerId: string) => `${API_BASE_URL}/posts/by-manager/${managerId}`,
     ADD_CLIENT: (id: string) => `${API_BASE_URL}/managers/${id}/clients`,
-    ME:`${API_BASE_URL}/managers/MyManager`
+    
 },
 
+USERS: {
+  GET_ONE: (id: string) => `${API_BASE_URL}/users/${id}`,
+  GET_BATCH: `${API_BASE_URL}/users/batch`,
+},
   
 };
 

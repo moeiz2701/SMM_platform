@@ -33,7 +33,9 @@ export default function ClientsPage() {
           return
         }
         // Fetch clients for this user
-        const res = await fetch(API_ROUTES.CLIENTS.BY_USER(userId), { credentials: 'include' })
+        const res = await fetch(API_ROUTES.CLIENTS.BY_MANAGER, {
+        credentials: 'include' // Required for auth cookies
+        });
         if (res.ok) {
           const data = await res.json()
           setClients(data.data || [])

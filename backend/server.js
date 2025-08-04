@@ -32,7 +32,8 @@ const clientRoutes = require('./routes/clientRoutes');
 const managerRoutes = require('./routes/managerRoutes');
 const oauthRoutes = require('./routes/oauthRoutes');
 const socialAccountRoutes = require('./routes/socialAccountRoutes');
-
+const reviewRoutes = require('./routes/reviewRoutes');
+const userRoutes = require('./routes/userRoutes');
 const app = express();
 
 // Body parser
@@ -65,6 +66,8 @@ app.use('/api/v1/clients', clientRoutes);
 app.use('/api/v1/managers', managerRoutes);
 app.use('/api/v1/oauth', oauthRoutes);
 app.use('/api/v1/social-accounts', socialAccountRoutes);
+app.use('/api/v1/managers/:managerId/reviews', reviewRoutes);
+app.use('/api/v1/users', userRoutes);
 
 const PORT = process.env.PORT || 3000;
 

@@ -20,7 +20,7 @@ const ReviewSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
-}, { _id: false });
+});
 
 const RequestSchema = new mongoose.Schema({
   manager: {
