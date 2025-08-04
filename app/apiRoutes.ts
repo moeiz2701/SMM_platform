@@ -56,7 +56,7 @@ export const API_ROUTES = {
     : `${API_BASE_URL}/managers/${managerId}/reviews`,
   DELETE_REVIEW: (managerId: string, reviewId: string) => 
     `${API_BASE_URL}/managers/${managerId}/reviews/${reviewId}`,
-    ME:`${API_BASE_URL}/managers/MyManager`
+   
   },
 
 POSTS: {
@@ -91,7 +91,7 @@ POSTS: {
     GET_BY_MANAGER: `${API_BASE_URL}/invoices/manager`,
     GET_BY_CLIENT: `${API_BASE_URL}/invoices/client`,
     GET: (id: string) =>`${API_BASE_URL}/invoices/invoiceDetails/${id}`,
-  }
+  },
 
 USERS: {
   GET_ONE: (id: string) => `${API_BASE_URL}/users/${id}`,
