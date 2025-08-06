@@ -23,7 +23,9 @@ export const API_ROUTES = {
   CLIENTS: {
     CREATE: `${API_BASE_URL}/clients`,
     GET_ALL: `${API_BASE_URL}/clients`,
+    GET_BY_IDS: `${API_BASE_URL}/clients/by-ids`,
     BY_USER: (userId: string) => `${API_BASE_URL}/clients/user/${userId}`,
+    BY_MANAGER: `${API_BASE_URL}/clients/manager/clients`,
     SEND_REQUEST: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/request`,
     SEND_REQUEST_TO_MANAGER: (managerId: string) => `${API_BASE_URL}/clients/request-manager/${managerId}`,
     GET_REQUESTS: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/requests`,
@@ -51,11 +53,23 @@ export const API_ROUTES = {
     GET_BY_USER: (userId: string) => `${API_BASE_URL}/managers/user/${userId}`,
     UPDATE: (id: string) => `${API_BASE_URL}/managers/${id}`,
     DELETE: (id: string) => `${API_BASE_URL}/managers/${id}`,
-    GET_CLIENTS: `${API_BASE_URL}/managers/clients`,
+    GET_CLIENTS: (id: string) => `${API_BASE_URL}/managers/${id}/clients`,
     ME:`${API_BASE_URL}/managers/MyManager`,
-    MY_REQUESTS: `${API_BASE_URL}/managers/me/requests`,
+    GET_FOR_CLIENT: (clientId: string) => `${API_BASE_URL}/managers/for-client/${clientId}`,
+    GET_MY_MANAGER: `${API_BASE_URL}/managers/my-manager`,
+    REMOVE_CLIENT: (managerId: string, clientId: string) => 
+    `${API_BASE_URL}/managers/${managerId}/clients/${clientId}`,
+        GET_REVIEWS: (managerId: string) => `${API_BASE_URL}/managers/${managerId}/reviews`,
+  ADD_OR_UPDATE_REVIEW: (managerId: string, reviewId?: string) => 
+  reviewId 
+    ? `${API_BASE_URL}/managers/${managerId}/reviews/${reviewId}`
+    : `${API_BASE_URL}/managers/${managerId}/reviews`,
+  DELETE_REVIEW: (managerId: string, reviewId: string) => 
+    `${API_BASE_URL}/managers/${managerId}/reviews/${reviewId}`,
+  MY_REQUESTS: `${API_BASE_URL}/managers/me/requests`,
     ACCEPT_REQUEST: (clientId: string) => `${API_BASE_URL}/managers/accept-request/${clientId}`,
     DECLINE_REQUEST: (clientId: string) => `${API_BASE_URL}/managers/decline-request/${clientId}`
+   
   },
 
 POSTS: {
@@ -64,7 +78,7 @@ POSTS: {
   GET_ONE: (id: string) => `${API_BASE_URL}/posts/${id}`,
   UPDATE: (id: string) => `${API_BASE_URL}/posts/${id}`,
   DELETE: (id: string) => `${API_BASE_URL}/posts/${id}`,
-  BY_CLIENT: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/posts`,
+  BY_CLIENT: (clientId: string) => `${API_BASE_URL}/posts/client/${clientId}`,
   BY_MANAGER: (managerId: string) => `${API_BASE_URL}/posts/by-manager/${managerId}`,
   ADD_CLIENT: (id: string) => `${API_BASE_URL}/managers/${id}/clients`,
     
@@ -100,8 +114,12 @@ POSTS: {
     MARK_AS_READ: (id: string) => `${API_BASE_URL}/notifications/${id}/read`,
     MARK_ALL_READ: `${API_BASE_URL}/notifications/mark-all-read`,
     PROCESS_ACTION: (id: string) => `${API_BASE_URL}/notifications/${id}/action`
-  }
+  },
 
+USERS: {
+  GET_ONE: (id: string) => `${API_BASE_URL}/users/${id}`,
+  GET_BATCH: `${API_BASE_URL}/users/batch`,
+},
   
 };
 

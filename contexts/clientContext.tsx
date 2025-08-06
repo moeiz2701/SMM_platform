@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import React, {
   createContext,
@@ -7,36 +7,31 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
-import { Client } from "@/types/client"; // Optional: move Client interface there
-import API_ROUTES from "../app/apiRoutes"; // Adjust path as needed
+import API_ROUTES from "../app/apiRoutes";
 
 interface ClientContextType {
-  client: Client | null;
+  client: any | null;
   loading: boolean;
-  setClient: React.Dispatch<React.SetStateAction<Client | null>>;
+  setClient: React.Dispatch<React.SetStateAction<any | null>>;
   refreshClient: () => void;
 }
 
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
 
-export const ClientProvider = ({
-  userId,
-  children,
-}: {
-  userId: string;
-  children: ReactNode;
-}) => {
-  const [client, setClient] = useState<Client | null>(null);
+export const ClientProvider = ({ children }: { children: ReactNode }) => {
+  const [client, setClient] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   const fetchClient = async () => {
     try {
-      const res = await fetch(API_ROUTES.CLIENTS.BY_USER(userId), {
-        credentials: "include", // include cookies/token
+      setLoading(true);
+      const res = await fetch(API_ROUTES.CLIENTS.ME, {
+        credentials: "include",
       });
+      
       if (res.ok) {
         const data = await res.json();
-        setClient(data.client); // adapt to actual response shape
+        setClient(data.data); // Assuming your API returns { success: true, data: {...} }
       } else {
         setClient(null);
       }
@@ -49,10 +44,8 @@ export const ClientProvider = ({
   };
 
   useEffect(() => {
-    if (userId) {
-      fetchClient();
-    }
-  }, [userId]);
+    fetchClient();
+  }, []);
 
   return (
     <ClientContext.Provider

@@ -124,14 +124,18 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
 
   if (!userId || clientExists === null) return <div>Loading...</div>;
 
-  return (
-    <ClientProvider userId={userId}>
-      <div style={{ display: 'flex', height: '100vh' }}>
-        <Sidebar userRole={'User'} userType={'User'} clientExists={true} />
-        <main style={{ flex: 1, paddingRight: '20px', overflow: 'auto', padding: '2rem' }}>
-          {children}
-        </main>
-      </div>
-    </ClientProvider>
-  );
+ return (
+  <ClientProvider>
+    <div style={{ display: 'flex', height: '100vh' }}>
+      <Sidebar 
+        userRole={clientExists ? 'client' : 'user'} 
+        userType={clientExists ? 'client' : 'user'} 
+        clientExists={clientExists} 
+      />
+      <main style={{ flex: 1, paddingRight: '20px', overflow: 'auto', padding: '2rem' }}>
+        {children}
+      </main>
+    </div>
+  </ClientProvider>
+);
 }

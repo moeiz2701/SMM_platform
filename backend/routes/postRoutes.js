@@ -33,7 +33,7 @@ router
 router
   .route('/:id')
   //.get(protect, checkOwnership(Post), getPost)
-  .put(protect, updatePost)
+  .put( updatePost)
   .delete(protect,  deletePost);
 
 router

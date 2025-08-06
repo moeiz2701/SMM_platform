@@ -1,33 +1,39 @@
-/* .layout {
-  display: flex;
-  min-height: 100vh;
-  background-color: var(--background, #303030);
-} */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
 
+/* Main Layout */
 .main {
   flex: 1;
   margin-left: auto;
   padding: 2rem;
   color: var(--theme-text, #fffafa);
-  font-family: 'BalooMedium', sans-serif;
+  min-height: 100vh;
+  font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .header {
-  margin-bottom: 2rem;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 1.5rem 0;
+  letter-spacing: -0.025em;
+  font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .title {
   font-size: 2rem;
   font-weight: 700;
   margin: 0 0 1.5rem 0;
-  color: var(--theme-text, #fffafa);
+  letter-spacing: -0.025em;
+  font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
+/* Top Actions */
 .topActions {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(215, 215, 215, 0.1);
 }
 
 .leftActions {
@@ -35,55 +41,58 @@
   gap: 1rem;
 }
 
+/* Action Buttons - Matching Content Page */
 .addButton {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: white;
-  color:black;
+  background: #6c82a4;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: var(--theme-secondary, #ffffff);
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  font-weight: 500;
+  border-radius: 8px;
   cursor: pointer;
-  transition: opacity 0.2s ease;
-  
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+  font-family: "Poppins", sans-serif;
 }
 
 .addButton:hover {
-  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
 }
 
 .filterButton {
   display: flex;
   align-items: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
   gap: 0.5rem;
   background-color: var(--component-background, #1b202a);
   color: var(--theme-text, #fffafa);
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
+  border: 1px solid rgba(215, 215, 215, 0.1);
+  border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
-  border: none;
+  transition: all 0.2s ease;
+  font-family: "Poppins", sans-serif;
 }
 
 .filterButton:hover {
-  background-color: var(--theme-primary, #0e0d0d);
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(215, 215, 215, 0.2);
 }
-.searchClientContainer{
-  border: 1px solid rgb(95, 95, 95);
-  padding: 20px;
-  border-radius: 20px;
-}
+
 .plusIcon {
-  font-size: 1.125rem;
-  font-weight: bold;
+  font-size: 1rem;
+  font-weight: normal;
 }
 
 .filterIcon {
   font-size: 0.875rem;
 }
 
+/* Search Container */
 .searchContainer {
   flex-shrink: 0;
   width: 300px;
@@ -106,61 +115,57 @@
   width: 100%;
   padding: 0.75rem 0.75rem 0.75rem 2.5rem;
   background-color: var(--component-background, #1b202a);
- 
-  border-radius: 10px;
+  border: 1px solid rgba(215, 215, 215, 0.1);
+  border-radius: 8px;
   color: var(--theme-text, #fffafa);
   font-size: 0.875rem;
-  transition: border-color 0.2s ease;
-  border: none;
+  transition: all 0.2s ease;
 }
 
 .searchInput:focus {
   outline: none;
- 
+  border-color: var(--theme-tertiary, #4f46e5);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
 .searchInput::placeholder {
   color: var(--text-secondary, #d7d7d7);
 }
 
+/* Tabs - Consistent with Content Page */
 .tabs {
   display: flex;
   gap: 0;
   margin-bottom: 2rem;
-
+  border-bottom: 1px solid #374151;
 }
 
 .tab {
   padding: 0.75rem 1.5rem;
   background: none;
   border: none;
-  color: var(--text-secondary, #d7d7d7);
+  color: #9ca3af;
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 500;
   border-bottom: 2px solid transparent;
   transition: all 0.2s ease;
+  font-family: "Poppins", sans-serif;
 }
 
 .tab:hover {
-  color: var(--theme-text, #fffafa);
-  background-color: var(--component-background, #1b202a);
+  color: #f3f4f6;
+  background-color: #374151;
 }
 
 .tabActive {
-  color: white;
-  border-bottom-color:  #ffffff !important;
+  color: #f3f4f6 !important;
+  border-bottom-color: #6c82a4 !important;
   background-color: transparent !important;
-  border-radius: 0px;
 }
 
-.tableContainer {
-  background-color: var(--component-background, #1b202a);
-  border-radius: 8px;
-  overflow: hidden;
+/* Table Styles */
 
-  margin-bottom: 1.5rem;
-}
 
 .table {
   width: 100%;
@@ -168,7 +173,7 @@
 }
 
 .table thead {
-  background-color: var(--theme-primary, #0e0d0d);
+  background-color: #1b202a;
 }
 
 .table th {
@@ -176,26 +181,23 @@
   text-align: left;
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--text-secondary, #d7d7d7);
+  color: #9ca3af;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--text-secondary, #d7d7d7);
+  border-bottom: 1px solid #374151;
 }
 
 .table td {
   padding: 1rem;
-  border-bottom: 1px solid var(--text-secondary, #d7d7d7);
+  border-bottom: 1px solid #374151;
   font-size: 0.875rem;
 }
 
 .table tbody tr:hover {
-  background-color: var(--theme-primary, #0e0d0d);
+  background-color: rgba(255, 255, 255, 0.03);
 }
 
-.evenRow {
-  background-color: var(--background, #303030);
-}
-
+/* Client Info Styles */
 .clientCell {
   min-width: 200px;
 }
@@ -210,7 +212,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: var(--theme-tertiary, #4f46e5);
+  background: linear-gradient(90deg, #d2dced 0%, #6c82a4 100%);
   color: var(--theme-secondary, #ffffff);
   display: flex;
   align-items: center;
@@ -231,30 +233,11 @@
 }
 
 .clientCompany {
-  color: var(--text-secondary, #d7d7d7);
+  color: #9ca3af;
   font-size: 0.75rem;
 }
 
-.contactCell {
-  min-width: 180px;
-}
-
-.contactInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.email {
-  color: var(--theme-text, #fffafa);
-  font-size: 0.875rem;
-}
-
-.phone {
-  color: var(--text-secondary, #d7d7d7);
-  font-size: 0.75rem;
-}
-
+/* Status Badges */
 .statusBadge {
   display: inline-flex;
   align-items: center;
@@ -266,65 +249,44 @@
 }
 
 .statusActive {
-  background-color: #065f46;
+  background-color: rgba(16, 185, 129, 0.1);
   color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .statusInactive {
-  background-color: var(--text-secondary, #d7d7d7);
-  color: var(--theme-primary, #0e0d0d);
+  background-color: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+  border: 1px solid rgba(107, 114, 128, 0.2);
 }
 
 .statusPending {
-  background-color: #78350f;
+  background-color: rgba(245, 158, 11, 0.1);
   color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
-.activityCell {
-  color: var(--text-secondary, #d7d7d7);
-  font-size: 0.875rem;
+/* Action Buttons */
+.actionButtons {
+  display: flex;
+  gap: 0.5rem;
 }
 
-.projectsCell {
-  color: var(--theme-text, #fffafa);
-  font-weight: 500;
-  text-align: center;
-}
-
-.revenueCell {
-  color: #10b981;
-  font-weight: 600;
-  text-align: right;
-}
-
-.actionsCell {
-  text-align: center;
-}
-
-.actionsButton {
+.removeAction {
+  color: #ef4444;
   background: none;
   border: none;
-  color: var(--text-secondary, #d7d7d7);
   cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 4px;
+  padding: 0.25rem;
+  font-size: 1rem;
   transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.actionsButton:hover {
-  background-color: var(--theme-primary, #0e0d0d);
-  color: var(--theme-text, #fffafa);
+.removeAction:hover {
+  color: #f87171;
 }
 
-.dotsIcon {
-  font-size: 1.25rem;
-  font-weight: bold;
-  line-height: 1;
-}
-
+/* Footer */
 .footer {
   display: flex;
   justify-content: space-between;
@@ -333,7 +295,7 @@
 }
 
 .counter {
-  color: var(--text-secondary, #d7d7d7);
+  color: #9ca3af;
   font-size: 0.875rem;
 }
 
@@ -380,24 +342,6 @@
   .table td {
     padding: 0.75rem 0.5rem;
   }
-
-  .clientInfo {
-    gap: 0.5rem;
-  }
-
-  .clientAvatar {
-    width: 32px;
-    height: 32px;
-    font-size: 0.75rem;
-  }
-
-  .clientName {
-    font-size: 0.875rem;
-  }
-
-  .clientCompany {
-    font-size: 0.6875rem;
-  }
 }
 
 @media (max-width: 480px) {
@@ -419,23 +363,6 @@
     width: 100%;
     justify-content: center;
   }
-
-  .table {
-    min-width: 800px;
-  }
-
-  .table th,
-  .table td {
-    padding: 0.5rem 0.25rem;
-  }
-
-  .clientCell {
-    min-width: 150px;
-  }
-
-  .contactCell {
-    min-width: 140px;
-  }
 }
 
 /* Custom scrollbar for dark theme */
@@ -444,14 +371,14 @@
 }
 
 .tableContainer::-webkit-scrollbar-track {
-  background: var(--theme-primary, #0e0d0d);
+  background: #1b202a;
 }
 
 .tableContainer::-webkit-scrollbar-thumb {
-  background: var(--text-secondary, #d7d7d7);
+  background: #4b5563;
   border-radius: 4px;
 }
 
 .tableContainer::-webkit-scrollbar-thumb:hover {
-  background: var(--theme-text, #fffafa);
+  background: #6b7280;
 }

@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useMemo, useRef, useEffect, useContext } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import styles from "@/styling/calendar.module.css"
 import SearchBar from "@/components/searchbar"
 import { useClient } from "@/contexts/clientContext"
 import API_ROUTES from "@/app/apiRoutes"
+import { useRouter } from "next/navigation"
 
 // Interfaces
 interface CalendarContentItem {
@@ -46,6 +47,7 @@ const monthNames = [
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
 export default function CalendarPage() {
+  const router = useRouter()
   const { client, loading: clientLoading } = useClient()
   const [searchTerm, setSearchTerm] = useState("")
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -58,94 +60,135 @@ export default function CalendarPage() {
   const [posts, setPosts] = useState<CalendarContentItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
   const filterRef = useRef<HTMLDivElement>(null)
+//   const [client, setClient] = useState(null); 
+//     useEffect(() => {
+//   fetch(API_ROUTES.CLIENTS.ME, { credentials: 'include' })
+//     .then(res => res.json())
+//     .then(data => setClient(data.data));
+// }, []);
 
-  // Fetch posts for the current client
-  useEffect(() => {
-    const fetchPosts = async () => {
-      console.log('Fetching posts...')
-      if (!client?._id) {
-        console.log('No client ID available yet')
-        setIsLoading(false)
-        return
-      }
-      
-      setIsLoading(true)
-      setError(null)
-      
-      try {
-        const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
-        const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
-        
-        const queryParams = new URLSearchParams({
-          startDate: startOfMonth.toISOString(),
-          endDate: endOfMonth.toISOString(),
-          status: 'scheduled,published',
-          sort: 'scheduledTime'
-        })
+// In your calendar page.tsx
+const clientId = client?.id || client?._id;
 
-        const url = `${API_ROUTES.POSTS.BY_CLIENT(client._id)}?${queryParams}`
-        console.log('Request URL:', url)
-
-        const response = await fetch(url, {
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        })
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-
-        const data = await response.json()
-
-        const transformedPosts = data.data.map((post: Post) => {
-          let displayStatus: "Scheduled" | "Pending" | "Published" | "Draft"
-          switch (post.status) {
-            case 'scheduled':
-              displayStatus = "Scheduled"
-              break
-            case 'published':
-              displayStatus = "Published"
-              break
-            case 'draft':
-              displayStatus = "Draft"
-              break
-            default:
-              displayStatus = "Pending"
-          }
-
-          const postType = post.platforms[0]?.platform || 'Post'
-          const postDate = new Date(post.scheduledTime)
-          const formattedTime = postDate.toLocaleTimeString([], { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          })
-
-          return {
-            id: post._id,
-            title: post.title,
-            time: formattedTime,
-            status: displayStatus,
-            type: postType,
-            date: postDate.toISOString().split('T')[0]
-          }
-        })
-
-        setPosts(transformedPosts)
-      } catch (err) {
-        console.error("Error fetching posts:", err)
-        setError("Failed to load calendar data. Please try again later.")
-      } finally {
-        setIsLoading(false)
-      }
+useEffect(() => {
+  const fetchPosts = async () => {
+    if (!clientId) {
+      console.log('Waiting for client ID...');
+      return;
     }
 
-    fetchPosts()
-  }, [client, currentDate]) 
+    setIsLoading(true);
+    setError(null);
 
+    try {
+      const response = await fetch(API_ROUTES.POSTS.BY_CLIENT(clientId), {
+        credentials: 'include',
+      });
+
+      // Handle non-JSON responses
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(text || 'Invalid response from server');
+      }
+
+      if (response.status === 401) {
+        router.push('/login');
+        return;
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      const transformedPosts = data.data.map((post: Post) => ({
+        id: post._id,
+        title: post.title,
+        time: new Date(post.scheduledTime).toLocaleTimeString([], { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+        status: post.status === 'scheduled' ? "Scheduled" :
+               post.status === 'published' ? "Published" :
+               post.status === 'draft' ? "Draft" : "Pending",
+        type: post.platforms[0]?.platform || 'Post',
+        date: new Date(post.scheduledTime).toISOString().split('T')[0]
+      }));
+
+      setPosts(transformedPosts);
+    } catch (err) {
+      console.error("Error fetching posts:", err);
+      setError(err instanceof Error ? err.message : "Failed to load calendar data");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  fetchPosts();
+}, [clientId, router]);
+  // Fetch posts for the current client
+// useEffect(() => {
+//   const fetchPosts = async () => {
+//     if (!clientId) {
+//       console.log('client ID:', clientId)
+//       setError("Client ID not found.");
+//       setIsLoading(false);
+//       return;
+//     }
+
+//     setIsLoading(true);
+//     setError(null);
+
+//     try {
+//       const response = await fetch(API_ROUTES.POSTS.BY_CLIENT(clientId), {
+//         credentials: 'include',
+//       });
+
+//         if (response.status === 401) {
+//           router.push('/login')
+//           return
+//         }
+
+//         if (response.status === 403) {
+//           throw new Error('You do not have permission to access these posts')
+//         }
+
+//         if (!response.ok) {
+//           throw new Error(`Request failed with status ${response.status}`)
+//         }
+
+//         const data = await response.json()
+
+//         const transformedPosts = data.data.map((post: Post) => ({
+//           id: post._id,
+//           title: post.title,
+//           time: new Date(post.scheduledTime).toLocaleTimeString([], { 
+//             hour: '2-digit', 
+//             minute: '2-digit' 
+//           }),
+//           status: post.status === 'scheduled' ? "Scheduled" :
+//                  post.status === 'published' ? "Published" :
+//                  post.status === 'draft' ? "Draft" : "Pending",
+//           type: post.platforms[0]?.platform || 'Post',
+//           date: new Date(post.scheduledTime).toISOString().split('T')[0]
+//         }))
+
+//         setPosts(transformedPosts)
+//       } catch (err) {
+//         console.error("Error fetching posts:", err)
+//         setError(err instanceof Error ? err.message : "Failed to load calendar data")
+//       } finally {
+//         setIsLoading(false)
+//       }
+//     }
+
+//     fetchPosts()
+//   }, [clientId, currentDate, router])
+
+  // Rest of your component remains the same...
   // Filter content based on search and filters
   const filteredContent = useMemo(() => {
     let filtered = [...posts]
@@ -272,7 +315,7 @@ export default function CalendarPage() {
     setCurrentDate(newDate)
   }
 
-  if (clientLoading || isLoading) {
+  if (isLoading) {
     return (
       <div className={styles.layout}>
         <main className={styles.main}>

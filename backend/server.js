@@ -33,8 +33,11 @@ const clientRoutes = require('./routes/clientRoutes');
 const managerRoutes = require('./routes/managerRoutes');
 const oauthRoutes = require('./routes/oauthRoutes');
 const socialAccountRoutes = require('./routes/socialAccountRoutes');
-const campaignRoutes = require('./routes/campaignRoutes')
+const reviewRoutes = require('./routes/reviewRoutes');
+const userRoutes = require('./routes/userRoutes');
 const invoiceRoutes = require('./routes/invoiceRoutes')
+const campaignRoutes = require('./routes/campaignRoutes')
+
 const messageRoutes = require('./routes/messageRoutes');
 
 const app = express();
@@ -69,6 +72,8 @@ app.use('/api/v1/clients', clientRoutes);
 app.use('/api/v1/managers', managerRoutes);
 app.use('/api/v1/oauth', oauthRoutes);
 app.use('/api/v1/social-accounts', socialAccountRoutes);
+app.use('/api/v1/managers/:managerId/reviews', reviewRoutes);
+app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/ad-campaigns', campaignRoutes);
 app.use('/api/v1/invoices', invoiceRoutes);
 app.use('/api/v1/messages', messageRoutes);

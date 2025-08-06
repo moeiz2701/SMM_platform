@@ -5,10 +5,6 @@ import { FaRegFileAlt } from 'react-icons/fa'
 import Image from 'next/image'
 import styles from '../../../styling/SocialAccounts.module.css'
 
-// const handleConnect = (platform: string) => {
-//   window.location.href = `http://localhost:3000/api/v1/oauth/${platform}`;
-// };
-
 import API_ROUTES from '../../apiRoutes';
 
 interface SocialAccount {
@@ -60,29 +56,18 @@ const page = () => {
 
   const getAccount = (platform: string) => socialAccounts.find(acc => acc.platform === platform);
 
-const handleAddSocialAccount = async (platform: string) => {
-  try {
-    const res = await fetch(API_ROUTES.SOCIAL_ACCOUNTS.ADD(platform), {
-      method: 'POST',
-      credentials: 'include',
-    });
-    if (!res.ok) {
-      const errorData = await res.json();
-      alert(errorData.message || 'Failed to add social account');
-      return;
-    }
-    alert('Social account added!');
-  } catch (err) {
-    alert('Failed to add social account');
-  }
-};
+  // Updated function to handle OAuth redirect
+  const handleConnectSocialAccount = (platform: string) => {
+    // Redirect to OAuth endpoint
+    window.location.href = `http://localhost:3000/api/v1/oauth/${platform}`;
+  };
 
   return (
     <div>
       <h2>Your Social Accounts</h2>
       <div className={styles.accountDisplay}>
         {/* Instagram */}
-        <div className={styles.instagram} style={{cursor:'pointer'}} onClick={() => !getAccount('instagram') && handleAddSocialAccount('instagram')}>
+        <div className={styles.instagram} style={{cursor:'pointer'}} onClick={() => !getAccount('instagram') && handleConnectSocialAccount('instagram')}>
           {getAccount('instagram') ? (
             <div className={styles.accountDetails} style={{ position: 'relative' }}>
               {/* Platform icon top-left */}
@@ -121,7 +106,7 @@ const handleAddSocialAccount = async (platform: string) => {
           )}
         </div>
         {/* LinkedIn */}
-        <div className={styles.linkdin} style={{cursor:'pointer'}} onClick={() => !getAccount('linkedin') && handleAddSocialAccount('linkedin')}>
+        <div className={styles.linkdin} style={{cursor:'pointer'}} onClick={() => !getAccount('linkedin') && handleConnectSocialAccount('linkedin')}>
           {getAccount('linkedin') ? (
             <div className={styles.accountDetails} style={{ position: 'relative' }}>
               {/* Platform icon top-left */}
@@ -154,13 +139,13 @@ const handleAddSocialAccount = async (platform: string) => {
             </div>
           ) : (
              <>
-            <Image src="/icons/linkedin.svg" alt="Instagram" width={60} height={60} />
+            <Image src="/icons/linkedin.svg" alt="LinkedIn" width={60} height={60} />
             <p>Add your linkedin</p>
             </>
           )}
         </div>
         {/* Facebook */}
-        <div className={styles.facebook} style={{cursor:'pointer'}} onClick={() => !getAccount('facebook') && handleAddSocialAccount('facebook')}>
+        <div className={styles.facebook} style={{cursor:'pointer'}} onClick={() => !getAccount('facebook') && handleConnectSocialAccount('facebook')}>
           {getAccount('facebook') ? (
             <div className={styles.accountDetails} style={{ position: 'relative' }}>
               {/* Platform icon top-left */}
@@ -193,7 +178,7 @@ const handleAddSocialAccount = async (platform: string) => {
             </div>
           ) : (
              <>
-            <Image src="/icons/facebook.svg" alt="Instagram" width={60} height={60} />
+            <Image src="/icons/facebook.svg" alt="Facebook" width={60} height={60} />
             <p>Add your facebook</p>
             </>
           )}
@@ -202,6 +187,5 @@ const handleAddSocialAccount = async (platform: string) => {
     </div>
   )
 }
-
 
 export default page

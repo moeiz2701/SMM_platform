@@ -1,10 +1,11 @@
 "use client"
 
-
 import { useEffect, useState, useMemo } from "react"
 import type { Client, ClientFilterTab } from "../../../components/client"
 import dynamic from "next/dynamic"
+import ReusableTable, { type TableColumn, type TableAction } from "../../../components/table"
 const SearchClients = dynamic(() => import("../../../components/clientSearch"), { ssr: false })
+import SearchBar from "../../../components/searchbar" // Add this import
 import API_ROUTES from "@/app/apiRoutes"
 import styles from "../../../styling/clients.module.css"
 
@@ -16,38 +17,37 @@ export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [showSearchClient, setShowSearchClient] = useState(false)
-
-
+  const [managerId, setManagerId] = useState<string | null>(null)
 
   useEffect(() => {
-    async function fetchClients() {
+    async function fetchData() {
       setLoading(true)
       try {
-        // Get current user id
-        const userRes = await fetch(API_ROUTES.AUTH.ME, { credentials: 'include' })
-        const userData = await userRes.json()
-        const userId = userData.data?._id
-        if (!userId) {
-          setClients([])
-          setLoading(false)
-          return
+        // First fetch the manager's ID
+        const managerRes = await fetch(API_ROUTES.MANAGERS.ME, {
+          credentials: 'include'
+        })
+        
+        if (managerRes.ok) {
+          const managerData = await managerRes.json()
+          setManagerId(managerData.data?._id || null)
+          
+          // Then fetch clients for this manager
+          const clientsRes = await fetch(API_ROUTES.CLIENTS.BY_MANAGER, {
+            credentials: 'include'
+          })
+          
+          if (clientsRes.ok) {
+            const clientsData = await clientsRes.json()
+            setClients(clientsData.data || [])
+          }
         }
-        // Fetch clients for this user
-        const res = await fetch(API_ROUTES.CLIENTS.BY_MANAGER, {
-        credentials: 'include' // Required for auth cookies
-        });
-        if (res.ok) {
-          const data = await res.json()
-          setClients(data.data || [])
-        } else {
-          setClients([])
-        }
-      } catch {
-        setClients([])
+      } catch (error) {
+        console.error("Error fetching data:", error)
       }
       setLoading(false)
     }
-    fetchClients()
+    fetchData()
   }, [])
 
   const filteredClients = useMemo(() => {
@@ -56,23 +56,45 @@ export default function ClientsPage() {
       filtered = filtered.filter(
         (client) =>
           client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          client.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          client.email.toLowerCase().includes(searchTerm.toLowerCase()),
+          (client.company && client.company.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (client.contactPerson?.email && client.contactPerson.email.toLowerCase().includes(searchTerm.toLowerCase())),
       )
     }
     if (activeTab !== "All Clients") {
-      filtered = filtered.filter((client) => client.status === activeTab)
+      filtered = filtered.filter((client) => client.status === activeTab.toLowerCase())
     }
     return filtered
   }, [clients, searchTerm, activeTab])
 
-  const getStatusClass = (status: Client["status"]) => {
-    switch (status) {
-      case "Active":
+  const handleRemoveClient = async (clientId: string) => {
+    if (!managerId) return
+    
+    try {
+      const res = await fetch(API_ROUTES.MANAGERS.REMOVE_CLIENT(managerId, clientId), {
+        method: "DELETE",
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (res.ok) {
+        setClients(prevClients => prevClients.filter(client => client._id !== clientId))
+      } else {
+        const errorData = await res.json()
+        console.error("Failed to remove client:", errorData.message)
+      }
+    } catch (error) {
+      console.error("Error removing client:", error)
+    }
+  }
+  const getStatusClass = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "active":
         return styles.statusActive
-      case "Inactive":
+      case "inactive":
         return styles.statusInactive
-      case "Pending":
+      case "pending":
         return styles.statusPending
       default:
         return styles.statusInactive
@@ -96,12 +118,111 @@ export default function ClientsPage() {
       .toUpperCase()
   }
 
-  return (
-    <div className={styles.layout}>
+  // Prepare data for the table
+  const tableData = useMemo(() => {
+    return filteredClients.map(client => ({
+      ...client,
+      id: client._id,
+      clientInfo: { 
+        name: client.name, 
+        company: client.company, 
+        initials: getInitials(client.name) 
+      },
+      contactInfo: { 
+        email: client.contactPerson?.email || "", 
+        phone: client.contactPerson?.phone || "" 
+      },
+      status: client.status,
+      lastActivity: client.lastActivity || "N/A",
+      projects: client.projects || 0,
+      revenueYTD: client.revenueYTD || 0
+    }))
+  }, [filteredClients])
 
+  const tableActions: TableAction[] = [
+    {
+      label: "Remove",
+      onClick: (row) => handleRemoveClient(row.id),
+      className: styles.removeAction,
+      icon: <span>🗑️</span>
+    }
+  ]
+
+  const columns: TableColumn[] = [
+    {
+      key: "clientInfo",
+      label: "CLIENT",
+      render: (value) => (
+        <div className={styles.clientInfo}>
+          <div className={styles.clientAvatar}>{value.initials}</div>
+          <div className={styles.clientDetails}>
+            <div className={styles.clientName}>{value.name}</div>
+            <div className={styles.clientCompany}>{value.company || "N/A"}</div>
+          </div>
+        </div>
+      )
+    },
+    {
+      key: "contactInfo",
+      label: "CONTACT INFO",
+      render: (value) => (
+        <div className={styles.contactInfo}>
+          <div className={styles.email}>{value.email || "N/A"}</div>
+          <div className={styles.phone}>{value.phone || "N/A"}</div>
+        </div>
+      )
+    },
+    {
+      key: "status",
+      label: "STATUS",
+      type: "status",
+      render: (value) => (
+        <span className={`${styles.statusBadge} ${getStatusClass(value)}`}>
+          {value}
+        </span>
+      )
+    },
+    {
+      key: "lastActivity",
+      label: "LAST ACTIVITY"
+    },
+    {
+      key: "projects",
+      label: "PROJECTS"
+    },
+    {
+      key: "revenueYTD",
+      label: "REVENUE YTD",
+      type: "currency"
+    },
+    {
+      key: "actions",
+      label: "ACTIONS",
+      render: (_, row) => (
+        <div className={styles.actionButtons}>
+          {tableActions.map((action, index) => (
+            <button
+              key={index}
+              onClick={(e) => {
+                e.stopPropagation()
+                action.onClick(row)
+              }}
+              className={action.className}
+              title={action.label}
+            >
+              {action.icon}
+            </button>
+          ))}
+        </div>
+      )
+    }
+  ]
+
+ return (
+    <div className={styles.layout}>
       <main className={styles.main}>
         <div className={styles.header}>
-          <h2 >Client Management</h2>
+          <h1 className={styles.title}>Client Management</h1>
 
           <div className={styles.topActions}>
             <div className={styles.leftActions}>
@@ -109,24 +230,14 @@ export default function ClientsPage() {
                 <span className={styles.plusIcon}>+</span>
                 Add Client
               </button>
-            
-              <button className={styles.filterButton}>
-                <span className={styles.filterIcon}>⚙</span>
-                Filter
-              </button>
             </div>
               
             <div className={styles.searchContainer}>
-              <div className={styles.searchInputWrapper}>
-                <span className={styles.searchIcon}>🔍</span>
-                <input
-                  type="text"
-                  placeholder="Search clients..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className={styles.searchInput}
-                />
-              </div>
+              <SearchBar 
+                placeholder="Search clients..."
+                onSearch={setSearchTerm}
+                className={styles.searchBar}
+              />
             </div>
           </div>
         </div>
@@ -134,12 +245,9 @@ export default function ClientsPage() {
         {showSearchClient ? (
           <div style={{ width: '100%', marginTop: 24 }} className={styles.searchClientContainer}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-              <button className="button2"
-                onClick={() => setShowSearchClient(false)}
-              >
+              <button className="button2" onClick={() => setShowSearchClient(false)}>
                 ← Back
               </button>
-              
             </div>
             <div style={{ width: '100%' }}>
               <SearchClients />
@@ -160,58 +268,23 @@ export default function ClientsPage() {
             </div>
             <div className={styles.tableContainer}>
               {loading ? (
-                <div style={{ textAlign: 'center', padding: '40px', fontSize: '1.2rem' }}>Loading clients...</div>
+                <div style={{ textAlign: 'center', padding: '40px', fontSize: '1.2rem' }}>
+                  Loading clients...
+                </div>
               ) : filteredClients.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '60px 0', fontSize: '1.5rem', color: '#888' }}>
-                  You have no clients
+                  You have no {activeTab !== "All Clients" ? activeTab.toLowerCase() : ""} clients
                 </div>
               ) : (
                 <>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>CLIENT</th>
-                        <th>CONTACT INFO</th>
-                        <th>STATUS</th>
-                        <th>LAST ACTIVITY</th>
-                        <th>PROJECTS</th>
-                        <th>REVENUE YTD</th>
-                        <th>ACTIONS</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredClients.map((client, index) => (
-                        <tr key={client.id || client._id} className={index % 2 === 0 ? styles.evenRow : ""}>
-                          <td className={styles.clientCell}>
-                            <div className={styles.clientInfo}>
-                              <div className={styles.clientAvatar}>{getInitials(client.name)}</div>
-                              <div className={styles.clientDetails}>
-                                <div className={styles.clientName}>{client.name}</div>
-                                <div className={styles.clientCompany}>{client.company}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className={styles.contactCell}>
-                            <div className={styles.contactInfo}>
-                              <div className={styles.email}>{client.email}</div>
-                              <div className={styles.phone}>{client.phone}</div>
-                            </div>
-                          </td>
-                          <td>
-                            <span className={`${styles.statusBadge} ${getStatusClass(client.status)}`}>{client.status}</span>
-                          </td>
-                          <td className={styles.activityCell}>{client.lastActivity}</td>
-                          <td className={styles.projectsCell}>{client.projects}</td>
-                          <td className={styles.revenueCell}>{formatCurrency(client.revenueYTD)}</td>
-                          <td className={styles.actionsCell}>
-                            <button className={styles.actionsButton}>
-                              <span className={styles.dotsIcon}>⋮</span>
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <ReusableTable
+                    data={tableData}
+                    columns={columns}
+                    actions={tableActions}
+                    searchable={false}
+                    emptyMessage="No clients found"
+                    className={styles.reusableTable}
+                  />
                   <div className={styles.footer}>
                     <span className={styles.counter}>
                       Showing {filteredClients.length} of {clients.length} clients

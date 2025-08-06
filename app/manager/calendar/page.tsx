@@ -981,14 +981,21 @@ export default function CalendarPage() {
             Scheduled Time <span className={styles.required}>*</span>
           </label>
           <div className={styles.inputWithIcon}>
-            <input
-              type="datetime-local"
-              id="scheduledTime"
-              value={formData.dueDate}
-              onChange={(e) => setFormData({...formData, dueDate: e.target.value})}
-              min={localISOTime}
-              className={`${styles.formInput} ${validationErrors.dueDate ? styles.inputError : ""}`}
-            />
+<input
+  type="datetime-local"
+  id="scheduledTime"
+  value={formData.dueDate ? `${formData.dueDate}T${formData.time || '12:00'}` : ''}
+  onChange={(e) => {
+    const [date, time] = e.target.value.split('T')
+    setFormData({
+      ...formData,
+      dueDate: date,
+      time: time || '12:00'
+    })
+  }}
+  min={localISOTime}
+  className={`${styles.formInput} ${validationErrors.dueDate ? styles.inputError : ""}`}
+/>
             <span className={styles.inputIcon}>📅</span>
           </div>
           {validationErrors.dueDate && (
@@ -1246,10 +1253,14 @@ export default function CalendarPage() {
                             currentDate.getMonth(),
                             day.date
                           )
-                          setFormData({
-                            ...formData,
-                            dueDate: selectedDateObj.toISOString().split('T')[0]
-                          })
+                          // Format as YYYY-MM-DD
+                          const formattedDate = selectedDateObj.toISOString().split('T')[0]
+                          setFormData(prev => ({
+                            ...prev,
+                            dueDate: formattedDate,
+                            // Also set the time to a default if needed
+                            time: prev.time || "12:00"
+                          }))
                           setShowCreateModal(true)
                         }}
                       >

@@ -5,14 +5,14 @@
 // @desc    Send a request to a client (by manager)
 // @route   POST /api/v1/clients/:id/request
 // @access  Private/Manager
-
+const User = require('../models/User');
 
 const Client = require('../models/Client');
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
 const Manager = require('../models/Manager'); // Add at the top if not already
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const User = require ('../models/User') // Add this at the top
+
 const Notification = require('../models/Notification')
 
 const mongoose = require('mongoose');
@@ -132,7 +132,7 @@ exports.getClient = asyncHandler(async (req, res, next) => {
 exports.createClient = asyncHandler(async (req, res, next) => {
   // Add user to req.body
   req.body.user = req.user.id;
-const user = await User.findById(userId);
+const user = await User.findById(req.user.id);
 user.role = 'client';
 await user.save();
   // profilePhoto should be a Cloudinary URL if provided
@@ -220,7 +220,7 @@ exports.deleteClient = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/clients/user/:userId
 // @access  Private/Admin/Manager
 exports.getClientsByUser = asyncHandler(async (req, res, next) => {
-  if (req.user.role !== 'admin' && req.user.role !== 'manager') {
+  if (req.user.role !== 'admin' && req.user.role !== 'manager' && req.user.role !== 'client' && client.user.toString() !== req.user.id) {
     return next(
       new ErrorResponse(`Not authorized to access this route`, 401)
     );
@@ -381,7 +381,7 @@ exports.sendRequestToManager = asyncHandler(async (req, res, next) => {
 // @access  Private/Admin/Manager
 exports.getRequests = asyncHandler(async (req, res, next) => {
   // Only admin or manager can view requests
-  if (req.user.role !== 'admin' && req.user.role !== 'client') {
+  if (req.user.role !== 'admin' && req.user.role !== 'client' && req.user.role !== 'client') {
     return next(new ErrorResponse('Not authorized to view requests', 403));
   }
   const clientId = req.params.id;
@@ -398,7 +398,7 @@ exports.getRequests = asyncHandler(async (req, res, next) => {
 // @access  Private/Client
 exports.assignManagerToClient = asyncHandler(async (req, res, next) => {
   // Only client can assign a manager to themselves
-  if (req.user.role !== 'client') {
+  if (req.user.role !== 'client' ) {
     return next(new ErrorResponse('Not authorized to assign manager', 403));
   }
 
@@ -477,10 +477,11 @@ exports.deleteRequest = asyncHandler(async (req, res, next) => {
   }
   // Only admin or the client owner can delete a request
   if (
-    req.user.role !== 'admin' &&
-    client.user.toString() !== req.user.id
+    req.user.role !== 'admin' ||
+    client.user.toString() !== req.user.id || req.user.role !== 'client'
   ) {
-    return next(new ErrorResponse('Not authorized to delete this request', 403));
+    console.log('Current role:', req.user.role);
+    return next(new ErrorResponse('Not authorized to delete this request your role', req.user.role, 403));
   }
   try {
     const updatedClient = await Client.deleteRequest(clientId, requestId);
@@ -767,4 +768,24 @@ exports.getClientsByIds = asyncHandler(async (req, res, next) => {
       error: 'Server error'
     });
   }
+});
+
+exports.getClientsByManager = asyncHandler(async (req, res, next) => {
+  console.log('Fetching clients for manager ID:', req.user.id); // Log the manager's user ID
+  
+  const manager = await Manager.findOne({ user: req.user.id })
+    .populate('managedClients')
+    .lean();
+
+  console.log('Manager document found:', !!manager); // Log if manager exists
+  console.log('Number of managed clients:', manager?.managedClients?.length || 0); // Log client count
+
+  if (!manager) {
+    return res.status(200).json({ success: true, data: [] });
+  }
+
+  res.status(200).json({
+    success: true,
+    data: manager.managedClients || [] // Ensure we always return an array
+  });
 });

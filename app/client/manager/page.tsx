@@ -1,12 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Image from "next/image"
 import styles from "../../../styling/ClientManager.module.css"
 import API_ROUTES from '../../apiRoutes'
 import ManagerProfilePage from "./managerProfile"
 
-// Mock data - replace with actual API calls
 type Manager = {
   _id: string;
   user: {
@@ -27,16 +25,19 @@ type Manager = {
   };
   experience: number;
   rating: number;
-  managedClients: string[]; // or populated array of Client objects
+  managedClients: string[];
   createdAt: string;
 };
 
-
-// Mock data - replace with actual API calls
+type Client = {
+  _id: string;
+  user: string;
+  manager?: string;
+};
 
 export default function ClientManagerPage() {
   const [currentManager, setCurrentManager] = useState<Manager | null>(null)
-  const [managers, setManagers] = useState<Manager[]>([]);
+  const [managers, setManagers] = useState<Manager[]>([])
   const [showManagerDetails, setShowManagerDetails] = useState(false)
   const [selectedManager, setSelectedManager] = useState<Manager | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -146,7 +147,6 @@ export default function ClientManagerPage() {
         <div className={styles.header}>
           <h1 className={styles.title}>Your Manager</h1>
           <div className={styles.headerContent}>
-            <p>Manage your assigned account manager and communication preferences.</p>
             <button className={styles.changeButton} onClick={handleChangeManager}>
               Change Manager
             </button>
@@ -158,6 +158,7 @@ export default function ClientManagerPage() {
     )
   }
 
+  // Otherwise, show the manager selection UI
   return (
     <div className={styles.main}>
       <div className={styles.header}>
@@ -170,67 +171,46 @@ export default function ClientManagerPage() {
       <div className={styles.managersGrid}>
         {managers.map((manager) => (
           <div key={manager._id} className={styles.managerCard}>
-            <div className={styles.cardHeader}>
-              {/* <div className={styles.managerAvatar}>
-                <Image
-                  src={manager.avatar || "/placeholder.svg"}
-                  alt={manager.name}
-                  width={80}
-                  height={80}
-                  className={styles.avatarImage}
-                />
-              </div> */}
-              {/*<div className={styles.availabilityBadge}>
-                <span
-                  className={`${styles.statusBadge} ${
-                    manager.availability === "Available" ? styles.statusAvailable : styles.statusBusy
-                  }`}
-                >
-                  {manager.availability}
-                </span>
-              </div>*/}
-            </div>
-
             <div className={styles.cardContent}>
-                <h3 className={styles.managerName}>{manager.user.name}</h3>
-                <p className={styles.specialization}>{manager.department}</p>
+              <h3 className={styles.managerName}>{manager.user.name}</h3>
+              <p className={styles.specialization}>{manager.department}</p>
 
-                {manager.website && (
-                  <p className={styles.bio}>
-                    <strong>Website:</strong>{" "}
-                    <a href={manager.website} target="_blank" rel="noopener noreferrer">
-                      {manager.website}
-                    </a>
-                  </p>
-                )}
+              {manager.website && (
+                <p className={styles.bio}>
+                  <strong>Website:</strong>{" "}
+                  <a href={manager.website} target="_blank" rel="noopener noreferrer">
+                    {manager.website}
+                  </a>
+                </p>
+              )}
 
-                <div className={styles.managerMetrics}>
-                  <div className={styles.metric}>
-                    <span className={styles.metricIcon}>⭐</span>
-                    <span className={styles.metricValue}>{manager.rating.toFixed(1)}</span>
-                    <span className={styles.metricLabel}>Rating</span>
-                  </div>
-
-                  <div className={styles.metric}>
-                    <span className={styles.metricIcon}>📞</span>
-                    <span className={styles.metricValue}>{manager.phone || "N/A"}</span>
-                    <span className={styles.metricLabel}>Phone</span>
-                  </div>
-
-                  <div className={styles.metric}>
-                    <span className={styles.metricIcon}>🧑‍💼</span>
-                    <span className={styles.metricValue}>{manager.experience}</span>
-                    <span className={styles.metricLabel}>Years Exp.</span>
-                  </div>
+              <div className={styles.managerMetrics}>
+                <div className={styles.metric}>
+                  <span className={styles.metricIcon}>⭐</span>
+                  <span className={styles.metricValue}>{manager.rating.toFixed(1)}</span>
+                  <span className={styles.metricLabel}>Rating</span>
                 </div>
 
-                <div className={styles.cardActions}>
-                  <button
-                    className={styles.viewDetailsButton}
-                    onClick={() => handleSelectManager(manager)}
-                  >
-                    View Details
-                  </button>
+                <div className={styles.metric}>
+                  <span className={styles.metricIcon}>📞</span>
+                  <span className={styles.metricValue}>{manager.phone || "N/A"}</span>
+                  <span className={styles.metricLabel}>Phone</span>
+                </div>
+
+                <div className={styles.metric}>
+                  <span className={styles.metricIcon}>🧑‍💼</span>
+                  <span className={styles.metricValue}>{manager.experience}</span>
+                  <span className={styles.metricLabel}>Years Exp.</span>
+                </div>
+              </div>
+
+              <div className={styles.cardActions}>
+                <button
+                  className={styles.viewDetailsButton}
+                  onClick={() => handleSelectManager(manager)}
+                >
+                  View Details
+                </button>
 
                   <button
                     className={styles.selectButton}
@@ -246,81 +226,81 @@ export default function ClientManagerPage() {
         ))}
       </div>
 
-     {showManagerDetails && selectedManager && (
-  <div className={styles.modalOverlay} onClick={() => setShowManagerDetails(false)}>
-    <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
-      <div className={styles.modalHeader}>
-        <h2 className={styles.modalTitle}>Manager Details</h2>
-        <button className={styles.closeButton} onClick={() => setShowManagerDetails(false)}>
-          ×
-        </button>
-      </div>
+      {showManagerDetails && selectedManager && (
+        <div className={styles.modalOverlay} onClick={() => setShowManagerDetails(false)}>
+          <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>Manager Details</h2>
+              <button className={styles.closeButton} onClick={() => setShowManagerDetails(false)}>
+                ×
+              </button>
+            </div>
 
-      <div className={styles.modalBody}>
-        <div className={styles.modalManagerInfo}>
-          <div className={styles.managerAvatar}>
-            <img
-              src={selectedManager.profilePhoto || "/placeholder.svg"}
-              alt={selectedManager.user.name}
-              width={100}
-              height={100}
-              className={styles.avatarImage}
-            />
-          </div>
-          <div className={styles.managerDetails}>
-            <h3>{selectedManager.user.name}</h3>
-            <p className={styles.specialization}>{selectedManager.department}</p>
-            <p className={styles.experience}>{selectedManager.experience} years experience</p>
-          </div>
-        </div>
+            <div className={styles.modalBody}>
+              <div className={styles.modalManagerInfo}>
+                <div className={styles.managerAvatar}>
+                  <img
+                    src={selectedManager.profilePhoto || "/placeholder.svg"}
+                    alt={selectedManager.user.name}
+                    width={100}
+                    height={100}
+                    className={styles.avatarImage}
+                  />
+                </div>
+                <div className={styles.managerDetails}>
+                  <h3>{selectedManager.user.name}</h3>
+                  <p className={styles.specialization}>{selectedManager.department}</p>
+                  <p className={styles.experience}>{selectedManager.experience} years experience</p>
+                </div>
+              </div>
 
-        <div className={styles.modalContent}>
-          <div className={styles.detailSection}>
-            <h4>Rating</h4>
-            <p>⭐ {selectedManager.rating} / 5</p>
-          </div>
+              <div className={styles.modalContent}>
+                <div className={styles.detailSection}>
+                  <h4>Rating</h4>
+                  <p>⭐ {selectedManager.rating} / 5</p>
+                </div>
 
-          <div className={styles.detailSection}>
-            <h4>Contact</h4>
-            <p>
-              <strong>Email:</strong> {selectedManager.user.email}
-            </p>
-            <p>
-              <strong>Phone:</strong> {selectedManager.phone || "N/A"}
-            </p>
-            <p>
-              <strong>Website:</strong>{" "}
-              {selectedManager.website ? (
-                <a href={selectedManager.website} target="_blank" rel="noopener noreferrer">
-                  {selectedManager.website}
-                </a>
-              ) : (
-                "N/A"
-              )}
-            </p>
-          </div>
+                <div className={styles.detailSection}>
+                  <h4>Contact</h4>
+                  <p>
+                    <strong>Email:</strong> {selectedManager.user.email}
+                  </p>
+                  <p>
+                    <strong>Phone:</strong> {selectedManager.phone || "N/A"}
+                  </p>
+                  <p>
+                    <strong>Website:</strong>{" "}
+                    {selectedManager.website ? (
+                      <a href={selectedManager.website} target="_blank" rel="noopener noreferrer">
+                        {selectedManager.website}
+                      </a>
+                    ) : (
+                      "N/A"
+                    )}
+                  </p>
+                </div>
 
-          <div className={styles.detailSection}>
-            <h4>Social Media</h4>
-            <ul className={styles.socialLinks}>
-              {Object.entries(selectedManager.socialMedia || {}).map(([platform, url]) =>
-                url ? (
-                  <li key={platform}>
-                    <a href={url} target="_blank" rel="noopener noreferrer">
-                      {platform.charAt(0).toUpperCase() + platform.slice(1)}
-                    </a>
-                  </li>
-                ) : null
-              )}
-            </ul>
-          </div>
+                <div className={styles.detailSection}>
+                  <h4>Social Media</h4>
+                  <ul className={styles.socialLinks}>
+                    {Object.entries(selectedManager.socialMedia || {}).map(([platform, url]) =>
+                      url ? (
+                        <li key={platform}>
+                          <a href={url} target="_blank" rel="noopener noreferrer">
+                            {platform.charAt(0).toUpperCase() + platform.slice(1)}
+                          </a>
+                        </li>
+                      ) : null
+                    )}
+                  </ul>
+                </div>
 
-          <div className={styles.detailSection}>
-            <h4>Status</h4>
-            <p>{selectedManager.status === "active" ? "✅ Active" : "❌ Inactive"}</p>
-          </div>
-        </div>
-      </div>
+                <div className={styles.detailSection}>
+                  <h4>Status</h4>
+                  <p>{selectedManager.status === "active" ? "✅ Active" : "❌ Inactive"}</p>
+                </div>
+              </div>
+            </div>
 
       <div className={styles.modalFooter}>
         <button className={styles.cancelButton} onClick={() => setShowManagerDetails(false)}>
