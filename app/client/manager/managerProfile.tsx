@@ -2,28 +2,72 @@
 
 import { useState, useEffect } from "react"
 import { User, Phone, Building, Globe, Star, Calendar, Users, MessageSquare, ExternalLink, Mail, MapPin, Award, TrendingUp, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
-import styles from "./ManagerProfile.module.css"
 import API_ROUTES from "@/app/apiRoutes"
+import styles from '../../../styling/managerProfile.module.css' // Assuming you have a CSS module for styles
 
 // Mock data - in real app this would come from API/props
 type Props = {
   id: string
 }
 
+type Manager = {
+  _id: string;
+  user: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  phone: string;
+  department: string;
+  status: 'active' | 'inactive';
+  profilePhoto: string;
+  website: string;
+  socialMedia: {
+    linkedin: string;
+    facebook: string;
+    twitter: string;
+    instagram: string;
+  };
+  experience: number;
+  rating: number;
+  managedClients: any[];
+  reviews: any[];
+  requests: any[];
+  createdAt: string;
+};
+
 export default function ManagerProfilePage({ id }: Props) {
   const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'reviews' | 'requests'>('overview')
-  const [manager, setManager] = useState(null);
+  const [manager, setManager] = useState<Manager | null>(null);
    const [loading, setLoading] = useState(true);
 
    useEffect(() => {
     if (!id) return;
     const fetchManager = async () => {
       try {
-        const res = await fetch(API_ROUTES.MANAGERS.GET_ONE(id));
+        const res = await fetch(API_ROUTES.MANAGERS.GET_ONE(id), {
+          credentials: 'include' // Include cookies for authentication
+        });
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Response is not JSON');
+        }
+        
         const data = await res.json();
-        setManager(data.data); // assuming response shape: { success, data }
+        
+        if (data.success && data.data) {
+          setManager(data.data);
+        } else {
+          throw new Error(data.message || 'Failed to fetch manager data');
+        }
       } catch (err) {
         console.error("Failed to load manager:", err);
+        setManager(null);
       } finally {
         setLoading(false);
       }
@@ -31,7 +75,26 @@ export default function ManagerProfilePage({ id }: Props) {
 
     fetchManager();
   }, [id]);
-  if (!manager) return null
+
+  if (loading) {
+    return (
+      <div className={styles.profileContainer}>
+        <div className={styles.profileWrapper}>
+          <div className={styles.loading}>Loading manager profile...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!manager) {
+    return (
+      <div className={styles.profileContainer}>
+        <div className={styles.profileWrapper}>
+          <div className={styles.error}>Manager not found or failed to load.</div>
+        </div>
+      </div>
+    );
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -78,12 +141,12 @@ export default function ManagerProfilePage({ id }: Props) {
       { key: 'facebook', name: 'Facebook', color: '#1877f2' },
       { key: 'instagram', name: 'Instagram', color: '#e4405f' }
     ]
-    if (loading || !manager) return null;
+    if (loading || !manager || !manager.socialMedia) return null;
 
     return (
       <div className={styles.socialLinks}>
         {socialPlatforms.map((platform) => {
-          const url = manager.socialMedia[platform.key as keyof typeof manager.socialMedia]
+          const url = manager.socialMedia?.[platform.key as keyof typeof manager.socialMedia]
           if (!url) return null
           
           return (
@@ -113,7 +176,7 @@ export default function ManagerProfilePage({ id }: Props) {
             <Users size={24} />
           </div>
           <div className={styles.statContent}>
-            <h3>{manager.managedClients.length}</h3>
+            <h3>{manager.managedClients?.length || 0}</h3>
             <p>Managed Clients</p>
           </div>
         </div>
@@ -123,7 +186,7 @@ export default function ManagerProfilePage({ id }: Props) {
             <Star size={24} />
           </div>
           <div className={styles.statContent}>
-            <h3>{manager.rating.toFixed(1)}</h3>
+            <h3>{manager.rating?.toFixed(1) || '0.0'}</h3>
             <p>Average Rating</p>
           </div>
         </div>
@@ -133,7 +196,7 @@ export default function ManagerProfilePage({ id }: Props) {
             <MessageSquare size={24} />
           </div>
           <div className={styles.statContent}>
-            <h3>{manager.reviews.length}</h3>
+            <h3>{manager.reviews?.length || 0}</h3>
             <p>Total Reviews</p>
           </div>
         </div>
@@ -143,7 +206,7 @@ export default function ManagerProfilePage({ id }: Props) {
             <TrendingUp size={24} />
           </div>
           <div className={styles.statContent}>
-            <h3>{manager.experience}</h3>
+            <h3>{manager.experience || 0}</h3>
             <p>Years Experience</p>
           </div>
         </div>
@@ -154,19 +217,19 @@ export default function ManagerProfilePage({ id }: Props) {
         <div className={styles.infoGrid}>
           <div className={styles.infoItem}>
             <Phone size={16} />
-            <span>{manager.phone}</span>
+            <span>{manager.phone || 'Not provided'}</span>
           </div>
           <div className={styles.infoItem}>
             <Mail size={16} />
-            <span>{manager.user.email}</span>
+            <span>{manager.user?.email || 'Not provided'}</span>
           </div>
           <div className={styles.infoItem}>
             <Building size={16} />
-            <span>{manager.department} Department</span>
+            <span>{manager.department || 'Not specified'} Department</span>
           </div>
           <div className={styles.infoItem}>
             <Calendar size={16} />
-            <span>Joined {formatDate(manager.createdAt)}</span>
+            <span>Joined {formatDate(manager.createdAt || new Date().toISOString())}</span>
           </div>
           {manager.website && (
             <div className={styles.infoItem}>
@@ -180,7 +243,7 @@ export default function ManagerProfilePage({ id }: Props) {
         </div>
       </div>
 
-      {(manager.socialMedia.linkedin || manager.socialMedia.twitter || manager.socialMedia.facebook || manager.socialMedia.instagram) && (
+      {(manager.socialMedia?.linkedin || manager.socialMedia?.twitter || manager.socialMedia?.facebook || manager.socialMedia?.instagram) && (
         <div className={styles.infoSection}>
           <h3>Social Media</h3>
           {renderSocialLinks()}
@@ -192,19 +255,19 @@ export default function ManagerProfilePage({ id }: Props) {
   const renderClientsTab = () => (
     <div className={styles.tabContent}>
       <div className={styles.clientsHeader}>
-        <h3>Managed Clients ({manager.managedClients.length})</h3>
+        <h3>Managed Clients ({manager.managedClients?.length || 0})</h3>
         <div className={styles.clientsStats}>
           <span className={styles.activeClients}>
-            {manager.managedClients.filter(c => c.status === 'active').length} Active
+            {manager.managedClients?.filter((c: any) => c.status === 'active').length || 0} Active
           </span>
           <span className={styles.inactiveClients}>
-            {manager.managedClients.filter(c => c.status === 'inactive').length} Inactive
+            {manager.managedClients?.filter((c: any) => c.status === 'inactive').length || 0} Inactive
           </span>
         </div>
       </div>
       
       <div className={styles.clientsList}>
-        {manager.managedClients.map((client) => (
+        {(manager.managedClients || []).map((client: any) => (
           <div key={client._id} className={styles.clientCard}>
             <div className={styles.clientInfo}>
               <div className={styles.clientAvatar}>
@@ -232,15 +295,15 @@ export default function ManagerProfilePage({ id }: Props) {
   const renderReviewsTab = () => (
     <div className={styles.tabContent}>
       <div className={styles.reviewsHeader}>
-        <h3>Client Reviews ({manager.reviews.length})</h3>
+        <h3>Client Reviews ({manager.reviews?.length || 0})</h3>
         <div className={styles.overallRating}>
-          {renderStars(manager.rating)}
-          <span className={styles.reviewCount}>Based on {manager.reviews.length} reviews</span>
+          {renderStars(manager.rating || 0)}
+          <span className={styles.reviewCount}>Based on {manager.reviews?.length || 0} reviews</span>
         </div>
       </div>
       
       <div className={styles.reviewsList}>
-        {manager.reviews.map((review, index) => (
+        {(manager.reviews || []).map((review: any, index: number) => (
           <div key={index} className={styles.reviewCard}>
             <div className={styles.reviewHeader}>
               <div className={styles.reviewerInfo}>
@@ -264,22 +327,22 @@ export default function ManagerProfilePage({ id }: Props) {
   const renderRequestsTab = () => (
     <div className={styles.tabContent}>
       <div className={styles.requestsHeader}>
-        <h3>Recent Requests ({manager.requests.length})</h3>
+        <h3>Recent Requests ({manager.requests?.length || 0})</h3>
         <div className={styles.requestsStats}>
           <span className={styles.pendingRequests}>
-            {manager.requests.filter(r => r.status === 'pending').length} Pending
+            {manager.requests?.filter((r: any) => r.status === 'pending').length || 0} Pending
           </span>
           <span className={styles.approvedRequests}>
-            {manager.requests.filter(r => r.status === 'approved').length} Approved
+            {manager.requests?.filter((r: any) => r.status === 'approved').length || 0} Approved
           </span>
           <span className={styles.rejectedRequests}>
-            {manager.requests.filter(r => r.status === 'rejected').length} Rejected
+            {manager.requests?.filter((r: any) => r.status === 'rejected').length || 0} Rejected
           </span>
         </div>
       </div>
       
       <div className={styles.requestsList}>
-        {manager.requests.map((request, index) => (
+        {(manager.requests || []).map((request: any, index: number) => (
           <div key={index} className={styles.requestCard}>
             <div className={styles.requestInfo}>
               <div className={styles.requestAvatar}>
@@ -313,7 +376,7 @@ export default function ManagerProfilePage({ id }: Props) {
           <div className={styles.profileImageContainer}>
             <img
               src={manager.profilePhoto || "/placeholder.svg"}
-              alt={manager.user.name}
+              alt={manager.user?.name || 'Manager'}
               className={styles.profileImage}
             />
             <div className={styles.statusBadge}>
@@ -325,19 +388,19 @@ export default function ManagerProfilePage({ id }: Props) {
           </div>
           
           <div className={styles.profileInfo}>
-            <h1 className={styles.profileName}>{manager.user.name}</h1>
-            <p className={styles.profileTitle}>{manager.department} Manager</p>
+            <h1 className={styles.profileName}>{manager.user?.name || 'Unknown Manager'}</h1>
+            <p className={styles.profileTitle}>{manager.department || 'Unknown'} Manager</p>
             <div className={styles.profileRating}>
-              {renderStars(manager.rating)}
+              {renderStars(manager.rating || 0)}
             </div>
             <div className={styles.profileMeta}>
               <span className={styles.experience}>
                 <Award size={16} />
-                {manager.experience} years experience
+                {manager.experience || 0} years experience
               </span>
               <span className={styles.joinDate}>
                 <Calendar size={16} />
-                Joined {formatDate(manager.createdAt)}
+                Joined {formatDate(manager.createdAt || new Date().toISOString())}
               </span>
             </div>
           </div>
@@ -357,21 +420,21 @@ export default function ManagerProfilePage({ id }: Props) {
             onClick={() => setActiveTab('clients')}
           >
             <Users size={16} />
-            Clients ({manager.managedClients.length})
+            Clients ({manager.managedClients?.length || 0})
           </button>
           <button
             className={`${styles.tabButton} ${activeTab === 'reviews' ? styles.active : ''}`}
             onClick={() => setActiveTab('reviews')}
           >
             <MessageSquare size={16} />
-            Reviews ({manager.reviews.length})
+            Reviews ({manager.reviews?.length || 0})
           </button>
           <button
             className={`${styles.tabButton} ${activeTab === 'requests' ? styles.active : ''}`}
             onClick={() => setActiveTab('requests')}
           >
             <AlertCircle size={16} />
-            Requests ({manager.requests.length})
+            Requests ({manager.requests?.length || 0})
           </button>
         </div>
 

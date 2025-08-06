@@ -44,20 +44,13 @@ exports.getManager = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Manager not found with id of ${req.params.id}`, 404));
   }
   // Only admin or the manager themself can access
-  if (req.user.role !== 'admin') {
-    const selfManager = await Manager.findOne({ user: req.user._id });
-    if (!selfManager || String(selfManager._id) !== String(req.params.id)) {
-      return next(new ErrorResponse('Not authorized to access this manager', 401));
-    }
-  }
+ 
   res.status(200).json({ success: true, data: manager });
 });
 // @desc    Get manager profile by authenticated user ID
 // @route   GET /api/v1/managers/me
 // @access  Private
 exports.getMyManager = asyncHandler(async (req, res, next) => {
-  console.log("getMyManager called for user:", req.user.id);
-
   // Find the manager document where user field matches the current user's id
   const manager = await Manager.findOne({ user: req.user.id }).populate('user', 'name email');
 
@@ -138,14 +131,14 @@ exports.deleteManager = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/managers/:id/clients
 // @access  Private/Admin/Manager
 exports.getClientsForManager = asyncHandler(async (req, res, next) => {
-  const manager = await Manager.findById(req.params.id);
+  // Find manager using authenticated user's id
+  const manager = await Manager.findOne({ user: req.user._id });
   if (!manager) {
-    return next(new ErrorResponse(`Manager not found with id of ${req.params.id}`, 404));
+    return next(new ErrorResponse(`Manager not found for user id ${req.user._id}`, 404));
   }
   // Only admin or the manager themself can access
   if (req.user.role !== 'admin') {
-    const selfManager = await Manager.findOne({ user: req.user._id });
-    if (!selfManager || String(selfManager._id) !== String(req.params.id)) {
+    if (String(manager.user) !== String(req.user._id)) {
       return next(new ErrorResponse('Not authorized to access this manager', 401));
     }
   }
@@ -219,4 +212,194 @@ exports.addClientsToManager = asyncHandler(async (req, res, next) => {
   manager.managedClients = Array.from(new Set([...(manager.managedClients || []), ...clients]));
   await manager.save();
   res.status(200).json({ success: true, data: manager });
+});
+
+// @desc    Get requests for the current manager user
+// @route   GET /api/v1/managers/me/requests
+// @access  Private/Manager
+exports.getMyRequests = asyncHandler(async (req, res, next) => {
+  // Only managers can access their requests
+  if (req.user.role !== 'manager') {
+    return next(new ErrorResponse('Only managers can access their requests', 403));
+  }
+
+  // Find the manager document for the current user
+  const manager = await Manager.findOne({ user: req.user.id })
+    .populate({
+      path: 'requests.Client',
+      populate: {
+        path: 'user',
+        select: 'name email'
+      }
+    });
+
+  if (!manager) {
+    return next(new ErrorResponse('Manager profile not found for this user', 404));
+  }
+
+  console.log('Manager found:', manager._id);
+  console.log('Number of requests:', manager.requests.length);
+  console.log('Requests data:', JSON.stringify(manager.requests, null, 2));
+
+  // Return the requests array
+  res.status(200).json({
+    success: true,
+    count: manager.requests.length,
+    data: manager.requests
+  });
+});
+
+// @desc    Accept client request and assign client to manager
+// @route   PUT /api/v1/managers/accept-request/:clientId
+// @access  Private/Manager
+exports.acceptClientRequest = asyncHandler(async (req, res, next) => {
+  // Only managers can accept client requests
+  if (req.user.role !== 'manager') {
+    return next(new ErrorResponse('Only managers can accept client requests', 403));
+  }
+
+  const clientId = req.params.clientId;
+
+  // Find the manager document for the current user
+  const manager = await Manager.findOne({ user: req.user.id }).populate('user', 'name email');
+  if (!manager) {
+    return next(new ErrorResponse('Manager profile not found for this user', 404));
+  }
+
+  // Find the client
+  const client = await Client.findById(clientId).populate('user', 'name email');
+  if (!client) {
+    return next(new ErrorResponse(`Client not found with id ${clientId}`, 404));
+  }
+
+  // Check if there's a pending request from this client
+  const requestIndex = manager.requests.findIndex(
+    req => req.Client.toString() === clientId && req.status === 'pending'
+  );
+  
+  if (requestIndex === -1) {
+    return next(new ErrorResponse('No pending request found from this client', 400));
+  }
+
+  try {
+    // Update the request status to approved
+    manager.requests[requestIndex].status = 'approved';
+    
+    // Add client to manager's managedClients if not already present
+    if (!manager.managedClients.includes(clientId)) {
+      manager.managedClients.push(clientId);
+    }
+    await manager.save();
+
+    // Set the manager field on the client
+    client.manager = manager._id;
+    await client.save();
+
+    // Create notification for the client
+    const Notification = require('../models/Notification');
+    try {
+      await Notification.create({
+        type: 'system',
+        title: 'Manager Request Accepted',
+        message: `${manager.user.name} has accepted your request and is now your assigned manager. You can now communicate and collaborate on your campaigns.`,
+        relatedEntity: {
+          entityType: 'Client',
+          entityId: clientId
+        },
+        user: client.user._id,
+        priority: 'high',
+        actionRequired: false
+      });
+
+      console.log('Notification created successfully for client user:', client.user._id);
+    } catch (notificationError) {
+      console.error('Error creating notification:', notificationError);
+      // Continue with response even if notification fails
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      message: `Successfully accepted request from ${client.user.name} and assigned as their manager`,
+      data: {
+        client: client,
+        manager: manager
+      }
+    });
+  } catch (err) {
+    console.error('Error accepting client request:', err);
+    return next(new ErrorResponse('Error accepting client request', 500));
+  }
+});
+
+// @desc    Decline client request
+// @route   PUT /api/v1/managers/decline-request/:clientId
+// @access  Private/Manager
+exports.declineClientRequest = asyncHandler(async (req, res, next) => {
+  // Only managers can decline client requests
+  if (req.user.role !== 'manager') {
+    return next(new ErrorResponse('Only managers can decline client requests', 403));
+  }
+
+  const clientId = req.params.clientId;
+
+  // Find the manager document for the current user
+  const manager = await Manager.findOne({ user: req.user.id }).populate('user', 'name email');
+  if (!manager) {
+    return next(new ErrorResponse('Manager profile not found for this user', 404));
+  }
+
+  // Find the client
+  const client = await Client.findById(clientId).populate('user', 'name email');
+  if (!client) {
+    return next(new ErrorResponse(`Client not found with id ${clientId}`, 404));
+  }
+
+  // Check if there's a pending request from this client
+  const requestIndex = manager.requests.findIndex(
+    req => req.Client.toString() === clientId && req.status === 'pending'
+  );
+  
+  if (requestIndex === -1) {
+    return next(new ErrorResponse('No pending request found from this client', 400));
+  }
+
+  try {
+    // Update the request status to rejected
+    manager.requests[requestIndex].status = 'rejected';
+    await manager.save();
+
+    // Create notification for the client
+    const Notification = require('../models/Notification');
+    try {
+      await Notification.create({
+        type: 'system',
+        title: 'Manager Request Declined',
+        message: `${manager.user.name} has declined your management request. You can send requests to other managers or try again later.`,
+        relatedEntity: {
+          entityType: 'Client',
+          entityId: clientId
+        },
+        user: client.user._id,
+        priority: 'medium',
+        actionRequired: false
+      });
+
+      console.log('Decline notification created successfully for client user:', client.user._id);
+    } catch (notificationError) {
+      console.error('Error creating decline notification:', notificationError);
+      // Continue with response even if notification fails
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      message: `Successfully declined request from ${client.user.name}`,
+      data: {
+        clientId: clientId,
+        status: 'rejected'
+      }
+    });
+  } catch (err) {
+    console.error('Error declining client request:', err);
+    return next(new ErrorResponse('Error declining client request', 500));
+  }
 });

@@ -2,6 +2,8 @@ const AdCampaign = require('../models/AdCampaign');
 const Manager = require('../models/Manager')
 const AdBudget= require('../models/AdBudget')
 const Invoice= require('../models/Invoice')
+const Notification = require('../models/Notification')
+const Client = require('../models/Client')
 
 // Utility to determine campaign status
 function computeCampaignStatus(startDate, endDate) {
@@ -89,6 +91,57 @@ exports.createAdCampaign = async (req, res) => {
     };
 
     const createdInvoice = await Invoice.create(invoiceData);
+
+    // Get the client to find the user ID for notifications
+    const client = await Client.findById(body.client).populate('user');
+    if (!client || !client.user) {
+      console.error('Client or client user not found for notifications');
+      return res.status(201).json({
+        success: true,
+        data: {
+          campaign: newCampaign,
+          budget: createdBudget,
+          invoice: createdInvoice,
+        },
+        message: "Campaign created but notifications could not be sent"
+      });
+    }
+
+    // Create notifications for the client user
+    try {
+      // Notification 1: Campaign Created
+      await Notification.create({
+        type: 'system',
+        title: 'New Campaign Created',
+        message: `A new campaign "${newCampaign.name}" has been created for you. The campaign will run from ${new Date(newCampaign.startDate).toLocaleDateString()} to ${new Date(newCampaign.endDate).toLocaleDateString()}.`,
+        relatedEntity: {
+          entityType: 'AdCampaign',
+          entityId: newCampaign._id
+        },
+        user: client.user._id,
+        priority: 'medium',
+        actionRequired: false
+      });
+
+      // Notification 2: Invoice Generated
+      await Notification.create({
+        type: 'budget',
+        title: 'Invoice Generated',
+        message: `An invoice for $${totalBudget.toLocaleString()} has been generated for your campaign "${newCampaign.name}". Please review and pay the invoice by ${new Date(createdInvoice.dueDate).toLocaleDateString()}.`,
+        relatedEntity: {
+          entityType: 'Invoice',
+          entityId: createdInvoice._id
+        },
+        user: client.user._id,
+        priority: 'high',
+        actionRequired: true
+      });
+
+      console.log('Notifications created successfully for client user:', client.user._id);
+    } catch (notificationError) {
+      console.error('Error creating notifications:', notificationError);
+      // Continue with response even if notifications fail
+    }
 
     res.status(201).json({
       success: true,

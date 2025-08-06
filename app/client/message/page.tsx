@@ -1,341 +1,571 @@
 "use client"
+import { useState, useMemo, useEffect } from "react"
+import { useSocket } from "@/app/hooks/useSocket"
+import styles from "@/styling/message.module.css"
+import API_ROUTES from "@/app/apiRoutes"
+import Image from "next/image"
+import { useRouter } from "next/navigation"
 
-import type React from "react"
-import { useState, useMemo } from "react"
-import type { Message } from "../../../components/messages"
-import styles from "@/styling/ClientMessage.module.css"
+interface Message {
+  _id: string
+  content: string
+  sender: {
+    _id: string
+    name: string
+    profilePhoto?: string
+  }
+  recipient: {
+    _id: string
+    name: string
+    profilePhoto?: string
+  }
+  conversationId: string
+  createdAt: string
+  read: boolean
+}
 
-const sampleConversations: {
-  id: string
-  name: string
-  role: string
-  avatar?: string
-  lastMessage: string
-  timestamp: string
-  isOnline: boolean
+interface Conversation {
+  _id: string // This is the conversationId
+  lastMessage: {
+    content: string
+    createdAt: string
+    sender: string
+    recipient: string
+  }
+  participants: Array<{
+    _id: string
+    name: string
+    profilePhoto?: string
+  }>
   unreadCount: number
-  messages: Message[]
-}[] = [
-  {
-    id: "1",
-    name: "Robert Johnson",
-    role: "Client",
-    lastMessage: "Thanks for the quick turnaround on the project!",
-    timestamp: "10:32 AM",
-    isOnline: true,
-    unreadCount: 0,
-    messages: [
-      {
-        id: "1",
-        text: "Hi there! How's the project coming along?",
-        timestamp: "10:15 AM",
-        isFromUser: false,
-      },
-      {
-        id: "2",
-        text: "Great! We're making excellent progress. Should have the first draft ready by tomorrow.",
-        timestamp: "10:18 AM",
-        isFromUser: true,
-      },
-      {
-        id: "3",
-        text: "That sounds perfect. Looking forward to seeing it!",
-        timestamp: "10:20 AM",
-        isFromUser: false,
-      },
-      {
-        id: "4",
-        text: "I'll send it over first thing in the morning. Thanks for your patience!",
-        timestamp: "10:25 AM",
-        isFromUser: true,
-      },
-      {
-        id: "5",
-        text: "Thanks for the quick turnaround on the project!",
-        timestamp: "10:32 AM",
-        isFromUser: false,
-      },
-    ],
-  },
-  {
-    id: "2",
-    name: "Sarah Williams",
-    role: "Manager",
-    lastMessage: "Can we schedule a meeting for tomorrow?",
-    timestamp: "9:45 AM",
-    isOnline: true,
-    unreadCount: 2,
-    messages: [
-      {
-        id: "1",
-        text: "Good morning! Hope you're having a great day.",
-        timestamp: "9:30 AM",
-        isFromUser: false,
-      },
-      {
-        id: "2",
-        text: "Morning Sarah! Yes, it's going well. How can I help you?",
-        timestamp: "9:32 AM",
-        isFromUser: true,
-      },
-      {
-        id: "3",
-        text: "Can we schedule a meeting for tomorrow?",
-        timestamp: "9:45 AM",
-        isFromUser: false,
-      },
-    ],
-  },
-  {
-    id: "3",
-    name: "Michael Chen",
-    role: "Client",
-    lastMessage: "The design looks amazing!",
-    timestamp: "Yesterday",
-    isOnline: false,
-    unreadCount: 0,
-    messages: [
-      {
-        id: "1",
-        text: "I've reviewed the latest designs you sent over.",
-        timestamp: "2:15 PM",
-        isFromUser: false,
-      },
-      {
-        id: "2",
-        text: "Great! What are your thoughts?",
-        timestamp: "2:18 PM",
-        isFromUser: true,
-      },
-      {
-        id: "3",
-        text: "The design looks amazing!",
-        timestamp: "2:25 PM",
-        isFromUser: false,
-      },
-    ],
-  },
-  {
-    id: "4",
-    name: "Emily Davis",
-    role: "Client",
-    lastMessage: "When can we start the next phase?",
-    timestamp: "Yesterday",
-    isOnline: false,
-    unreadCount: 1,
-    messages: [
-      {
-        id: "1",
-        text: "Hi! I wanted to follow up on our last conversation.",
-        timestamp: "4:30 PM",
-        isFromUser: false,
-      },
-      {
-        id: "2",
-        text: "Of course! What would you like to discuss?",
-        timestamp: "4:35 PM",
-        isFromUser: true,
-      },
-      {
-        id: "3",
-        text: "When can we start the next phase?",
-        timestamp: "4:40 PM",
-        isFromUser: false,
-      },
-    ],
-  },
-  {
-    id: "5",
-    name: "David Martinez",
-    role: "Manager",
-    lastMessage: "Team meeting at 3 PM today",
-    timestamp: "2 days ago",
-    isOnline: true,
-    unreadCount: 0,
-    messages: [
-      {
-        id: "1",
-        text: "Don't forget about the team meeting today.",
-        timestamp: "2:45 PM",
-        isFromUser: false,
-      },
-      {
-        id: "2",
-        text: "Thanks for the reminder! I'll be there.",
-        timestamp: "2:50 PM",
-        isFromUser: true,
-      },
-      {
-        id: "3",
-        text: "Team meeting at 3 PM today",
-        timestamp: "2:55 PM",
-        isFromUser: false,
-      },
-    ],
-  },
-]
+}
+
+interface User {
+  _id: string
+  name: string
+  profilePhoto?: string
+  email: string
+  type?: string
+  role?: string
+  status?: string
+}
+
+interface Manager {
+  _id: string
+  name: string
+  profilePhoto?: string
+  email: string
+}
 
 export default function MessagesPage() {
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [messages, setMessages] = useState<Message[]>([])
+  const [activeUserId, setActiveUserId] = useState<string>("") // userId of the other participant
+  const [activeConversationId, setActiveConversationId] = useState<string>("") // conversationId for messaging
   const [searchTerm, setSearchTerm] = useState("")
-  const [activeConversationId, setActiveConversationId] = useState("1")
   const [newMessage, setNewMessage] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [isTyping, setIsTyping] = useState(false)
+  const [manager, setManager] = useState<Manager | null>(null)
+  const [searchResults, setSearchResults] = useState<User[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [showUserSearch, setShowUserSearch] = useState(false)
+  const [userSearchTerm, setUserSearchTerm] = useState("")
+  const [sendingMessage, setSendingMessage] = useState(false)
+  const router = useRouter()
+
+  // Get the auth token from localStorage or your auth system
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+  const currentUserId = typeof window !== "undefined" ? localStorage.getItem("userId") : null
+
+  const { connected, sendMessage, onNewMessage, markAsRead, emitTyping, emitStopTyping, onTyping, onStopTyping } =
+    useSocket(token || "")
+
+  // Fetch manager
+  useEffect(() => {
+    const fetchManager = async () => {
+      try {
+        const res = await fetch(API_ROUTES.CLIENTS.ME_MANAGER, {
+          credentials: "include",
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setManager(data.data)
+        }
+      } catch (err) {
+        console.error("Failed to fetch manager:", err)
+      }
+    }
+    fetchManager()
+  }, [])
+
+  // Fetch conversations
+  useEffect(() => {
+    const fetchConversations = async () => {
+      try {
+        const res = await fetch(API_ROUTES.MESSAGES, {
+          credentials: "include",
+        })
+        if (!res.ok) throw new Error("Failed to fetch conversations")
+        const data = await res.json()
+        setConversations(data.data)
+        setLoading(false)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred")
+        setLoading(false)
+      }
+    }
+    fetchConversations()
+  }, [])
+
+  // Fetch messages for active user conversation
+  useEffect(() => {
+    if (!activeConversationId) return
+    const fetchMessages = async () => {
+      try {
+        const res = await fetch(API_ROUTES.GET_CONVERSATION(activeUserId), {
+          credentials: "include",
+        })
+        if (!res.ok) throw new Error("Failed to fetch messages")
+        const data = await res.json()
+        setMessages(data.data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred")
+      }
+    }
+    fetchMessages()
+  }, [activeConversationId])
+
+  // Fetch all users (clients and managers)
+  useEffect(() => {
+    const fetchAllUsers = async () => {
+      if (!showUserSearch) return
+
+      setIsSearching(true)
+      try {
+        const res = await fetch(API_ROUTES.AUTH.GET_ALL_USERS, {
+          credentials: "include",
+        })
+        if (res.ok) {
+          const data = await res.json()
+          // Combine clients and managers into a single array
+          const allUsers = [
+            ...data.clients.map((client) => ({
+              _id: client.id,
+              name: client.email.split("@")[0], // Use email prefix as name if no name field
+              email: client.email,
+              profilePhoto: client.profilePhoto,
+              type: client.type,
+              role: client.role,
+              status: client.status,
+            })),
+            ...data.managers.map((manager) => ({
+              _id: manager.id,
+              name: manager.email.split("@")[0], // Use email prefix as name if no name field
+              email: manager.email,
+              profilePhoto: manager.profilePhoto,
+              type: manager.type,
+              role: manager.role,
+              status: manager.status,
+            })),
+          ]
+          // Filter out current user
+          const filteredUsers = allUsers.filter((user) => user._id !== currentUserId)
+          setSearchResults(filteredUsers)
+        }
+      } catch (err) {
+        console.error("Failed to fetch users:", err)
+      } finally {
+        setIsSearching(false)
+      }
+    }
+
+    fetchAllUsers()
+  }, [showUserSearch, currentUserId])
+
+  // Filter search results based on search term
+  const filteredSearchResults = useMemo(() => {
+    if (!userSearchTerm.trim()) return searchResults
+
+    return searchResults.filter(
+      (user) =>
+        user.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(userSearchTerm.toLowerCase()),
+    )
+  }, [searchResults, userSearchTerm])
+
+  // Handle real-time events
+  useEffect(() => {
+    if (!connected) return
+
+    onNewMessage((message: Message) => {
+      // Add message to current conversation if it matches
+      if (message.sender._id === activeUserId || message.recipient._id === activeUserId) {
+        setMessages((prev) => [...prev, message])
+      }
+
+      // Refresh conversations to update last message
+      fetchConversationsRefresh()
+    })
+
+    onTyping((userId: string) => {
+      if (userId === activeUserId) {
+        setIsTyping(true)
+      }
+    })
+
+    onStopTyping((userId: string) => {
+      if (userId === activeUserId) {
+        setIsTyping(false)
+      }
+    })
+  }, [connected, onNewMessage, onTyping, onStopTyping, activeUserId])
+
+  const fetchConversationsRefresh = async () => {
+    try {
+      const res = await fetch(API_ROUTES.MESSAGES, {
+        credentials: "include",
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setConversations(data.data)
+      }
+    } catch (err) {
+      console.error("Failed to refresh conversations:", err)
+    }
+  }
 
   const filteredConversations = useMemo(() => {
-    if (!searchTerm) return sampleConversations
-    return sampleConversations.filter(
+    if (!searchTerm) return conversations
+    return conversations.filter(
       (conversation) =>
-        conversation.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        conversation.lastMessage.toLowerCase().includes(searchTerm.toLowerCase()),
+        conversation.participants.some((p) => p.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        conversation.lastMessage.content.toLowerCase().includes(searchTerm.toLowerCase()),
     )
-  }, [searchTerm])
+  }, [searchTerm, conversations])
 
-  const activeConversation = sampleConversations.find((conv) => conv.id === activeConversationId)
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !activeConversationId || sendingMessage) return
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-  }
+    setSendingMessage(true)
+    try {
+      const res = await fetch(API_ROUTES.MESSAGES, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          recipientId: activeUserId,
+          content: newMessage.trim(),
+        }),
+      })
 
-  const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      // In a real app, this would send the message to the backend
-      console.log("Sending message:", newMessage)
-      setNewMessage("")
+      if (res.ok) {
+        const data = await res.json()
+        setMessages((prev) => [...prev, data.data])
+        setNewMessage("")
+        fetchConversationsRefresh()
+      } else {
+        const errorText = await res.text()
+        console.error("Failed to send message:", errorText)
+        throw new Error("Failed to send message")
+      }
+    } catch (err) {
+      setError("Failed to send message")
+    } finally {
+      setSendingMessage(false)
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
-      handleSendMessage()
+  const handleTyping = () => {
+    if (activeUserId && connected) {
+      emitTyping(activeUserId)
     }
   }
+
+  const startConversationWithManager = async () => {
+    if (!manager) return
+
+    try {
+      const res = await fetch(API_ROUTES.START_CONVERSATION, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ recipientId: manager._id }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setActiveUserId(manager._id)
+        setActiveConversationId(data.data._id)
+        fetchConversationsRefresh()
+      }
+    } catch (err) {
+      setError("Failed to start conversation with manager")
+    }
+  }
+
+  const startConversationWithUser = async (userId: string) => {
+    try {
+      const res = await fetch(API_ROUTES.START_CONVERSATION, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ recipientId: userId }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setActiveUserId(userId)
+        setActiveConversationId(data.data._id)
+        setShowUserSearch(false)
+        setUserSearchTerm("")
+        setSearchResults([])
+        fetchConversationsRefresh()
+      }
+    } catch (err) {
+      setError("Failed to start conversation")
+    }
+  }
+
+  const getOtherParticipant = (conversation: Conversation) => {
+    return conversation.participants.find((p) => p._id !== currentUserId)
+  }
+
+  const handleConversationClick = (conversation: Conversation) => {
+    const otherParticipant = getOtherParticipant(conversation)
+    if (otherParticipant) {
+      setActiveUserId(otherParticipant._id)
+      setActiveConversationId(conversation._id)
+      if (conversation.unreadCount > 0) {
+        markConversationAsRead(conversation._id)
+      }
+    }
+  }
+
+  const markConversationAsRead = async (conversationId: string) => {
+    try {
+      await fetch(API_ROUTES.READ(conversationId), {
+        method: "PUT",
+        credentials: "include",
+      })
+      // Refresh conversations to update unread count
+      fetchConversationsRefresh()
+    } catch (err) {
+      console.error("Failed to mark as read:", err)
+    }
+  }
+
+  if (loading) return <div className={styles.loading}>Loading...</div>
+  if (error) return <div className={styles.error}>{error}</div>
 
   return (
     <div className={styles.layout}>
       <main className={styles.main}>
         <div className={styles.header}>
           <h1 className={styles.title}>Messages</h1>
+          <div className={styles.headerActions}>
+            {manager && (
+              <button className={styles.managerButton} onClick={startConversationWithManager}>
+                <span className={styles.managerIcon}>👨‍💼</span>
+                Chat with Manager
+              </button>
+            )}
+            <button className={styles.newChatButton} onClick={() => setShowUserSearch(!showUserSearch)}>
+              <span className={styles.plusIcon}>+</span>
+              New Chat
+            </button>
+          </div>
         </div>
 
         <div className={styles.messagesContainer}>
-          {/* Left Column - Messages List */}
+          {/* Left Column - Conversations List */}
           <div className={styles.messagesList}>
-  <div className={styles.messagesHeader}>
-    <div className={styles.searchContainer}>
-      <div className={styles.searchInputWrapper}>
-        <span className={styles.searchIcon}>🔍</span>
-        <input
-          type="text"
-          placeholder="Search conversations..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className={styles.searchInput}
-        />
-      </div>
-    </div>
-  </div>
-
-              <div className={styles.conversationsList}>
-    {filteredConversations.map((conversation) => (
-      <div
-        key={conversation.id}
-        className={`${styles.conversationItem} ${
-          activeConversationId === conversation.id ? styles.activeConversation : ""
-        }`}
-        onClick={() => setActiveConversationId(conversation.id)}
-      >
-        <div className={styles.conversationAvatar}>{getInitials(conversation.name)}</div>
-        <div className={styles.conversationContent}>
-          <div className={styles.conversationHeader}>
-            <div className={styles.conversationInfo}>
-              <div className={styles.conversationName}>{conversation.name}</div>
-              <div className={styles.conversationRole}>{conversation.role}</div>
+            <div className={styles.searchContainer}>
+              <input
+                type="text"
+                placeholder="Search conversations..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={styles.searchInput}
+              />
             </div>
-            <div className={styles.conversationMeta}>
-              <div className={styles.conversationTime}>{conversation.timestamp}</div>
-              {conversation.unreadCount > 0 && (
-                <div className={styles.unreadBadge}>{conversation.unreadCount}</div>
-              )}
-            </div>
-          </div>
-          <div className={styles.lastMessage}>{conversation.lastMessage}</div>
-        </div>
-      </div>
-    ))}
-  </div>
-           <div className={styles.newMessageSection}>
-    <button className={styles.newMessageButton}>
-      <span className={styles.plusIcon}>+</span>
-      New Message
-    </button>
-  </div>
-</div>
 
-          {/* Right Column - Chat View */}
-          <div className={styles.chatView}>
-            {activeConversation ? (
-              <>
-                <div className={styles.chatHeader}>
-                  <div className={styles.chatUserInfo}>
-                    <div className={styles.chatAvatar}>{getInitials(activeConversation.name)}</div>
-                    <div className={styles.chatUserDetails}>
-                      <div className={styles.chatUserName}>{activeConversation.name}</div>
-                      <div className={styles.chatUserStatus}>
-                        <span className={`${styles.statusDot} ${activeConversation.isOnline ? styles.online : ""}`} />
-                        {activeConversation.isOnline ? "Online" : "Offline"}
-                      </div>
-                    </div>
-                  </div>
-                  <div className={styles.chatActions}>
-                    <button className={styles.chatActionButton}>📞</button>
-                    <button className={styles.chatActionButton}>📹</button>
-                    <button className={styles.chatActionButton}>⋮</button>
-                  </div>
+            {showUserSearch && (
+              <div className={styles.userSearchContainer}>
+                <div className={styles.userSearchHeader}>
+                  <input
+                    type="text"
+                    placeholder="Search users..."
+                    value={userSearchTerm}
+                    onChange={(e) => setUserSearchTerm(e.target.value)}
+                    className={styles.userSearchInput}
+                  />
+                  <button
+                    className={styles.closeSearchButton}
+                    onClick={() => {
+                      setShowUserSearch(false)
+                      setUserSearchTerm("")
+                      setSearchResults([])
+                    }}
+                  >
+                    ×
+                  </button>
                 </div>
-
-                <div className={styles.chatMessages}>
-                  {activeConversation.messages.map((message) => (
+                <div className={styles.searchResults}>
+                  {isSearching && <div className={styles.searchingText}>Loading users...</div>}
+                  {!isSearching && filteredSearchResults.length === 0 && userSearchTerm && (
+                    <div className={styles.searchingText}>No users found</div>
+                  )}
+                  {filteredSearchResults.map((user) => (
                     <div
-                      key={message.id}
-                      className={`${styles.messageWrapper} ${
-                        message.isFromUser ? styles.sentMessage : styles.receivedMessage
-                      }`}
+                      key={user._id}
+                      className={styles.searchResultItem}
+                      onClick={() => startConversationWithUser(user._id)}
                     >
-                      <div className={styles.messageBubble}>
-                        <div className={styles.messageText}>{message.text}</div>
-                        <div className={styles.messageTime}>{message.timestamp}</div>
+                      <div className={styles.searchResultAvatar}>
+                        {user.profilePhoto ? (
+                          <Image
+                            src={user.profilePhoto || "/placeholder.svg"}
+                            alt={user.name}
+                            width={32}
+                            height={32}
+                            className={styles.avatar}
+                          />
+                        ) : (
+                          user.name.charAt(0).toUpperCase()
+                        )}
+                      </div>
+                      <div className={styles.searchResultInfo}>
+                        <div className={styles.searchResultName}>
+                          {user.name}
+                          <span className={styles.userTypeBadge}>{user.type === "manager" ? "Manager" : "Client"}</span>
+                        </div>
+                        <div className={styles.searchResultEmail}>{user.email}</div>
+                        {user.status && <div className={styles.searchResultStatus}>Status: {user.status}</div>}
                       </div>
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
 
-                <div className={styles.messageInput}>
-                  <div className={styles.inputWrapper}>
-                    <input
-                      type="text"
-                      placeholder="Type your message..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      className={styles.textInput}
-                    />
-                    <button className={styles.magicButton}>🪄</button>
-                    <button className={styles.sendButton} onClick={handleSendMessage}>
-                      ➤
-                    </button>
+            <div className={styles.conversationsList}>
+              {filteredConversations.map((conversation) => {
+                const otherParticipant = getOtherParticipant(conversation)
+                if (!otherParticipant) return null
+
+                return (
+                  <div
+                    key={conversation._id}
+                    className={`${styles.conversationItem} ${
+                      activeUserId === otherParticipant._id ? styles.active : ""
+                    }`}
+                    onClick={() => handleConversationClick(conversation)}
+                  >
+                    <div className={styles.conversationAvatar}>
+                      {otherParticipant.profilePhoto ? (
+                        <Image
+                          src={otherParticipant.profilePhoto || "/placeholder.svg"}
+                          alt={otherParticipant.name}
+                          width={40}
+                          height={40}
+                          className={styles.avatar}
+                        />
+                      ) : (
+                        otherParticipant.name.charAt(0)
+                      )}
+                    </div>
+                    <div className={styles.conversationInfo}>
+                      <div className={styles.conversationHeader}>
+                        <span className={styles.conversationName}>
+                          {otherParticipant.name}
+                          {manager && otherParticipant._id === manager._id && (
+                            <span className={styles.managerBadge}>Manager</span>
+                          )}
+                          {conversation.unreadCount > 0 && (
+                            <span className={styles.unreadBadge}>{conversation.unreadCount}</span>
+                          )}
+                        </span>
+                        <span className={styles.conversationTime}>
+                          {new Date(conversation.lastMessage.createdAt).toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <div className={styles.conversationPreview}>{conversation.lastMessage.content}</div>
+                    </div>
                   </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Right Column - Messages */}
+          <div className={styles.chatView}>
+            {activeConversationId ? (
+              <>
+                <div className={styles.messagesArea}>
+                  {messages.map((message) => (
+                    <div
+                      key={message._id}
+                      className={`${styles.message} ${
+                        message.sender._id === currentUserId ? styles.sent : styles.received
+                      }`}
+                    >
+                      <div className={styles.messageContent}>{message.content}</div>
+                      <div className={styles.messageTime}>{new Date(message.createdAt).toLocaleTimeString()}</div>
+                    </div>
+                  ))}
+                  {isTyping && (
+                    <div className={styles.typingIndicator}>
+                      <div className={styles.typingDots}>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                      <span className={styles.typingText}>Typing...</span>
+                    </div>
+                  )}
+                </div>
+                <div className={styles.messageInput}>
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault()
+                        handleSendMessage()
+                      }
+                    }}
+                    onKeyDown={handleTyping}
+                    placeholder="Type a message..."
+                    className={styles.input}
+                    disabled={sendingMessage}
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={!newMessage.trim() || sendingMessage}
+                    className={styles.sendButton}
+                  >
+                    {sendingMessage ? (
+                      <span className={styles.sendingIcon}>⏳</span>
+                    ) : (
+                      <span className={styles.sendIcon}>→</span>
+                    )}
+                  </button>
                 </div>
               </>
             ) : (
-              <div className={styles.noChatSelected}>
-                <div className={styles.noChatContent}>
-                  <h3>Select a conversation</h3>
-                  <p>Choose a conversation from the list to start messaging</p>
-                </div>
+              <div className={styles.noChat}>
+                <div className={styles.noChatIcon}>💬</div>
+                <h3>Select a conversation to start messaging</h3>
+                <p>Choose from your existing conversations or start a new one</p>
               </div>
             )}
           </div>

@@ -35,6 +35,7 @@ const oauthRoutes = require('./routes/oauthRoutes');
 const socialAccountRoutes = require('./routes/socialAccountRoutes');
 const campaignRoutes = require('./routes/campaignRoutes')
 const invoiceRoutes = require('./routes/invoiceRoutes')
+const messageRoutes = require('./routes/messageRoutes');
 
 const app = express();
 
@@ -70,6 +71,7 @@ app.use('/api/v1/oauth', oauthRoutes);
 app.use('/api/v1/social-accounts', socialAccountRoutes);
 app.use('/api/v1/ad-campaigns', campaignRoutes);
 app.use('/api/v1/invoices', invoiceRoutes);
+app.use('/api/v1/messages', messageRoutes);
 
 
 const PORT = process.env.PORT || 3000;

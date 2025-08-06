@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import styles from "../../../styling/ClientManager.module.css"
 import API_ROUTES from '../../apiRoutes'
+import ManagerProfilePage from "./managerProfile"
 
 // Mock data - replace with actual API calls
 type Manager = {
@@ -38,32 +39,53 @@ export default function ClientManagerPage() {
   const [managers, setManagers] = useState<Manager[]>([]);
   const [showManagerDetails, setShowManagerDetails] = useState(false)
   const [selectedManager, setSelectedManager] = useState<Manager | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Simulate checking if client has a manager
-   useEffect(() => {
-    const fetchManagers = async () => {
+  // Check if client already has a manager
+  useEffect(() => {
+    const fetchCurrentManager = async () => {
       try {
-        const res = await fetch(API_ROUTES.MANAGERS.GET_ALL, {
+        const res = await fetch(API_ROUTES.CLIENTS.ME_MANAGER, {
           credentials: 'include'
         });
 
         const data = await res.json();
 
-        if (res.ok && data.success) {
-          setManagers(data.data);
-        } else {
-          console.error("Failed to fetch managers:", data.message);
+        if (res.ok && data.success && data.data) {
+          setCurrentManager(data.data);
+          setIsLoading(false);
+          return; // If manager exists, don't fetch all managers
         }
       } catch (err) {
-        console.error("Error fetching managers:", err);
-      } finally {
-        setIsLoading(false);
+        console.error("Error fetching current manager:", err);
       }
+
+      // If no current manager, fetch all available managers
+      fetchManagers();
     };
 
-    fetchManagers();
+    fetchCurrentManager();
   }, []);
+
+  const fetchManagers = async () => {
+    try {
+      const res = await fetch(API_ROUTES.MANAGERS.GET_ALL, {
+        credentials: 'include'
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setManagers(data.data);
+      } else {
+        console.error("Failed to fetch managers:", data.message);
+      }
+    } catch (err) {
+      console.error("Error fetching managers:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSelectManager = (manager: Manager) => {
     setSelectedManager(manager)
@@ -72,23 +94,53 @@ export default function ClientManagerPage() {
 
   const handleAssignManager = async (managerId: string) => {
     setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      const manager = managers.find((m) => m._id === managerId)
-      if (manager) {
-        setCurrentManager(manager)
+    try {
+      const res = await fetch(API_ROUTES.CLIENTS.SEND_REQUEST_TO_MANAGER(managerId), {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        alert(`Request sent successfully to manager! They will be notified and can accept or decline your request.`);
+        setShowManagerDetails(false);
+        setSelectedManager(null);
+      } else {
+        console.error("Failed to send request to manager:", data.message);
+        alert(data.message || "Failed to send request to manager. Please try again.");
       }
-      setShowManagerDetails(false)
-      setSelectedManager(null)
-      setIsLoading(false)
-    }, 1500)
+    } catch (err) {
+      console.error("Error sending request to manager:", err);
+      alert("Error sending request to manager. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const handleChangeManager = () => {
     setCurrentManager(null)
     setShowManagerDetails(false)
+    // Fetch all managers when changing manager
+    fetchManagers()
   }
-  /*if (currentManager) {
+
+  // If loading, show loading state
+  if (isLoading) {
+    return (
+      <div className={styles.main}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>Loading...</h1>
+        </div>
+      </div>
+    )
+  }
+
+  // If client has a current manager, show manager profile
+  if (currentManager) {
     return (
       <div className={styles.main}>
         <div className={styles.header}>
@@ -101,92 +153,17 @@ export default function ClientManagerPage() {
           </div>
         </div>
 
-        <div className={styles.currentManagerCard}>
-          <div className={styles.managerHeader}>
-            { <div className={styles.managerAvatar}>
-              <Image
-                src={currentManager.avatar || "/placeholder.svg"}
-                alt={currentManager.name}
-                width={120}
-                height={120}
-                className={styles.avatarImage}
-              />
-            </div>
-            <div className={styles.managerInfo}>
-              <h2 className={styles.managerName}>{currentManager.name}</h2>
-              <p className={styles.specialization}>{currentManager.specialization}</p>
-              <div className={styles.managerStats}>
-                <div className={styles.stat}>
-                  <span className={styles.statValue}>{currentManager.rating}</span>
-                  <span className={styles.statLabel}>Rating</span>
-                </div>
-                <div className={styles.stat}>
-                  <span className={styles.statValue}>{currentManager.completedProjects}</span>
-                  <span className={styles.statLabel}>Projects</span>
-                </div>
-                <div className={styles.stat}>
-                  <span className={styles.statValue}>{currentManager.responseTime}</span>
-                  <span className={styles.statLabel}>Response</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.managerDetails}>
-            <div className={styles.detailSection}>
-              <h3>About</h3>
-              <p>{currentManager.bio}</p>
-            </div>
-
-            <div className={styles.detailSection}>
-              <h3>Contact Information</h3>
-              <div className={styles.contactInfo}>
-                <div className={styles.contactItem}>
-                  <span className={styles.contactLabel}>Email:</span>
-                  <span className={styles.contactValue}>{currentManager.email}</span>
-                </div>
-                <div className={styles.contactItem}>
-                  <span className={styles.contactLabel}>Phone:</span>
-                  <span className={styles.contactValue}>{currentManager.phone}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.detailSection}>
-              <h3>Expertise</h3>
-              <div className={styles.expertiseGrid}>
-                <div className={styles.expertiseItem}>
-                  <span className={styles.expertiseLabel}>Experience:</span>
-                  <span className={styles.expertiseValue}>{currentManager.experience}</span>
-                </div>
-                <div className={styles.expertiseItem}>
-                  <span className={styles.expertiseLabel}>Languages:</span>
-                  <span className={styles.expertiseValue}>{currentManager.languages.join(", ")}</span>
-                </div>
-              </div>
-              <div className={styles.certifications}>
-                <span className={styles.expertiseLabel}>Certifications:</span>
-                <div className={styles.certificationTags}>
-                  {currentManager.certifications.map((cert, index) => (
-                    <span key={index} className={styles.certificationTag}>
-                      {cert}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ManagerProfilePage id={currentManager._id} />
       </div>
     )
-  } */
+  }
 
   return (
     <div className={styles.main}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Select Your Manager</h1>
+        <h1 className={styles.title}>Request a Manager</h1>
         <div className={styles.headerContent}>
-          <p>Choose from our experienced team of account managers to guide your journey.</p>
+          <p>Send requests to our experienced team of account managers. They will review and respond to your request.</p>
         </div>
       </div>
 
@@ -260,7 +237,7 @@ export default function ClientManagerPage() {
                     onClick={() => handleAssignManager(manager._id)}
                     disabled={isLoading || manager.status === "inactive"}
                   >
-                    {isLoading ? "Assigning..." : "Select Manager"}
+                    {isLoading ? "Sending Request..." : "Send Request"}
                   </button>
                 </div>
               </div>
@@ -354,7 +331,7 @@ export default function ClientManagerPage() {
           onClick={() => handleAssignManager(selectedManager._id)}
           disabled={isLoading || selectedManager.status === "inactive"}
         >
-          {isLoading ? "Assigning..." : "Select This Manager"}
+          {isLoading ? "Sending Request..." : "Send Request to Manager"}
         </button>
       </div>
     </div>
