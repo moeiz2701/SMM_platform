@@ -15,6 +15,6 @@ router.post('/:platform', protect, addSocialAccount);
 // Delete a social account
 router.delete('/:platform', protect, deleteSocialAccount);
 
-router.get('/client/:clientId', protect, getSocialAccountsByClient);
+router.get('/client/:clientId', getSocialAccountsByClient);
 
 module.exports = router;
