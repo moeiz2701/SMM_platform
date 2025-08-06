@@ -361,6 +361,7 @@ function CreateContentModal({
       .toISOString()
       .slice(0, 16);
 
+      
     return (
       <div className={styles.stepContent}>
         <div className={styles.formGroup}>
