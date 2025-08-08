@@ -118,16 +118,24 @@ exports.deleteSocialAccount = asyncHandler(async (req, res, next) => {
 exports.getSocialAccounts = asyncHandler(async (req, res, next) => {
   // Allow client owner or manager to get social accounts
   let isManager = false;
+  let manager;
   if (req.user && req.user.id) {
-    const manager = await Manager.findById(req.user.id);
+    manager = await Manager.findById(req.user._id);
     if (manager) isManager = true;
   }
   let client;
   if (isManager) {
-    client = await Client.findOne({ manager: req.user.id });
+    client = await Client.findOne({ manager: req.user._id });
   } else {
-    client = await Client.findOne({ user: req.user.id });
+    client = await Client.findOne({ user: req.user._id });
   }
+  if (!client) {
+    client = await Client.findOne({ manager: req.user._id });
+  }
+
+  console.log('Client:', client);
+  console.log(req.user._id);
+
   if (!client) {
     return next(new ErrorResponse('Client not found for user or manager', 404));
   }
@@ -146,7 +154,7 @@ exports.getSocialAccountsByClient = async (req, res) => {
     const { clientId } = req.params;
 
     const accounts = await SocialAccount.find({ client: clientId }).select(
-      'platform accountName accountId profilePicture status followersCount postCount description createdAt'
+      'platform accountName accountId profilePicture status followersCount postCount description createdAt accessToken'
     );
 
     if (!accounts || accounts.length === 0) {

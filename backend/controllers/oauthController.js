@@ -11,6 +11,9 @@ exports.redirectToOAuth = (req, res) => {
     authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${process.env.LINKEDIN_CLIENT_ID}&redirect_uri=${redirectUri}&scope=openid%20profile%20email%20w_member_social`;
   } else if (platform === 'facebook') {
     authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${process.env.FACEBOOK_CLIENT_ID}&redirect_uri=${redirectUri}&scope=pages_manage_posts,pages_read_engagement,pages_show_list,pages_manage_engagement,email&&response_type=code`;
+  } else if (platform === 'instagram') {
+    // Instagram uses Facebook's OAuth with Instagram-specific scopes
+    authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${process.env.FACEBOOK_CLIENT_ID}&redirect_uri=${redirectUri}&scope=instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement&response_type=code`;
   }
   
   console.log(platform, 'OAuth redirect URL:', authUrl);
@@ -107,6 +110,8 @@ exports.handleOAuthCallback = async (req, res) => {
           code
         }
       });
+
+      console.log("Facebook OAuth working");
       
       const accessToken = tokenRes.data.access_token;
       const profileRes = await axios.get(`https://graph.facebook.com/me?access_token=${accessToken}`);
@@ -119,6 +124,74 @@ exports.handleOAuthCallback = async (req, res) => {
         user: userId,
         client: clientId
       });
+      
+      return res.redirect('http://localhost:3001/client/accounts');
+    }
+
+    if (platform === 'instagram') {
+      // Step 1: Exchange code for access token (same as Facebook)
+      const tokenRes = await axios.get('https://graph.facebook.com/v19.0/oauth/access_token', {
+        params: {
+          client_id: process.env.FACEBOOK_CLIENT_ID,
+          client_secret: process.env.FACEBOOK_CLIENT_SECRET,
+          redirect_uri: `http://localhost:3000/api/v1/oauth/instagram/callback`,
+          code
+        }
+      });
+
+      console.log("Instagram OAuth working");
+      
+      const accessToken = tokenRes.data.access_token;
+      console.log('Access Token:', accessToken);
+
+      // Step 2: Get Instagram business account from your specific page
+      const pageInstagramRes = await axios.get(
+        `https://graph.facebook.com/v19.0/${process.env.INSTAGRAM_PAGE_ID}?fields=instagram_business_account&access_token=${accessToken}`
+      );
+      
+      console.log('Page Instagram Response:', pageInstagramRes.data);
+      
+      // Step 3: Extract Instagram business account ID
+      if (!pageInstagramRes.data.instagram_business_account) {
+        console.log('No Instagram business account found for the specified page');
+        return res.redirect('http://localhost:3001/client/accounts?error=no_instagram_account');
+      }
+      
+      const instagramBusinessAccountId = pageInstagramRes.data.instagram_business_account.id;
+      console.log('Instagram Business Account ID:', instagramBusinessAccountId);
+      
+      // Step 4: Get Instagram account details
+      const instagramDetailsRes = await axios.get(
+        `https://graph.facebook.com/v19.0/${instagramBusinessAccountId}?fields=id,username,name,profile_picture_url,followers_count,follows_count,media_count&access_token=${accessToken}`
+      );
+      
+      console.log('Instagram Details Response:', instagramDetailsRes.data);
+      
+      const instagramData = instagramDetailsRes.data;
+      
+      // Step 5: Save Instagram account to database
+      await SocialAccount.create({
+        platform: 'instagram',
+        accountName: instagramData.name || instagramData.username,
+        accountId: instagramData.id,
+        username: instagramData.username,
+        accessToken: accessToken,
+        isBusinessAccount: true,
+        status: 'connected',
+        additionalData: {
+          profilePicture: instagramData.profile_picture_url,
+          followersCount: instagramData.followers_count,
+          followsCount: instagramData.follows_count,
+          mediaCount: instagramData.media_count,
+          pageId: process.env.INSTAGRAM_PAGE_ID
+        },
+        user: userId,
+        client: clientId,
+        scopes: [],
+        description: ''
+      });
+      
+      console.log('Instagram account connected:', instagramData.username);
       
       return res.redirect('http://localhost:3001/client/accounts');
     }

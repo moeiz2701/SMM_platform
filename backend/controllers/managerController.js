@@ -138,14 +138,18 @@ exports.deleteManager = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/managers/:id/clients
 // @access  Private/Admin/Manager
 exports.getClientsForManager = asyncHandler(async (req, res, next) => {
-  const manager = await Manager.findById(req.params.id);
+  let manager = await Manager.findById(req.params.id);
+  if (!manager) {
+     manager = await Manager.findOne({ user: req.params.id });
+  }
   if (!manager) {
     return next(new ErrorResponse(`Manager not found with id of ${req.params.id}`, 404));
   }
   // Only admin or the manager themself can access
   if (req.user.role !== 'admin') {
-    const selfManager = await Manager.findOne({ user: req.user._id });
-    if (!selfManager || String(selfManager._id) !== String(req.params.id)) {
+    const selfManager = await Manager.findOne({ user: req.params.id });
+    console.log(selfManager)
+    if (!selfManager || (String(selfManager.user) !== String(req.params.id))&&(String(selfManager._id) !== String(req.params.id))) {
       return next(new ErrorResponse('Not authorized to access this manager', 401));
     }
   }

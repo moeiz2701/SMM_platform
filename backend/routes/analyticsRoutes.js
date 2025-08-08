@@ -5,7 +5,8 @@ const {
   getReport,
   createReport,
   exportReport,
-  getClientSummary
+  getClientSummary,
+  getFacebookReport  // Add this new import
 } = require('../controllers/analyticsController');
 const { protect, authorize, checkOwnership } = require('../middleware/auth');
 const AnalyticsReport = require('../models/AnalyticsReport');
@@ -34,5 +35,10 @@ router
 router
   .route('/clients/:clientId/summary')
   .get(protect, getClientSummary);
+
+// Add the new Facebook analytics route
+router
+  .route('/facebook-report')
+  .post(protect, getFacebookReport);
 
 module.exports = router;

@@ -260,26 +260,6 @@ exports.postExistingToLinkedin = asyncHandler(async (req, res, next) => {
 
     let contentWithTags = post.content || '';
 
-    console.log(post.hashtags)
-    
-    if (post.hashtags && Array.isArray(post.hashtags) && post.hashtags.length > 0) {
-      const hashtags = post.hashtags
-        .filter(tag => tag && tag.trim()) // Filter out empty/null tags
-        .map(tag => {
-          // Remove existing # if present and add it back
-          const cleanTag = tag.replace(/^#/, '').trim();
-          return `#${cleanTag}`;
-        })
-        .join(' ');
-      
-      // Add hashtags to content (with spacing)
-      if (hashtags) {
-        contentWithTags = contentWithTags.trim() + (contentWithTags.trim() ? '\n\n' : '') + hashtags;
-      }
-    }
-
-    console.log('Content with tags:', contentWithTags);
-
     // Prepare post data
     const postData = {
       author: authorUrn,
@@ -577,11 +557,15 @@ exports.getUploadStatus = asyncHandler(async (req, res, next) => {
 // Updated OAuth URL with all required permissions
 // Fixed posting function
 exports.postExistingToFacebook = asyncHandler(async (req, res, next) => {
-  const { accountId, pageId } = req.body;
-  console.log('Request body:', req.body);
+  const { accountId, access_token } = req.body;
+  console.log('Received access token:', access_token);
   
   if (!accountId) {
     return next(new ErrorResponse('Facebook account ID is required', 400));
+  }
+
+  if (!access_token) {
+    return next(new ErrorResponse('Access token is required', 400));
   }
 
   // Get the post
@@ -596,8 +580,8 @@ exports.postExistingToFacebook = asyncHandler(async (req, res, next) => {
     platform: 'facebook'
   });
 
-  if (!socialAccount || !socialAccount.accessToken) {
-    return next(new ErrorResponse('Facebook account or access token not found', 400));
+  if (!socialAccount) {
+    return next(new ErrorResponse('Facebook account not found', 400));
   }
 
   let uploadLog;
@@ -610,122 +594,72 @@ exports.postExistingToFacebook = asyncHandler(async (req, res, next) => {
       status: 'pending'
     });
 
-    let targetId, accessToken;
+    // Step 1: Get page accounts and access token
+    console.log('Step 1: Fetching page accounts...');
+    const pagesResponse = await axios.get(`https://graph.facebook.com/v19.0/me/accounts`, {
+      params: { access_token: access_token }
+    });
 
-    if (pageId) {
-      // POSTING TO A PAGE - Use page access token
-      console.log('Posting to page:', pageId);
-      
-      try {
-        // Get page access token
-        const pagesResponse = await axios.get(`https://graph.facebook.com/me/accounts`, {
-          params: { access_token: socialAccount.accessToken }
-        });
-        
-        const page = pagesResponse.data.data?.find(p => p.id === pageId);
-        if (!page) {
-          throw new Error(`Page ${pageId} not found or you don't have access to it`);
-        }
-        
-        // Check if user has required permissions on this page
-        const pageData = await axios.get(`https://graph.facebook.com/${pageId}`, {
-          params: {
-            fields: 'id,name,tasks',
-            access_token: page.access_token
-          }
-        });
-        
-        console.log('Page data:', pageData.data);
-        
-        targetId = pageId;
-        accessToken = page.access_token; // Use PAGE access token, not user token
-        
-      } catch (pageError) {
-        console.error('Page access error:', pageError.response?.data || pageError.message);
-        throw new Error(`Cannot access page: ${pageError.response?.data?.error?.message || pageError.message}`);
-      }
-    } else {
-      // POSTING TO USER PROFILE - Use user access token
-      console.log('Posting to user profile');
-      targetId = 'me';
-      accessToken = socialAccount.accessToken;
+    console.log('Pages response:', pagesResponse.data);
+
+    // Step 2: Extract the page access token from the first page (or find specific page)
+    if (!pagesResponse.data.data || pagesResponse.data.data.length === 0) {
+      throw new Error('No pages found for this account');
     }
 
-    // Validate the target and permissions
-    try {
-      const testResponse = await axios.get(`https://graph.facebook.com/${targetId}`, {
-        params: {
-          fields: 'id,name',
-          access_token: accessToken
-        }
-      });
-      console.log('Target validation successful:', testResponse.data);
-    } catch (testError) {
-      console.error('Target validation failed:', testError.response?.data);
-      throw new Error(`Invalid target: ${testError.response?.data?.error?.message || testError.message}`);
+    // Get the page access token from the response
+    const pageAccessToken = pagesResponse.data.data[0].access_token;
+    console.log('Page access token retrieved');
+
+    // Step 3: Get Facebook test page ID from environment
+    const facebookTestPageId = process.env.FACEBOOK_TEST_PAGE_ID;
+    if (!facebookTestPageId) {
+      throw new Error('FACEBOOK_TEST_PAGE_ID environment variable not set');
     }
 
-    // Prepare content
+    console.log('Using Facebook test page ID:', facebookTestPageId);
+
+    // Step 4: Prepare content with hashtags
     let contentWithTags = post.content || '';
-    if (post.hashtags && Array.isArray(post.hashtags) && post.hashtags.length > 0) {
-      const hashtags = post.hashtags
-        .filter(tag => tag && tag.trim())
-        .map(tag => {
-          const cleanTag = tag.replace(/^#/, '').trim();
-          return `#${cleanTag}`;
-        })
-        .join(' ');
-      
-      if (hashtags) {
-        contentWithTags = contentWithTags.trim() + (contentWithTags.trim() ? '\n\n' : '') + hashtags;
-      }
-    }
 
+    // Step 5: Prepare the photo posting data
     const postData = {
-      message: contentWithTags,
-      access_token: accessToken // Use the correct access token
+      message: contentWithTags || "Check out this photo!",
+      access_token: pageAccessToken
     };
 
-    let response;
-    let endpoint;
-
-    // Handle media
+    // Step 6: Handle media - get image URL from post
     if (post.media && post.media.length > 0) {
       const imageMedia = post.media.filter(media => media.mediaType === 'image');
-      const videoMedia = post.media.filter(media => media.mediaType === 'video');
-
-      if (videoMedia.length > 0) {
-        // Video post
-        postData.source = videoMedia[0].url;
-        endpoint = `https://graph.facebook.com/${targetId}/videos`;
-      } else if (imageMedia.length === 1) {
-        // Single image
+      
+      if (imageMedia.length > 0) {
+        // Use the first image URL from the post
         postData.url = imageMedia[0].url;
-        endpoint = `https://graph.facebook.com/${targetId}/photos`;
-      } else if (imageMedia.length > 1) {
-        // Multiple images - create photo album or post links
-        const imageLinks = imageMedia.map((img, idx) => `Image ${idx + 1}: ${img.url}`).join('\n');
-        postData.message = contentWithTags + '\n\n' + imageLinks;
-        endpoint = `https://graph.facebook.com/${targetId}/feed`;
       } else {
-        // Text only
-        endpoint = `https://graph.facebook.com/${targetId}/feed`;
+        throw new Error('No image media found in the post');
       }
     } else {
-      // Text only
-      endpoint = `https://graph.facebook.com/${targetId}/feed`;
+      throw new Error('No media found in the post');
     }
 
-    console.log('Posting to endpoint:', endpoint);
-    console.log('Post data:', { ...postData, access_token: '[REDACTED]' });
+    // Step 7: Post to Facebook page photos endpoint
+    const endpoint = `https://graph.facebook.com/v23.0/${facebookTestPageId}/photos`;
+    
+    console.log('Step 7: Posting to Facebook...');
+    console.log('Endpoint:', endpoint);
+    console.log('Post data:', { 
+      message: postData.message,
+      url: postData.url,
+      access_token: '[REDACTED]'
+    });
 
-    response = await axios.post(endpoint, postData);
+    const response = await axios.post(endpoint, postData);
     console.log('Facebook API Response:', response.data);
 
-    // Update upload log with success
+    // Step 8: Update upload log with success
     await UploadLog.findByIdAndUpdate(uploadLog._id, {
       status: 'success',
-      message: 'Posted successfully to Facebook',
+      message: 'Posted successfully to Facebook page',
       platformPostId: response.data.id,
       platformResponse: response.data,
       postUrl: `https://www.facebook.com/${response.data.id}`,
@@ -733,13 +667,15 @@ exports.postExistingToFacebook = asyncHandler(async (req, res, next) => {
       updatedAt: new Date()
     });
 
+    // Step 9: Send success response
     res.status(200).json({
       success: true,
       data: {
         uploadLog: uploadLog._id,
         platformPostId: response.data.id,
         postUrl: `https://www.facebook.com/${response.data.id}`,
-        message: 'Posted successfully to Facebook'
+        message: 'Posted successfully to Facebook page',
+        pageId: facebookTestPageId
       }
     });
 
@@ -1079,6 +1015,302 @@ exports.getFacebookPages = asyncHandler(async (req, res, next) => {
     console.error('Facebook pages fetch error:', error.response?.data || error.message);
     return next(new ErrorResponse(
       `Failed to fetch Facebook pages: ${error.response?.data?.error?.message || error.message}`, 
+      500
+    ));
+  }
+});
+
+exports.postExistingToInstagram = asyncHandler(async (req, res, next) => {
+  const { accountId } = req.body;
+
+  console.log('Instagram accountId:', accountId);
+
+  if (!accountId) {
+    return next(new ErrorResponse('Instagram account ID is required', 400));
+  }
+
+  // Get the post
+  const post = await Post.findOne({
+    _id: req.params.postId,
+  });
+
+  console.log('Post:', post);
+
+  if (!post) {
+    return next(new ErrorResponse(`No post found with the id of ${req.params.postId}`, 404));
+  }
+
+  // Get the Instagram social account
+  const socialAccount = await SocialAccount.findOne({
+    _id: accountId,
+    platform: 'instagram'
+  });
+
+  console.log('Instagram Social Account:', socialAccount);
+
+  if (!socialAccount) {
+    return next(new ErrorResponse('Instagram account not found', 404));
+  }
+
+  if (!socialAccount.accessToken) {
+    return next(new ErrorResponse('Instagram access token not available', 400));
+  }
+
+  let uploadLog;
+  try {
+    // Create upload log
+    uploadLog = await UploadLog.create({
+      post: post._id,
+      platform: 'instagram',
+      account: socialAccount._id,
+      status: 'pending'
+    });
+
+    console.log('Upload Log Created:', uploadLog);
+
+    // Check if post has media
+    if (!post.media || post.media.length === 0) {
+      throw new Error('Instagram posts require at least one image');
+    }
+
+    // Filter for image media only
+    const imageMedia = post.media.filter(media => media.mediaType === 'image');
+    
+    if (imageMedia.length === 0) {
+      throw new Error('Instagram posts require at least one image');
+    }
+
+    console.log('Image media found:', imageMedia.length);
+
+    // Use the first image for Instagram post
+    const imageUrl = imageMedia[0].url;
+    
+    // Prepare caption with content
+    let caption = post.content || '';
+
+    console.log('Image URL:', imageUrl);
+    console.log('Caption:', caption);
+
+    // Step 1: Create media container
+    const mediaContainerUrl = `https://graph.facebook.com/v19.0/${socialAccount.accountId}/media`;
+    
+    const containerData = {
+      image_url: imageUrl,
+      caption: caption,
+      access_token: socialAccount.accessToken
+    };
+
+    console.log('Step 1: Creating media container...');
+    console.log('Container URL:', mediaContainerUrl);
+    console.log('Container data:', { ...containerData, access_token: '[REDACTED]' });
+
+    const containerResponse = await axios.post(mediaContainerUrl, containerData);
+    
+    console.log('Container Response:', containerResponse.data);
+
+    if (!containerResponse.data.id) {
+      throw new Error('Failed to create media container - no ID returned');
+    }
+
+    const containerId = containerResponse.data.id;
+    console.log('Container ID:', containerId);
+
+    // Step 2: Publish the media
+    const publishUrl = `https://graph.facebook.com/v19.0/${socialAccount.accountId}/media_publish`;
+    
+    const publishData = {
+      creation_id: containerId,
+      access_token: socialAccount.accessToken
+    };
+
+    console.log('Step 2: Publishing media...');
+    console.log('Publish URL:', publishUrl);
+    console.log('Publish data:', { ...publishData, access_token: '[REDACTED]' });
+
+    const publishResponse = await axios.post(publishUrl, publishData);
+    
+    console.log('Publish Response:', publishResponse.data);
+
+    if (!publishResponse.data.id) {
+      throw new Error('Failed to publish media - no ID returned');
+    }
+
+    const mediaId = publishResponse.data.id;
+    console.log('Published Media ID:', mediaId);
+
+    // Update upload log with success
+    await UploadLog.findByIdAndUpdate(uploadLog._id, {
+      status: 'success',
+      message: 'Posted successfully to Instagram',
+      platformPostId: mediaId,
+      platformResponse: publishResponse.data,
+      postUrl: `https://www.instagram.com/p/${mediaId}`, // Note: This might not be the exact URL format
+      publishedAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        uploadLog: uploadLog._id,
+        platformPostId: mediaId,
+        containerId: containerId,
+        postUrl: `https://www.instagram.com/p/${mediaId}`,
+        message: 'Posted successfully to Instagram'
+      }
+    });
+
+  } catch (error) {
+    console.error('Instagram posting error:', error.response?.data || error.message);
+    
+    // Update upload log with failure
+    if (uploadLog) {
+      await UploadLog.findByIdAndUpdate(uploadLog._id, {
+        status: 'failed',
+        message: error.response?.data?.error?.message || error.message,
+        error: {
+          code: error.response?.status,
+          message: error.response?.data?.error?.message || error.message,
+          details: error.response?.data
+        },
+        updatedAt: new Date()
+      });
+    }
+
+    return next(new ErrorResponse(
+      `Instagram posting failed: ${error.response?.data?.error?.message || error.message}`, 
+      500
+    ));
+  }
+});
+
+// @desc Test Instagram connection
+// @route GET /api/v1/upload/instagram/test/:accountId
+// @access Private
+exports.testInstagramConnection = asyncHandler(async (req, res, next) => {
+  const { accountId } = req.params;
+
+  // Get the Instagram social account
+  const socialAccount = await SocialAccount.findOne({
+    _id: accountId,
+    user: req.user.id,
+    platform: 'instagram'
+  });
+
+  if (!socialAccount) {
+    return next(new ErrorResponse('Instagram account not found', 404));
+  }
+
+  if (!socialAccount.accessToken) {
+    return next(new ErrorResponse('Instagram access token not available', 400));
+  }
+
+  try {
+    // Test the connection by getting Instagram account info
+    const accountInfoResponse = await axios.get(
+      `https://graph.facebook.com/v19.0/${socialAccount.accountId}?fields=id,username,name,profile_picture_url,followers_count,follows_count,media_count&access_token=${socialAccount.accessToken}`
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Instagram connection is working',
+      data: {
+        accountName: accountInfoResponse.data.name || accountInfoResponse.data.username,
+        username: accountInfoResponse.data.username,
+        accountId: accountInfoResponse.data.id,
+        connected: true,
+        tokenValid: true,
+        profile: accountInfoResponse.data
+      }
+    });
+
+  } catch (error) {
+    console.error('Instagram connection test error:', error.response?.data || error.message);
+    
+    // Check if it's an authentication error
+    const isAuthError = error.response?.status === 401 || 
+                       error.response?.data?.error?.code === 190;
+    
+    res.status(200).json({
+      success: false,
+      message: isAuthError ? 'Instagram access token expired or invalid' : 'Instagram connection failed',
+      data: {
+        connected: false,
+        tokenValid: !isAuthError,
+        error: error.response?.data?.error?.message || error.message
+      }
+    });
+  }
+});
+
+// @desc Post directly to Instagram
+// @route POST /api/v1/upload/instagram
+// @access Private
+exports.postToInstagram = asyncHandler(async (req, res, next) => {
+  const { content, accountId, mediaUrls } = req.body;
+
+  if (!mediaUrls || mediaUrls.length === 0) {
+    return next(new ErrorResponse('Instagram posts require at least one image', 400));
+  }
+
+  if (!accountId) {
+    return next(new ErrorResponse('Instagram account ID is required', 400));
+  }
+
+  // Get the Instagram social account
+  const socialAccount = await SocialAccount.findOne({
+    _id: accountId,
+    user: req.user.id,
+    platform: 'instagram'
+  });
+
+  if (!socialAccount) {
+    return next(new ErrorResponse('Instagram account not found', 404));
+  }
+
+  if (!socialAccount.accessToken) {
+    return next(new ErrorResponse('Instagram access token not available', 400));
+  }
+
+  try {
+    // Use the first image URL
+    const imageUrl = mediaUrls[0];
+    const caption = content || '';
+
+    // Step 1: Create media container
+    const containerResponse = await axios.post(
+      `https://graph.facebook.com/v19.0/${socialAccount.accountId}/media`,
+      {
+        image_url: imageUrl,
+        caption: caption,
+        access_token: socialAccount.accessToken
+      }
+    );
+
+    const containerId = containerResponse.data.id;
+
+    // Step 2: Publish the media
+    const publishResponse = await axios.post(
+      `https://graph.facebook.com/v19.0/${socialAccount.accountId}/media_publish`,
+      {
+        creation_id: containerId,
+        access_token: socialAccount.accessToken
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        platformPostId: publishResponse.data.id,
+        containerId: containerId,
+        message: 'Posted successfully to Instagram'
+      }
+    });
+
+  } catch (error) {
+    console.error('Instagram posting error:', error.response?.data || error.message);
+    return next(new ErrorResponse(
+      `Instagram posting failed: ${error.response?.data?.error?.message || error.message}`, 
       500
     ));
   }

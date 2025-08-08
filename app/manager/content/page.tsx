@@ -513,6 +513,9 @@ export default function ContentPage() {
   const statusOptions = ["Draft", "Scheduled", "Published", "Failed"]
 
   const handleUploadPost = async (postId: string) => {
+
+      const token = localStorage.getItem('token')
+      console.log(token)
     setUploadingPosts(prev => new Set([...prev, postId]))
     
     try {
@@ -580,7 +583,8 @@ export default function ContentPage() {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              accountId: matchingAccount._id
+              accountId: matchingAccount._id,
+              access_token: matchingAccount.accessToken,
             })
           })
 

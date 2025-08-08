@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type {
   MetricCard,
   PlatformData,
@@ -13,6 +13,43 @@ import type {
 } from "../../../components/analytics"
 import styles from "@/styling/reports.module.css"
 import ReusableTable, { type TableColumn, type TableAction } from "../../../components/table"
+
+// Facebook API Response Types
+interface FacebookPageInfo {
+  id: string
+  name: string
+  category: string
+  current_fans: number
+  followers_count: number
+}
+
+interface FacebookInsights {
+  page_views: number
+  page_impressions_unique: number
+  page_reach: number
+  page_engaged_users: number
+  page_engaged_users: number
+  page_fans_total: number
+}
+
+interface FacebookContentMetrics {
+  total_posts: number
+  total_likes: number
+  total_comments: number
+  total_shares: number
+  total_engagement: number
+  average_engagement_per_post: number
+  engagement_rate: number
+}
+
+interface FacebookReportData {
+  success: boolean
+  page_info: FacebookPageInfo
+  insights: FacebookInsights
+  content_metrics: FacebookContentMetrics
+  report_generated_at: string
+  data_source: string
+}
 
 const metricCards: MetricCard[] = [
   {
@@ -210,12 +247,12 @@ const audienceData: AudienceData = {
   ],
 }
 
-const reportTabs: ReportTab[] = ["Performance", "Content Performance", "Audience", "Financial"]
+const reportTabs: ReportTab[] = ["LinkedIn", "Facebook", "Instagram"]
 const trendTypes: TrendType[] = ["Reach", "Engagement", "Clicks", "Conversions"]
 const dateRanges: DateRange[] = ["Last 7 Days", "Last 30 Days", "Last 90 Days", "Last Year"]
 
 export default function ReportsPage() {
-  const [activeTab, setActiveTab] = useState<ReportTab>("Performance")
+  const [activeTab, setActiveTab] = useState<ReportTab>("Facebook")
   const [activeTrend, setActiveTrend] = useState<TrendType>("Engagement")
   const [selectedDateRange, setSelectedDateRange] = useState<DateRange>("Last 30 Days")
   const [showFilters, setShowFilters] = useState(false)
@@ -224,6 +261,207 @@ export default function ReportsPage() {
     startDate: "",
     endDate: "",
   })
+  const [facebookData, setFacebookData] = useState<FacebookReportData | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch Facebook data when Facebook tab is active
+  useEffect(() => {
+    if (activeTab === "Facebook") {
+      fetchFacebookData()
+    }
+  }, [activeTab])
+
+  const fetchFacebookData = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      // Step 1: Get current user information
+      const userResponse = await fetch("http://localhost:3000/api/v1/auth/me", {
+        method: 'GET',
+        credentials: 'include',
+      })
+
+      if (!userResponse.ok) {
+        throw new Error("Failed to fetch user information")
+      }
+
+      const userData = await userResponse.json()
+      const userId = userData.data._id || userData.client
+
+      // Step 2: Get manager information and their managed clients
+      const managedClientsResponse = await fetch(`http://localhost:3000/api/v1/managers/${userId}/clients`, {
+        method: 'GET',
+        credentials: 'include',
+      })
+
+      if (!managedClientsResponse.ok) {
+        throw new Error("Failed to fetch managed clients")
+      }
+
+      const managedClientsData = await managedClientsResponse.json()
+      const managedClients = managedClientsData.data || []
+
+      if (managedClients.length === 0) {
+        throw new Error("No clients found for this manager")
+      }
+
+      // Extract client IDs for filtering
+      const managedClientIds = managedClients.map(client => client._id)
+
+      // Step 3: Get all social accounts
+      const socialAccountsResponse = await fetch("http://localhost:3000/api/v1/social-accounts", {
+        method: 'GET',
+        credentials: 'include',
+      })
+
+      if (!socialAccountsResponse.ok) {
+        throw new Error("Failed to fetch social accounts")
+      }
+
+      const socialAccountsData = await socialAccountsResponse.json()
+      // Extract the actual array from the response
+      const allSocialAccounts = socialAccountsData.data || socialAccountsData
+
+      // Step 4: Filter accounts by managed client IDs and find Facebook accounts
+      const managerFacebookAccounts = allSocialAccounts.filter((account) => {
+        // Check if the account belongs to one of the managed clients
+        const accountClientId = account.client || account.user
+        const isClientManaged = managedClientIds.some(clientId => 
+          clientId === accountClientId || clientId.toString() === accountClientId?.toString()
+        )
+        const isFacebook = account.platform.toLowerCase() === 'facebook'
+        return isClientManaged && isFacebook
+      })
+
+      if (managerFacebookAccounts.length === 0) {
+        throw new Error("No Facebook accounts found for this manager's clients")
+      }
+
+      // Step 5: Extract access tokens and fetch data from each Facebook account
+      const facebookReports = []
+      console.log("hello")
+      console.log(managerFacebookAccounts)
+
+      for (const facebookAccount of managerFacebookAccounts) {
+        if (!facebookAccount.accessToken) {
+          console.warn(`Facebook account ${facebookAccount.id} has no access token, skipping...`)
+          continue
+        }
+
+        try {
+          const facebookReportResponse = await fetch("http://localhost:3000/api/v1/analytics/facebook-report", {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              access_token: facebookAccount.accessToken
+            })
+          })
+
+          if (facebookReportResponse.ok) {
+            const reportData = await facebookReportResponse.json()
+            facebookReports.push({
+              ...reportData,
+              account_info: {
+                id: facebookAccount.id,
+                client_id: facebookAccount.client || facebookAccount.user,
+                platform: facebookAccount.platform
+              }
+            })
+          } else {
+            console.warn(`Failed to fetch data for Facebook account ${facebookAccount.id}`)
+          }
+        } catch (accountError) {
+          console.warn(`Error fetching data for Facebook account ${facebookAccount.id}:`, accountError)
+        }
+      }
+
+      if (facebookReports.length === 0) {
+        throw new Error("No Facebook data could be retrieved from any connected accounts")
+      }
+
+      console.log(facebookReports)
+
+      // Step 6: Aggregate all Facebook data into combined statistics
+      const aggregatedData = {
+        success: true,
+        page_info: {
+          category: "",
+          current_fans: 0,
+          followers_count: 0
+        },
+        insights: {
+          page_views: 0,
+          page_impressions_unique: 0,
+          page_reach: 0,
+          page_engaged_users: 0,
+          page_fans_total: 0
+        },
+        content_metrics: {
+          total_posts: 0,
+          total_likes: 0,
+          total_comments: 0,
+          total_shares: 0,
+          total_engagement: 0,
+          average_engagement_per_post: 0,
+          engagement_rate: 0
+        },
+        report_generated_at: new Date().toISOString(),
+        data_source: "Facebook Graph API (Multiple Manager Clients)",
+        account_count: facebookReports.length,
+        client_count: managedClients.length,
+        managed_clients: managedClients.map(client => ({
+          id: client._id,
+          name: client.name || client.email || 'Unknown Client'
+        }))
+      }
+
+      // Aggregate the data from all Facebook accounts
+      facebookReports.forEach(report => {
+        if (report.page_info) {
+          aggregatedData.page_info.current_fans += report.page_info.current_fans || 0
+          aggregatedData.page_info.followers_count += report.page_info.followers_count || 0
+        }
+
+        if (report.insights) {
+          aggregatedData.insights.page_views += report.insights.page_views || 0
+          aggregatedData.insights.page_impressions_unique += report.insights.page_impressions_unique || 0
+          aggregatedData.insights.page_reach += report.insights.page_reach || 0
+          aggregatedData.insights.page_engaged_users += report.insights.page_engaged_users || 0
+          aggregatedData.insights.page_fans_total += report.insights.page_fans_total || 0
+        }
+
+        if (report.content_metrics) {
+          aggregatedData.content_metrics.total_posts += report.content_metrics.total_posts || 0
+          aggregatedData.content_metrics.total_likes += report.content_metrics.total_likes || 0
+          aggregatedData.content_metrics.total_comments += report.content_metrics.total_comments || 0
+          aggregatedData.content_metrics.total_shares += report.content_metrics.total_shares || 0
+          aggregatedData.content_metrics.total_engagement += report.content_metrics.total_engagement || 0
+        }
+      })
+
+      // Calculate average engagement per post and engagement rate
+      if (aggregatedData.content_metrics.total_posts > 0) {
+        aggregatedData.content_metrics.average_engagement_per_post = 
+          aggregatedData.content_metrics.total_engagement / aggregatedData.content_metrics.total_posts
+
+        // Calculate engagement rate as (total_engagement / total_fans) * 100
+        if (aggregatedData.insights.page_fans_total > 0) {
+          aggregatedData.content_metrics.engagement_rate = 
+            (aggregatedData.content_metrics.total_engagement / aggregatedData.insights.page_fans_total) * 100
+        }
+      }
+
+      setFacebookData(aggregatedData)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred while fetching Facebook data")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const formatChange = (change: number, changeType: "increase" | "decrease") => {
     const sign = changeType === "increase" ? "+" : "-"
@@ -272,7 +510,222 @@ export default function ReportsPage() {
 
   const chartData = generateChartData()
 
-  const renderPerformanceTab = () => (
+  const renderFacebookTab = () => {
+    if (loading) {
+      return (
+        <div className={styles.loadingContainer}>
+          <div className={styles.loadingSpinner}>Loading Facebook data...</div>
+        </div>
+      )
+    }
+
+    if (error) {
+      return (
+        <div className={styles.errorContainer}>
+          <div className={styles.errorMessage}>Error: {error}</div>
+          <button onClick={fetchFacebookData} className={styles.retryButton}>
+            Retry
+          </button>
+        </div>
+      )
+    }
+
+    if (!facebookData) {
+      return (
+        <div className={styles.noDataContainer}>
+          <div className={styles.noDataMessage}>No Facebook data available</div>
+        </div>
+      )
+    }
+
+    const { page_info, insights, content_metrics } = facebookData
+
+    return (
+      <>
+        {/* Page Overview Section */}
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>Page Overview</h2>
+        </div>
+        <div className={styles.summaryCards}>
+          <div className={styles.metricCard}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>Current Fans</h3>
+            </div>
+            <div className={styles.cardValue}>{formatNumber(page_info.current_fans)}</div>
+            <div className={styles.cardSubtitle}>Total page fans</div>
+          </div>
+          
+          <div className={styles.metricCard}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>Followers</h3>
+            </div>
+            <div className={styles.cardValue}>{formatNumber(page_info.followers_count)}</div>
+            <div className={styles.cardSubtitle}>Page followers</div>
+          </div>
+        </div>
+
+        {/* Page Insights Section */}
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>Page Insights</h2>
+        </div>
+        <div className={styles.summaryCards}>
+          <div className={styles.metricCard}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>Page Views</h3>
+            </div>
+            <div className={styles.cardValue}>{formatNumber(insights.page_views)}</div>
+            <div className={styles.cardSubtitle}>Total page views</div>
+          </div>
+
+          <div className={styles.metricCard}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>Unique Impressions</h3>
+            </div>
+            <div className={styles.cardValue}>{formatNumber(insights.page_impressions_unique)}</div>
+            <div className={styles.cardSubtitle}>Unique page impressions</div>
+          </div>
+
+          <div className={styles.metricCard}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>Page Reach</h3>
+            </div>
+            <div className={styles.cardValue}>{formatNumber(insights.page_reach)}</div>
+            <div className={styles.cardSubtitle}>Total reach</div>
+          </div>
+
+          <div className={styles.metricCard}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>Engaged Users</h3>
+            </div>
+            <div className={styles.cardValue}>{formatNumber(insights.page_engaged_users)}</div>
+            <div className={styles.cardSubtitle}>Users who engaged</div>
+          </div>
+        </div>
+
+        {/* Content Performance Section */}
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>Content Performance</h2>
+        </div>
+        <div className={styles.summaryCards}>
+          <div className={styles.metricCard}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>Total Posts</h3>
+            </div>
+            <div className={styles.cardValue}>{formatNumber(content_metrics.total_posts)}</div>
+            <div className={styles.cardSubtitle}>Published posts</div>
+          </div>
+
+          <div className={styles.metricCard}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>Total Likes</h3>
+            </div>
+            <div className={styles.cardValue}>{formatNumber(content_metrics.total_likes)}</div>
+            <div className={styles.cardSubtitle}>Post likes</div>
+          </div>
+
+          <div className={styles.metricCard}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>Total Comments</h3>
+            </div>
+            <div className={styles.cardValue}>{formatNumber(content_metrics.total_comments)}</div>
+            <div className={styles.cardSubtitle}>Post comments</div>
+          </div>
+
+          <div className={styles.metricCard}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>Total Shares</h3>
+            </div>
+            <div className={styles.cardValue}>{formatNumber(content_metrics.total_shares)}</div>
+            <div className={styles.cardSubtitle}>Post shares</div>
+          </div>
+
+          <div className={styles.metricCard}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>Total Engagement</h3>
+            </div>
+            <div className={styles.cardValue}>{formatNumber(content_metrics.total_engagement)}</div>
+            <div className={styles.cardSubtitle}>All interactions</div>
+          </div>
+
+          <div className={styles.metricCard}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>Avg Engagement</h3>
+            </div>
+            <div className={styles.cardValue}>{content_metrics.average_engagement_per_post.toFixed(1)}</div>
+            <div className={styles.cardSubtitle}>Per post</div>
+          </div>
+
+          <div className={styles.metricCard}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>Engagement Rate</h3>
+            </div>
+            <div className={styles.cardValue}>{content_metrics.engagement_rate.toFixed(2)}%</div>
+            <div className={styles.cardSubtitle}>Overall rate</div>
+          </div>
+        </div>
+
+        {/* Performance Trends Section */}
+        <div className={styles.performanceSection}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Facebook Performance Trends</h2>
+            <div className={styles.trendButtons}>
+              {trendTypes.map((trend) => (
+                <button
+                  key={trend}
+                  onClick={() => setActiveTrend(trend)}
+                  className={`${styles.trendButton} ${
+                    activeTrend === trend ? styles.trendButtonActive : ""
+                  }`}
+                >
+                  {trend}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className={styles.chartContainer}>
+            <div className={styles.chartPlaceholder}>
+              <div className={styles.chartArea}>
+                <div className={styles.chartTitle}>
+                  Facebook {activeTrend} Over Time ({selectedDateRange})
+                </div>
+                <div className={styles.chartContent}>
+                  <div className={styles.chartLines}>
+                    {chartData.map((value, index) => (
+                      <div
+                        key={index}
+                        className={styles.chartLine}
+                        style={{ height: `${value}%` }}
+                        title={`Day ${index + 1}: ${value}%`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className={styles.chartAxis}>
+                  <span>1</span>
+                  <span>6</span>
+                  <span>11</span>
+                  <span>16</span>
+                  <span>21</span>
+                  <span>26</span>
+                  <span>30</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Data Source Info */}
+        <div className={styles.dataSourceSection}>
+          <div className={styles.dataSourceInfo}>
+            <p><strong>Data Source:</strong> {facebookData.data_source}</p>
+            <p><strong>Report Generated:</strong> {new Date(facebookData.report_generated_at).toLocaleString()}</p>
+          </div>
+        </div>
+      </>
+    )
+  }
+
+  const renderLinkedInTab = () => (
     <>
       <div className={styles.summaryCards}>
         {metricCards.map((card) => (
@@ -293,13 +746,15 @@ export default function ReportsPage() {
 
       <div className={styles.performanceSection}>
         <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>Performance Trends</h2>
+          <h2 className={styles.sectionTitle}>LinkedIn Performance Trends</h2>
           <div className={styles.trendButtons}>
             {trendTypes.map((trend) => (
               <button
                 key={trend}
                 onClick={() => setActiveTrend(trend)}
-                className={`${styles.trendButton} ${activeTrend === trend ? styles.trendButtonActive : ""}`}
+                className={`${styles.trendButton} ${
+                  activeTrend === trend ? styles.trendButtonActive : ""
+                }`}
               >
                 {trend}
               </button>
@@ -310,7 +765,7 @@ export default function ReportsPage() {
           <div className={styles.chartPlaceholder}>
             <div className={styles.chartArea}>
               <div className={styles.chartTitle}>
-                {activeTrend} Over Time ({selectedDateRange})
+                LinkedIn {activeTrend} Over Time ({selectedDateRange})
               </div>
               <div className={styles.chartContent}>
                 <div className={styles.chartLines}>
@@ -337,470 +792,211 @@ export default function ReportsPage() {
           </div>
         </div>
       </div>
+    </>
+  )
 
-      <div className={styles.platformSection}>
-        <h2 className={styles.sectionTitle}>Platform Breakdown</h2>
-        <div className={styles.platformContent}>
-          <div className={styles.donutChartContainer}>
-            <div className={styles.donutChart}>
-              <svg viewBox="0 0 200 200" className={styles.donutSvg}>
-                {platformData.map((platform, index) => {
-                  const previousPercentages = platformData.slice(0, index).reduce((sum, p) => sum + p.percentage, 0)
-                  const strokeDasharray = `${platform.percentage * 5.03} 502.4`
-                  const strokeDashoffset = `-${previousPercentages * 5.03}`
-
-                  return (
-                    <circle
-                      key={platform.name}
-                      cx="100"
-                      cy="100"
-                      r="80"
-                      fill="none"
-                      stroke={platform.color}
-                      strokeWidth="30"
-                      strokeDasharray={strokeDasharray}
-                      strokeDashoffset={strokeDashoffset}
-                      transform="rotate(-90 100 100)"
-                      style={{ transition: "all 0.3s ease" }}
-                    />
-                  )
-                })}
-              </svg>
-              <div className={styles.donutCenter}>
-                <div className={styles.donutTitle}>Platform</div>
-                <div className={styles.donutSubtitle}>Distribution</div>
-              </div>
+  const renderInstagramTab = () => (
+    <>
+      <div className={styles.summaryCards}>
+        {metricCards.map((card) => (
+          <div key={card.id} className={styles.metricCard}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>{card.title}</h3>
             </div>
+            <div className={styles.cardValue}>{card.value}</div>
+            <div className={styles.cardChange}>
+              <span className={`${styles.changeText} ${styles[card.changeType]}`}>
+                {formatChange(card.change, card.changeType)}
+              </span>
+            </div>
+            <div className={styles.cardSubtitle}>{card.subtitle}</div>
           </div>
-          <div className={styles.platformLegend}>
-            {platformData.map((platform) => (
-              <div key={platform.name} className={styles.platformItem}>
-                <div className={styles.platformInfo}>
-                  <div className={styles.platformIndicator} style={{ backgroundColor: platform.color }}></div>
-                  <span className={styles.platformName}>{platform.name}</span>
-                </div>
-                <div className={styles.platformStats}>
-                  <div className={styles.progressBarContainer}>
-                    <div
-                      className={styles.progressBar}
-                      style={{
-                        width: `${platform.percentage}%`,
-                        backgroundColor: platform.color,
-                      }}
-                    />
-                  </div>
-                  <div className={styles.platformPercentage}>{platform.percentage}%</div>
-                  <div className={`${styles.platformChange} ${styles[platform.changeType]}`}>
-                    {formatChange(platform.change, platform.changeType)}
-                  </div>
-                </div>
-              </div>
+        ))}
+      </div>
+
+      <div className={styles.performanceSection}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>Instagram Performance Trends</h2>
+          <div className={styles.trendButtons}>
+            {trendTypes.map((trend) => (
+              <button
+                key={trend}
+                onClick={() => setActiveTrend(trend)}
+                className={`${styles.trendButton} ${
+                  activeTrend === trend ? styles.trendButtonActive : ""
+                }`}
+              >
+                {trend}
+              </button>
             ))}
           </div>
         </div>
-      </div>
-    </>
-  )
-
-  const renderContentPerformanceTab = () => {
-  // Define columns for content performance table
-  const contentPerformanceColumns: TableColumn[] = [
-  {
-    key: "content",
-    label: "CONTENT",
-    type: "string",
-    sortable: true,
-    render: (value) => <span className={styles.contentTitle} style={{ color: 'white' }}>{value}</span>,
-  },
-  {
-    key: "type",
-    label: "TYPE",
-    type: "string",
-    sortable: true,
-    render: (value) => <span className={styles.contentType} style={{ color: 'white' }}>{value}</span>,
-  },
-  { 
-    key: "date", 
-    label: "DATE", 
-    type: "date", 
-    sortable: true,
-    render: (value) => <span style={{ color: 'white' }}>{value}</span>
-  },
-  {
-    key: "reach",
-    label: "REACH",
-    type: "number",
-    sortable: true,
-    render: (value) => <span className={styles.metricValue} style={{ color: 'white' }}>{formatNumber(value)}</span>,
-  },
-  {
-    key: "engagement",
-    label: "ENGAGEMENT",
-    type: "number",
-    sortable: true,
-    render: (value) => <span className={styles.metricValue} style={{ color: 'white' }}>{formatNumber(value)}</span>,
-  },
-  {
-    key: "clicks",
-    label: "CLICKS",
-    type: "number",
-    sortable: true,
-    render: (value) => <span className={styles.metricValue} style={{ color: 'white' }}>{formatNumber(value)}</span>,
-  },
-  {
-    key: "conversions",
-    label: "CONVERSIONS",
-    type: "number",
-    sortable: true,
-    render: (value) => <span className={styles.metricValue} style={{ color: 'white' }}>{formatNumber(value)}</span>,
-  },
-]
-
-  // Define actions for content performance
-  const contentPerformanceActions: TableAction[] = [
-    { 
-      label: "View Details", 
-      onClick: (row) => console.log("View Details", row),
-      className: styles.actionLink
-    },
-  ]
-
-  const handleEditContent = (row: ContentPerformanceItem) => {
-    console.log("Editing content:", row)
-    // Here you would typically open a modal or navigate to an edit page
-  }
-
-  const handleDeleteContent = (row: ContentPerformanceItem) => {
-    console.log("Deleting content:", row)
-    // Here you would typically show a confirmation dialog before deletion
-  }
-
-  return (
-    <>
-      <ReusableTable
-        data={contentPerformanceData}
-        columns={[
-          ...contentPerformanceColumns,
-          { key: "actions", label: "ACTIONS", type: "actions", sortable: false },
-        ]}
-        actions={contentPerformanceActions}
-        pageSize={10}
-        searchable={true}
-        searchPlaceholder="Search content..."
-        onRowClick={(row) => console.log("Content clicked:", row)}
-        onEdit={handleEditContent}
-        onDelete={handleDeleteContent}
-        className={styles.reportsTable}
-      />
-    </>
-  )
-}
-  const renderAudienceTab = () => (
-    <div className={styles.audienceContent}>
-      <div className={styles.demographicsSection}>
-        <h2 className={styles.sectionTitle}>Demographics</h2>
-
-        <div className={styles.ageDistribution}>
-          <h3 className={styles.ageDistributionTitle}>Age Distribution</h3>
-          {audienceData.ageDistribution.map((age) => (
-            <div key={age.range} className={styles.ageItem}>
-              <span className={styles.ageLabel}>{age.range}</span>
-              <div className={styles.ageBarContainer}>
-                <div className={styles.ageBar} style={{ width: `${age.percentage}%` }} />
+        <div className={styles.chartContainer}>
+          <div className={styles.chartPlaceholder}>
+            <div className={styles.chartArea}>
+              <div className={styles.chartTitle}>
+                Instagram {activeTrend} Over Time ({selectedDateRange})
               </div>
-              <span className={styles.agePercentage}>{age.percentage}%</span>
-            </div>
-          ))}
-        </div>
-
-        <div>
-          <h3 className={styles.ageDistributionTitle}>Gender</h3>
-          <div className={styles.genderChart}>
-            <svg viewBox="0 0 200 200" className={styles.genderSvg}>
-              <circle
-                cx="100"
-                cy="100"
-                r="80"
-                fill="none"
-                stroke="#4f46e5"
-                strokeWidth="30"
-                strokeDasharray={`${audienceData.gender.female * 5.03} 502.4`}
-                strokeDashoffset="0"
-                transform="rotate(-90 100 100)"
-              />
-              <circle
-                cx="100"
-                cy="100"
-                r="80"
-                fill="none"
-                stroke="#e5e7eb"
-                strokeWidth="30"
-                strokeDasharray={`${audienceData.gender.male * 5.03} 502.4`}
-                strokeDashoffset={`-${audienceData.gender.female * 5.03}`}
-                transform="rotate(-90 100 100)"
-              />
-            </svg>
-            <div className={styles.genderCenter}>
-              <div className={styles.genderPercentage}>{audienceData.gender.female}%</div>
-              <div className={styles.genderLabel}>Female</div>
-            </div>
-          </div>
-          <div className={styles.genderLegend}>
-            <div className={styles.genderLegendItem}>
-              <div className={styles.genderIndicator} style={{ backgroundColor: "#4f46e5" }}></div>
-              <span>Female: {audienceData.gender.female}%</span>
-            </div>
-            <div className={styles.genderLegendItem}>
-              <div className={styles.genderIndicator} style={{ backgroundColor: "#e5e7eb" }}></div>
-              <span>Male: {audienceData.gender.male}%</span>
+              <div className={styles.chartContent}>
+                <div className={styles.chartLines}>
+                  {chartData.map((value, index) => (
+                    <div
+                      key={index}
+                      className={styles.chartLine}
+                      style={{ height: `${value}%` }}
+                      title={`Day ${index + 1}: ${value}%`}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className={styles.chartAxis}>
+                <span>1</span>
+                <span>6</span>
+                <span>11</span>
+                <span>16</span>
+                <span>21</span>
+                <span>26</span>
+                <span>30</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-
-      <div className={styles.geographicSection}>
-        <h2 className={styles.sectionTitle}>Geographic Distribution</h2>
-        <div className={styles.mapPlaceholder}>Map visualization would go here</div>
-        <div className={styles.countryList}>
-          {audienceData.geographic.map((country) => (
-            <div key={country.country} className={styles.countryItem}>
-              <span className={styles.countryName}>{country.country}</span>
-              <span className={styles.countryPercentage}>{country.percentage}%</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+    </>
   )
-
-  const renderFinancialTab = () => {
-    // Define columns for financial table
-   const financialColumns: TableColumn[] = [
-  {
-    key: "client",
-    label: "CLIENT",
-    type: "string",
-    sortable: true,
-    render: (value) => <span className={styles.contentTitle} style={{ color: 'white' }}>{value}</span>,
-  },
-  {
-    key: "revenue",
-    label: "REVENUE",
-    type: "currency",
-    sortable: true,
-    render: (value) => <span className={styles.metricValue} style={{ color: 'white' }}>{formatCurrency(value)}</span>,
-  },
-  {
-    key: "expenses",
-    label: "EXPENSES",
-    type: "currency",
-    sortable: true,
-    render: (value) => <span className={styles.metricValue} style={{ color: 'white' }}>{formatCurrency(value)}</span>,
-  },
-  {
-    key: "profit",
-    label: "PROFIT",
-    type: "currency",
-    sortable: true,
-    render: (value) => <span className={styles.metricValue} style={{ color: 'white' }}>{formatCurrency(value)}</span>,
-  },
-  {
-    key: "profitMargin",
-    label: "PROFIT MARGIN",
-    type: "number",
-    sortable: true,
-    render: (value) => <span className={`${styles.metricValue} ${styles.increase}`} style={{ color: 'white' }}>{value}%</span>,
-  },
-]
-
-    // Define actions for financial table
-    const financialActions: TableAction[] = [
-      { label: "View Report", onClick: (row) => console.log("View Report", row) },
-      { label: "Download Invoice", onClick: (row) => console.log("Download Invoice", row) },
-      { label: "Send Statement", onClick: (row) => console.log("Send Statement", row) },
-    ]
-
-    return (
-      <>
-        <div className={styles.financialCards}>
-          <div className={styles.financialCard}>
-            <div className={styles.cardHeader}>
-              <h3 className={styles.cardTitle}>Total Revenue</h3>
-            </div>
-            <div className={styles.financialValue}>{formatCurrency(financialData.totalRevenue.value)}</div>
-            <div className={styles.cardChange}>
-              <span className={`${styles.changeText} ${styles[financialData.totalRevenue.changeType]}`}>
-                {formatChange(financialData.totalRevenue.change, financialData.totalRevenue.changeType)} from last
-                period
-              </span>
-            </div>
-          </div>
-  
-          <div className={styles.financialCard}>
-            <div className={styles.cardHeader}>
-              <h3 className={styles.cardTitle}>Expenses</h3>
-            </div>
-            <div className={styles.financialValue}>{formatCurrency(financialData.expenses.value)}</div>
-            <div className={styles.cardChange}>
-              <span className={`${styles.changeText} ${styles[financialData.expenses.changeType]}`}>
-                {formatChange(financialData.expenses.change, financialData.expenses.changeType)} from last period
-              </span>
-            </div>
-          </div>
-
-          <div className={styles.financialCard}>
-            <div className={styles.cardHeader}>
-              <h3 className={styles.cardTitle}>Profit</h3>
-            </div>
-            <div className={styles.financialValue}>{formatCurrency(financialData.profit.value)}</div>
-            <div className={styles.cardChange}>
-              <span className={`${styles.changeText} ${styles[financialData.profit.changeType]}`}>
-                {formatChange(financialData.profit.change, financialData.profit.changeType)} from last period
-              </span>
-            </div>
-          </div>
-        </div>
-    <div className={styles.financialSection}>
-        <h2 className={styles.floatingTitle}>Revenue by Client</h2>
-        <ReusableTable
-          data={financialData.revenueByClient}
-          columns={[...financialColumns, { key: "actions", label: "ACTIONS", type: "actions", sortable: false }]}
-          actions={financialActions}
-          pageSize={10}
-          searchable={true}
-          searchPlaceholder="Search clients..."
-          onRowClick={(row) => console.log("Client clicked:", row)}
-          className={styles.reportsTable}
-        />
-        </div>
-      </>
-    )
-  }
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case "Performance":
-        return renderPerformanceTab()
-      case "Content Performance":
-        return renderContentPerformanceTab()
-      case "Audience":
-        return renderAudienceTab()
-      case "Financial":
-        return renderFinancialTab()
+      case "LinkedIn":
+        return renderLinkedInTab()
+      case "Facebook":
+        return renderFacebookTab()
+      case "Instagram":
+        return renderInstagramTab()
       default:
-        return renderPerformanceTab()
+        return renderFacebookTab()
     }
   }
 
   return (
-  <div className={styles.layout}>
-    <main className={styles.main}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Reports & Analytics</h1>
-        
-        {/* Moved Date Controls and Actions to be above tabs */}
-        
-        <div className={styles.headerBottom}>
-          <div className={styles.dateControls}>
-            <div className={styles.dateControlGroup}>
-              <span className={styles.dateLabel}>Period:</span>
-              <select
-                value={selectedDateRange}
-                onChange={(e) => setSelectedDateRange(e.target.value as DateRange)}
-                className={styles.dateDropdown}
-              >
-                {dateRanges.map((range) => (
-                  <option key={range} value={range}>
-                    {range}
-                  </option>
-                ))}
-              </select>
+    <div className={styles.layout}>
+      <main className={styles.main}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>Social Media Analytics</h1>
+          
+          {/* Moved Date Controls and Actions to be above tabs */}
+          <div className={styles.headerBottom}>
+            <div className={styles.dateControls}>
+              <div className={styles.dateControlGroup}>
+                <span className={styles.dateLabel}>Period:</span>
+                <select
+                  value={selectedDateRange}
+                  onChange={(e) => setSelectedDateRange(e.target.value as DateRange)}
+                  className={styles.dateDropdown}
+                >
+                  {dateRanges.map((range) => (
+                    <option key={range} value={range}>
+                      {range}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={styles.dateControlGroup}>
+                <button className={styles.datePickerButton} onClick={handleChooseDates}>
+                  <span className={styles.calendarIcon}></span>
+                  Custom Range
+                </button>
+              </div>
             </div>
 
-            <div className={styles.dateControlGroup}>
-              <button className={styles.datePickerButton} onClick={handleChooseDates}>
-                <span className={styles.calendarIcon}></span>
-                Custom Range
+            <div className={styles.actionButtons}>
+              <button className={styles.actionButton} onClick={handleExport}>
+                <span className={styles.actionIcon}>📤</span>
+                Export
+              </button>
+              <button className={styles.actionButton} onClick={handleShare}>
+                <span className={styles.actionIcon}>🔗</span>
+                Share
               </button>
             </div>
           </div>
 
-          <div className={styles.actionButtons}>
-            <button className={styles.actionButton} onClick={handleExport}>
-              <span className={styles.actionIcon}>📤</span>
-              Export
-            </button>
-            <button className={styles.actionButton} onClick={handleShare}>
-              <span className={styles.actionIcon}>🔗</span>
-              Share
-            </button>
-          </div>
-        </div>
-
-        {/* Tabs moved below the controls */}
-        <div className={styles.tabs}>
-          {reportTabs.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`${styles.tab} ${activeTab === tab ? styles.tabActive : ""}`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className={styles.tabContent}>{renderTabContent()}</div>
-      
-      {/* Custom Date Range Modal remains the same */}
-      {showDatePicker && (
-        <div className={styles.datePickerOverlay} onClick={() => setShowDatePicker(false)}>
-          <div className={styles.datePickerModal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.datePickerHeader}>
-              <h3 className={styles.datePickerTitle}>Select Custom Date Range</h3>
-              <button className={styles.datePickerClose} onClick={() => setShowDatePicker(false)}>
-                ×
-              </button>
-            </div>
-            <div className={styles.datePickerContent}>
-              <div className={styles.dateInputGroup}>
-                <label className={styles.dateInputLabel}>Start Date</label>
-                <input
-                  type="date"
-                  value={customDateRange.startDate}
-                  onChange={(e) => setCustomDateRange((prev) => ({ ...prev, startDate: e.target.value }))}
-                  className={styles.dateInput}
-                />
-              </div>
-              <div className={styles.dateInputGroup}>
-                <label className={styles.dateInputLabel}>End Date</label>
-                <input
-                  type="date"
-                  value={customDateRange.endDate}
-                  onChange={(e) => setCustomDateRange((prev) => ({ ...prev, endDate: e.target.value }))}
-                  className={styles.dateInput}
-                />
-              </div>
-            </div>
-            <div className={styles.datePickerActions}>
-              <button className={styles.datePickerCancel} onClick={() => setShowDatePicker(false)}>
-                Cancel
-              </button>
+          {/* Tabs moved below the controls */}
+          <div className={styles.tabs}>
+            {reportTabs.map((tab) => (
               <button
-                className={styles.datePickerApply}
-                onClick={() => {
-                  console.log("Applied custom date range:", customDateRange)
-                  setShowDatePicker(false)
-                }}
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`${styles.tab} ${activeTab === tab ? styles.tabActive : ""}`}
               >
-                Apply Range
+                {tab}
               </button>
-            </div>
+            ))}
           </div>
         </div>
-      )}
-    </main>
-  </div>
-)
+
+        <div className={styles.tabContent}>
+          {renderTabContent()}
+        </div>
+
+        {/* Custom Date Range Modal remains the same */}
+        {showDatePicker && (
+          <div className={styles.datePickerOverlay} onClick={() => setShowDatePicker(false)}>
+            <div className={styles.datePickerModal} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.datePickerHeader}>
+                <h3 className={styles.datePickerTitle}>Select Custom Date Range</h3>
+                <button
+                  className={styles.datePickerClose}
+                  onClick={() => setShowDatePicker(false)}
+                >
+                  ×
+                </button>
+              </div>
+              <div className={styles.datePickerContent}>
+                <div className={styles.dateInputGroup}>
+                  <label className={styles.dateInputLabel}>Start Date</label>
+                  <input
+                    type="date"
+                    value={customDateRange.startDate}
+                    onChange={(e) =>
+                      setCustomDateRange((prev) => ({ ...prev, startDate: e.target.value }))
+                    }
+                    className={styles.dateInput}
+                  />
+                </div>
+                <div className={styles.dateInputGroup}>
+                  <label className={styles.dateInputLabel}>End Date</label>
+                  <input
+                    type="date"
+                    value={customDateRange.endDate}
+                    onChange={(e) =>
+                      setCustomDateRange((prev) => ({ ...prev, endDate: e.target.value }))
+                    }
+                    className={styles.dateInput}
+                  />
+                </div>
+              </div>
+              <div className={styles.datePickerActions}>
+                <button
+                  className={styles.datePickerCancel}
+                  onClick={() => setShowDatePicker(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className={styles.datePickerApply}
+                  onClick={() => {
+                    console.log("Applied custom date range:", customDateRange)
+                    setShowDatePicker(false)
+                  }}
+                >
+                  Apply Range
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  )
 }

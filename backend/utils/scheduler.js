@@ -77,7 +77,8 @@ const initScheduler = () => {
 
               // Make request to your API (like frontend does)
               const response = await axios.post(endpoint, {
-                accountId: matchingAccount._id
+                accountId: matchingAccount._id,
+                access_token: matchingAccount.accessToken,
               }, {
                 headers: {
                   'Content-Type': 'application/json'

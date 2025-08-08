@@ -11,7 +11,10 @@ const {
   postToFacebook,
   postExistingToFacebook,
   testFacebookConnection,
-  getFacebookPages
+  getFacebookPages,
+  postToInstagram,
+  postExistingToInstagram,
+  testInstagramConnection
 } = require('../controllers/uploadController');
 const { protect, checkOwnership } = require('../middleware/auth');
 const Post = require('../models/post');
@@ -41,5 +44,10 @@ router.post('/facebook', protect, postToFacebook);
 router.post('/facebook/:postId', postExistingToFacebook);
 router.get('/facebook/test/:accountId', protect, testFacebookConnection);
 router.get('/facebook/:accountId/pages', protect, getFacebookPages);
+
+// Instagram specific routes
+router.post('/instagram', protect, postToInstagram);
+router.post('/instagram/:postId', postExistingToInstagram);
+router.get('/instagram/test/:accountId', protect, testInstagramConnection);
 
 module.exports = router;

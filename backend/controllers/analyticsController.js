@@ -4,6 +4,164 @@ const AdCampaign = require('../models/AdCampaign');
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
 const { generatePDFReport } = require('../utils/analyticsHelpers');
+const axios = require('axios');
+
+
+// Add this to your analyticsController.js
+//http://localhost:3000/api/v1/analytics/facebook-report
+//body { 
+//  "access_token": "your_facebook_access_token"}
+exports.getFacebookReport = asyncHandler(async (req, res, next) => {
+  const { access_token } = req.body;
+  
+  if (!access_token) {
+    return next(new ErrorResponse('Access token is required', 400));
+  }
+
+  // Get page ID from environment variable
+  const pageId = process.env.FACEBOOK_TEST_PAGE_ID;
+  if (!pageId) {
+    return next(new ErrorResponse('FACEBOOK_TEST_PAGE_ID environment variable not set', 500));
+  }
+
+  try {
+    console.log('Fetching Facebook analytics for page:', pageId);
+
+    // Step 1: Get basic page information
+    const basicInfoResponse = await axios.get(`https://graph.facebook.com/v23.0/${pageId}`, {
+      params: {
+        fields: 'id,name,fan_count,followers_count,talking_about_count,category,website',
+        access_token: access_token
+      }
+    });
+
+    console.log('Basic page info:', basicInfoResponse.data);
+
+    // Step 2: Get page insights (if available)
+    let insightsData = {
+      page_impressions_unique: 0,
+      page_impressions_paid: 0,
+      page_reach_unique: 0,
+      page_engaged_users: 0,
+      page_fans: 0,
+      page_fan_adds: 0,
+      page_fan_removes: 0
+    };
+
+    try {
+      // Try to get insights data
+      const insightsResponse = await axios.get(`https://graph.facebook.com/v23.0/${pageId}/insights`, {
+        params: {
+          metric: 'page_impressions_unique,page_impressions_paid,page_reach_unique,page_engaged_users,page_fans,page_fan_adds,page_fan_removes',
+          access_token: access_token
+        }
+      });
+
+      console.log('Insights response:', insightsResponse.data);
+
+      // Process insights data if available
+      if (insightsResponse.data.data && insightsResponse.data.data.length > 0) {
+        insightsResponse.data.data.forEach(metric => {
+          if (metric.values && metric.values.length > 0) {
+            // Get the most recent value
+            const latestValue = metric.values[metric.values.length - 1];
+            insightsData[metric.name] = latestValue.value || 0;
+          }
+        });
+      }
+    } catch (insightsError) {
+      console.log('Insights not available:', insightsError.response?.data?.error?.message || insightsError.message);
+      // Keep default zeros if insights are not available
+    }
+
+    // Step 3: Get recent posts data for additional metrics
+    let postsData = {
+      total_posts: 0,
+      total_likes: 0,
+      total_comments: 0,
+      total_shares: 0,
+      average_engagement: 0
+    };
+
+    try {
+      const postsResponse = await axios.get(`https://graph.facebook.com/v23.0/${pageId}/posts`, {
+        params: {
+          fields: 'id,message,created_time,likes.summary(true),comments.summary(true),shares',
+          limit: 25,
+          access_token: access_token
+        }
+      });
+
+      if (postsResponse.data.data && postsResponse.data.data.length > 0) {
+        const posts = postsResponse.data.data;
+        postsData.total_posts = posts.length;
+
+        posts.forEach(post => {
+          postsData.total_likes += post.likes?.summary?.total_count || 0;
+          postsData.total_comments += post.comments?.summary?.total_count || 0;
+          postsData.total_shares += post.shares?.count || 0;
+        });
+
+        // Calculate average engagement per post
+        const totalEngagement = postsData.total_likes + postsData.total_comments + postsData.total_shares;
+        postsData.average_engagement = postsData.total_posts > 0 ? 
+          Math.round(totalEngagement / postsData.total_posts) : 0;
+      }
+    } catch (postsError) {
+      console.log('Posts data not available:', postsError.response?.data?.error?.message || postsError.message);
+    }
+
+    // Step 4: Prepare comprehensive report
+    const facebookReport = {
+      success: true,
+      page_info: {
+        id: basicInfoResponse.data.id,
+        name: basicInfoResponse.data.name,
+        category: basicInfoResponse.data.category,
+        website: basicInfoResponse.data.website,
+        current_fans: basicInfoResponse.data.fan_count || 0,
+        followers_count: basicInfoResponse.data.followers_count || 0,
+        talking_about_count: basicInfoResponse.data.talking_about_count || 0
+      },
+      insights: {
+        page_views: insightsData.page_reach_unique || 0, // Using reach as page views equivalent
+        page_impressions_unique: insightsData.page_impressions_unique || 0,
+        page_impressions_paid: insightsData.page_impressions_paid || 0,
+        page_reach: insightsData.page_reach_unique || 0,
+        page_engaged_users: insightsData.page_engaged_users || 0,
+        page_fans_total: insightsData.page_fans || basicInfoResponse.data.fan_count || 0,
+        page_fan_adds: insightsData.page_fan_adds || 0,
+        page_fan_removes: insightsData.page_fan_removes || 0,
+        net_fan_growth: (insightsData.page_fan_adds || 0) - (insightsData.page_fan_removes || 0)
+      },
+      content_metrics: {
+        total_posts: postsData.total_posts,
+        total_likes: postsData.total_likes,
+        total_comments: postsData.total_comments,
+        total_shares: postsData.total_shares,
+        total_engagement: postsData.total_likes + postsData.total_comments + postsData.total_shares,
+        average_engagement_per_post: postsData.average_engagement,
+        engagement_rate: basicInfoResponse.data.fan_count > 0 ? 
+          Math.round(((postsData.total_likes + postsData.total_comments + postsData.total_shares) / basicInfoResponse.data.fan_count) * 100 * 100) / 100 : 0
+      },
+      report_generated_at: new Date().toISOString(),
+      data_source: 'Facebook Graph API v23.0'
+    };
+
+    console.log('Final Facebook report:', facebookReport);
+
+    res.status(200).json(facebookReport);
+
+  } catch (error) {
+    console.error('Facebook analytics error:', error.response?.data || error.message);
+
+    // Return error with zero values
+    return next(new ErrorResponse(
+      `Facebook analytics failed: ${error.response?.data?.error?.message || error.message}`,
+      500
+    ));
+  }
+});
 
 // @desc    Get all analytics reports
 // @route   GET /api/v1/analytics/reports
