@@ -113,7 +113,7 @@ const fetchBudget = async () => {
 
       <div className={styles.overview}>
         <div className={styles.overviewCard}>
-          <DollarSign size={24} />
+          <DollarSign size={24} style={{ color: 'var(--theme-tertiary)' }} />
           <div>
             <h3>Total Budget</h3>
             <p>${budget.totalBudget.toLocaleString()}</p>
@@ -121,7 +121,7 @@ const fetchBudget = async () => {
         </div>
 
         <div className={styles.overviewCard}>
-          <TrendingUp size={24} />
+          <TrendingUp size={24} style={{ color: 'var(--theme-tertiary)' }} />
           <div>
             <h3>Spent</h3>
             <p>${totalSpent.toLocaleString()}</p>
@@ -129,7 +129,7 @@ const fetchBudget = async () => {
         </div>
 
         <div className={styles.overviewCard}>
-          <DollarSign size={24} />
+          <DollarSign size={24} style={{ color: 'var(--theme-tertiary)' }} />
           <div>
             <h3>Remaining</h3>
             <p>${remaining.toLocaleString()}</p>
@@ -137,7 +137,7 @@ const fetchBudget = async () => {
         </div>
 
         <div className={styles.overviewCard}>
-          <Calendar size={24} />
+          <Calendar size={24} style={{ color: 'var(--theme-tertiary)' }} />
           <div>
             <h3>Utilization</h3>
             <p style={{ color: getUtilizationColor(utilization) }}>{utilization}%</p>

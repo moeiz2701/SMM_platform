@@ -4,6 +4,7 @@ const AdBudget= require('../models/AdBudget')
 const Invoice= require('../models/Invoice')
 const Notification = require('../models/Notification')
 const Client = require('../models/Client')
+const { createNotificationWithEmail } = require('../utils/notificationHelper')
 
 // Utility to determine campaign status
 function computeCampaignStatus(startDate, endDate) {
@@ -110,31 +111,31 @@ exports.createAdCampaign = async (req, res) => {
     // Create notifications for the client user
     try {
       // Notification 1: Campaign Created
-      await Notification.create({
+      await createNotificationWithEmail({
+        userId: client.user._id,
         type: 'system',
         title: 'New Campaign Created',
         message: `A new campaign "${newCampaign.name}" has been created for you. The campaign will run from ${new Date(newCampaign.startDate).toLocaleDateString()} to ${new Date(newCampaign.endDate).toLocaleDateString()}.`,
+        priority: 'medium',
+        actionRequired: false,
         relatedEntity: {
           entityType: 'AdCampaign',
           entityId: newCampaign._id
-        },
-        user: client.user._id,
-        priority: 'medium',
-        actionRequired: false
+        }
       });
 
       // Notification 2: Invoice Generated
-      await Notification.create({
+      await createNotificationWithEmail({
+        userId: client.user._id,
         type: 'budget',
         title: 'Invoice Generated',
         message: `An invoice for $${totalBudget.toLocaleString()} has been generated for your campaign "${newCampaign.name}". Please review and pay the invoice by ${new Date(createdInvoice.dueDate).toLocaleDateString()}.`,
+        priority: 'high',
+        actionRequired: true,
         relatedEntity: {
           entityType: 'Invoice',
           entityId: createdInvoice._id
-        },
-        user: client.user._id,
-        priority: 'high',
-        actionRequired: true
+        }
       });
 
       console.log('Notifications created successfully for client user:', client.user._id);

@@ -1,14 +1,14 @@
 /* Dark Theme Variables */
 :root {
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #1a1a1a;
-  --bg-tertiary: #2a2a2a;
+  --bg-primary: #000000;
+  --bg-secondary: var(--component-background, #1b202a);
+  --bg-tertiary: #2c3e68;
   --bg-hover: #333333;
   --text-primary: #ffffff;
   --text-secondary: #b3b3b3;
   --text-muted: #666666;
-  --accent-primary: #3b82f6;
-  --accent-hover: #2563eb;
+  --accent-primary:#8a85e9;
+  --accent-hover: #8a85e9;
   --accent-light: rgba(59, 130, 246, 0.1);
   --border-color: #333333;
   --success-color: #10b981;
@@ -28,7 +28,6 @@
 /* Layout */
 .layout {
   min-height: 100vh;
-  background: var(--bg-primary);
   color: var(--text-primary);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { User, Phone, Building, Globe, Star, Calendar, Users, MessageSquare, ExternalLink, Mail, Award, TrendingUp, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { API_ROUTES } from "@/app/apiRoutes"
-import styles from '../../../styling/managerProfile.module.css'
+import styles from '../../../styling/ManagerProfile.module.css'
 
 interface Manager {
   _id: string;

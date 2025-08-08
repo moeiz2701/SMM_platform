@@ -73,13 +73,28 @@ export default function ManagerMessagesPage() {
   
   const router = useRouter()
 
-  // Get the auth token from localStorage or your auth system
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-  const currentUserId = typeof window !== "undefined" ? localStorage.getItem("userId") : null
- 
+  // Get current user ID from /auth/me route
+  const [currentUserId, setCurrentUserId] = useState<string>("")
+
+  useEffect(() => {
+    const fetchCurrentUserId = async () => {
+      try {
+        const response = await fetch(API_ROUTES.AUTH.ME, {
+          credentials: "include",
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setCurrentUserId(data.data._id)
+        }
+      } catch (error) {
+        console.error("Failed to fetch current user ID:", error)
+      }
+    }
+    fetchCurrentUserId()
+  }, [])
 
   const { connected, sendMessage, onNewMessage, markAsRead, emitTyping, emitStopTyping, onTyping, onStopTyping } =
-    useSocket(token || "")
+    useSocket("") // Socket authentication handled by cookies
 
   useEffect(() => {
   const fetchManagerId = async () => {
@@ -104,7 +119,7 @@ export default function ManagerMessagesPage() {
   useEffect(() => {
     const fetchConversations = async () => {
       try {
-        const res = await fetch(API_ROUTES.MESSAGES, {
+        const res = await fetch(API_ROUTES.MESSAGES.GET_ALL, {
           credentials: "include",
         })
         if (!res.ok) throw new Error("Failed to fetch conversations")
@@ -124,7 +139,7 @@ export default function ManagerMessagesPage() {
     if (!activeConversationId) return
     const fetchMessages = async () => {
       try {
-        const res = await fetch(API_ROUTES.GET_CONVERSATION(activeUserId), {
+        const res = await fetch(API_ROUTES.MESSAGES.GET_CONVERSATION(activeUserId), {
           credentials: "include",
         })
         if (!res.ok) throw new Error("Failed to fetch messages")
@@ -144,7 +159,7 @@ export default function ManagerMessagesPage() {
 
       setIsSearching(true)
       try {
-        const res = await fetch(API_ROUTES.MANAGERS.GET_CLIENTS, {
+        const res = await fetch(API_ROUTES.MANAGERS.GET_CLIENTS(managerId), {
           credentials: "include",
         })
         if (res.ok) {
@@ -210,7 +225,7 @@ export default function ManagerMessagesPage() {
 
   const fetchConversationsRefresh = async () => {
     try {
-      const res = await fetch(API_ROUTES.MESSAGES, {
+      const res = await fetch(API_ROUTES.MESSAGES.GET_ALL, {
         credentials: "include",
       })
       if (res.ok) {
@@ -223,20 +238,30 @@ export default function ManagerMessagesPage() {
   }
 
   const filteredConversations = useMemo(() => {
-    if (!searchTerm) return conversations
-    return conversations.filter(
-      (conversation) =>
-        conversation.participants.some((p) => p.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        conversation.lastMessage.content.toLowerCase().includes(searchTerm.toLowerCase()),
-    )
-  }, [searchTerm, conversations])
+    if (!searchTerm) {
+      // Filter out conversations where the other participant is the current user
+      return conversations.filter((conversation) => {
+        const otherParticipant = conversation.participants.find((p) => p._id !== managerId && p._id !== currentUserId)
+        return otherParticipant && otherParticipant._id !== currentUserId
+      })
+    }
+    // Also apply search filter
+    return conversations.filter((conversation) => {
+      const otherParticipant = conversation.participants.find((p) => p._id !== managerId && p._id !== currentUserId)
+      return (
+        otherParticipant &&
+        (otherParticipant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          conversation.lastMessage.content.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+    })
+  }, [searchTerm, conversations, currentUserId, managerId])
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !activeConversationId || sendingMessage) return
 
     setSendingMessage(true)
     try {
-      const res = await fetch(API_ROUTES.MESSAGES, {
+      const res = await fetch(API_ROUTES.MESSAGES.GET_ALL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -273,18 +298,18 @@ export default function ManagerMessagesPage() {
 
   const startConversationWithClient = async (client: Client) => {
     try {
-      const res = await fetch(API_ROUTES.START_CONVERSATION, {
+      const res = await fetch(API_ROUTES.MESSAGES.START_CONVERSATION, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify({ recipientId: client.userId || client._id }),
+        body: JSON.stringify({ recipientId: client.user?._id || client._id }),
       })
 
       if (res.ok) {
         const data = await res.json()
-        setActiveUserId(client.userId || client._id)
+        setActiveUserId(client.user?._id || client._id)
         setActiveConversationId(data.data._id)
         setShowClientSearch(false)
         setClientSearchTerm("")
@@ -297,8 +322,8 @@ export default function ManagerMessagesPage() {
   }
 
   const getOtherParticipant = (conversation: Conversation) => {
-    return conversation.participants.find((p) => p._id !== currentUserId)
-  }
+  return conversation.participants.find((p) => p._id !== managerId)
+}
 
   const handleConversationClick = (conversation: Conversation) => {
     const otherParticipant = getOtherParticipant(conversation)
@@ -313,7 +338,7 @@ export default function ManagerMessagesPage() {
 
   const markConversationAsRead = async (conversationId: string) => {
     try {
-      await fetch(API_ROUTES.READ(conversationId), {
+      await fetch(API_ROUTES.MESSAGES.MARK_AS_READ(conversationId), {
         method: "PUT",
         credentials: "include",
       })

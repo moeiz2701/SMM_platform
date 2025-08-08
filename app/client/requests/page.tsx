@@ -99,6 +99,7 @@ const RequestsPage = () => {
 
         // Get requests for this client
         const reqRes = await fetch(API_ROUTES.CLIENTS.GET_REQUESTS(client._id), { credentials: 'include' });
+        console.log(client._id, 'Client ID for requests');
         if (!reqRes.ok) throw new Error('Failed to fetch requests');
         const reqData = await reqRes.json();
         setRequests(reqData.requests || []);

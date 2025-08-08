@@ -11,8 +11,11 @@ exports.redirectToOAuth = (req, res) => {
     authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${process.env.LINKEDIN_CLIENT_ID}&redirect_uri=${redirectUri}&scope=openid%20profile%20email%20w_member_social`;
   } else if (platform === 'facebook') {
     authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${process.env.FACEBOOK_CLIENT_ID}&redirect_uri=${redirectUri}&scope=pages_manage_posts,pages_read_engagement,pages_show_list,pages_manage_engagement,email&&response_type=code`;
+  } else if (platform === 'instagram') {
+   authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${process.env.FACEBOOK_CLIENT_ID}&redirect_uri=${redirectUri}&scope=pages_manage_posts,pages_read_engagement,pages_show_list,pages_manage_engagement,email,instagram_basic,instagram_manage_insights,instagram_content_publish&response_type=code`;
   }
-  
+
+
   console.log(platform, 'OAuth redirect URL:', authUrl);
   res.redirect(authUrl);
 };
@@ -122,10 +125,79 @@ exports.handleOAuthCallback = async (req, res) => {
       
       return res.redirect('http://localhost:3001/client/accounts');
     }
+    if (platform === 'instagram') {
+  // Step 1: Get user access token (same as Facebook)
+  const tokenRes = await axios.get('https://graph.facebook.com/v19.0/oauth/access_token', {
+    params: {
+      client_id: process.env.FACEBOOK_CLIENT_ID,
+      client_secret: process.env.FACEBOOK_CLIENT_SECRET,
+      redirect_uri: `http://localhost:3000/api/v1/oauth/instagram/callback`,
+      code
+    }
+  });
+
+  const userAccessToken = tokenRes.data.access_token;
+
+  // Step 2: Get list of pages user manages
+  const pagesRes = await axios.get('https://graph.facebook.com/v19.0/me/accounts', {
+    params: { access_token: userAccessToken }
+  });
+
+  const pages = pagesRes.data.data;
+
+  let instagramAccount = null;
+
+  for (let page of pages) {
+    const pageId = page.id;
+    const pageAccessToken = page.access_token;
+
+    const igRes = await axios.get(`https://graph.facebook.com/v19.0/${pageId}?fields=instagram_business_account`, {
+      params: { access_token: pageAccessToken }
+    });
+
+    if (igRes.data.instagram_business_account) {
+      instagramAccount = {
+        pageId,
+        pageAccessToken,
+        igUserId: igRes.data.instagram_business_account.id
+      };
+      break;
+    }
+  }
+
+  if (!instagramAccount) {
+    return res.status(400).send('No Instagram Business account linked to your Facebook Pages.');
+  }
+
+  // Step 3: Fetch IG profile info
+  const profileRes = await axios.get(`https://graph.facebook.com/v19.0/${instagramAccount.igUserId}`, {
+    params: {
+      fields: 'username,name,profile_picture_url',
+      access_token: instagramAccount.pageAccessToken
+    }
+  });
+
+  const profile = profileRes.data;
+
+  // Save to database
+  await SocialAccount.create({
+    platform: 'instagram',
+    accountName: profile.username,
+    accountId: instagramAccount.igUserId,
+    accessToken: instagramAccount.pageAccessToken,
+    user: userId,
+    client: clientId
+  });
+
+  return res.redirect('http://localhost:3001/client/accounts');
+}
+
     
     res.status(400).send('Unsupported platform');
   } catch (err) {
     console.error('OAuth callback error:', err);
     res.status(500).send('OAuth callback failed');
   }
+
+  
 };

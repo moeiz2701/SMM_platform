@@ -8,6 +8,7 @@ import TopPosts from "@/components/dashboard/top-posts"
 
 const page = () => {
   return (
+    <div className="animation">
     <div className="dashboard-grid">
       <div className="dashboard-main">
         <HeroBanner />
@@ -20,8 +21,9 @@ const page = () => {
           <MessagesWidget />
           <PendingApprovals />
         </div>
-        <TopPosts />
+        
       </div>
+    </div>
     </div>
   )
 }

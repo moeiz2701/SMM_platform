@@ -13,7 +13,7 @@ const asyncHandler = require('../middleware/async');
 const Manager = require('../models/Manager'); // Add at the top if not already
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-const Notification = require('../models/Notification')
+const { createNotificationWithEmail } = require('../utils/notificationHelper');
 
 const mongoose = require('mongoose');
 // @desc    Get all clients
@@ -105,7 +105,12 @@ exports.getClientsByManager = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/clients/:id
 // @access  Private
 exports.getClient = asyncHandler(async (req, res, next) => {
-  const client = await Client.findById(req.params.id).populate('user', 'name email');
+  const client = await Client.findById(req.params.id)
+    .populate('user', 'name email')
+    .populate({
+      path: 'manager',
+      populate: { path: 'user', select: 'name email' }
+    });
 
   if (!client) {
     return next(
@@ -113,8 +118,11 @@ exports.getClient = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Make sure user owns the client or is admin
-  if (client.user.toString() !== req.user.id && req.user.role !== 'admin') {
+  // Make sure user owns the client, is admin, or is the assigned manager
+  const isClientOwner = client.user._id.toString() === req.user.id;
+  const isAdmin = req.user.role === 'admin';
+  const isAssignedManager = client.manager && client.manager.user && client.manager.user._id.toString() === req.user.id;
+  if (!isClientOwner && !isAdmin && !isAssignedManager) {
     return next(
       new ErrorResponse(`Not authorized to access this client`, 401)
     );
@@ -132,9 +140,9 @@ exports.getClient = asyncHandler(async (req, res, next) => {
 exports.createClient = asyncHandler(async (req, res, next) => {
   // Add user to req.body
   req.body.user = req.user.id;
-const user = await User.findById(req.user.id);
-user.role = 'client';
-await user.save();
+  const user = await User.findById(req.user.id);
+  user.role = 'client';
+  await user.save();
   // profilePhoto should be a Cloudinary URL if provided
   // (Assume frontend uploads to Cloudinary and sends the URL)
 
@@ -147,8 +155,8 @@ await user.save();
   // Create the client document
   const client = await Client.create(req.body);
 
-  // Update user's role to 'client'
-  await User.findByIdAndUpdate(userId, { role: 'client' });
+  // Update user's role to 'client' (already done above, so this line can be removed)
+  // await User.findByIdAndUpdate(req.user.id, { role: 'client' });
 
   res.status(201).json({
     success: true,
@@ -269,7 +277,8 @@ exports.sendRequest = asyncHandler(async (req, res, next) => {
 
     // Create notification for the client
     try {
-      await Notification.create({
+      await createNotificationWithEmail({
+        userId: clientWithUser.user._id,
         type: 'system',
         title: 'New Manager Request',
         message: `${managerDoc.user.name} has sent you a request to become your manager. You can review and accept this request in your requests section.`,
@@ -277,7 +286,6 @@ exports.sendRequest = asyncHandler(async (req, res, next) => {
           entityType: 'Client',
           entityId: clientId
         },
-        user: clientWithUser.user._id,
         priority: 'high',
         actionRequired: true
       });
@@ -341,7 +349,8 @@ exports.sendRequestToManager = asyncHandler(async (req, res, next) => {
 
     // Create notification for the manager
     try {
-      await Notification.create({
+      await createNotificationWithEmail({
+        userId: manager.user._id,
         type: 'system',
         title: 'New Client Request',
         message: `${clientDoc.user.name} has sent you a request to become their manager. You can review and respond to this request in your requests section.`,
@@ -349,7 +358,6 @@ exports.sendRequestToManager = asyncHandler(async (req, res, next) => {
           entityType: 'Manager',
           entityId: managerId
         },
-        user: manager.user._id,
         priority: 'high',
         actionRequired: true
       });
@@ -381,7 +389,7 @@ exports.sendRequestToManager = asyncHandler(async (req, res, next) => {
 // @access  Private/Admin/Manager
 exports.getRequests = asyncHandler(async (req, res, next) => {
   // Only admin or manager can view requests
-  if (req.user.role !== 'admin' && req.user.role !== 'client' && req.user.role !== 'client') {
+  if (req.user.role !== 'admin' && req.user.role !== 'client' && req.user.role !== 'user') {
     return next(new ErrorResponse('Not authorized to view requests', 403));
   }
   const clientId = req.params.id;
@@ -436,7 +444,8 @@ exports.assignManagerToClient = asyncHandler(async (req, res, next) => {
   // Create notification for the manager
   try {
     if (manager.user && client.user) {
-      await Notification.create({
+      await createNotificationWithEmail({
+        userId: manager.user._id,
         type: 'system',
         title: 'New Client Assigned',
         message: `${client.user.name} has assigned you as their manager. You can now manage their campaigns and view their account details.`,
@@ -444,7 +453,6 @@ exports.assignManagerToClient = asyncHandler(async (req, res, next) => {
           entityType: 'Client',
           entityId: client._id
         },
-        user: manager.user._id,
         priority: 'high',
         actionRequired: false
       });
@@ -477,7 +485,7 @@ exports.deleteRequest = asyncHandler(async (req, res, next) => {
   }
   // Only admin or the client owner can delete a request
   if (
-    req.user.role !== 'admin' ||
+    req.user.role !== 'admin' &&
     client.user.toString() !== req.user.id || req.user.role !== 'client'
   ) {
     console.log('Current role:', req.user.role);

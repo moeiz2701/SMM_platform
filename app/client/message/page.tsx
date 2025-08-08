@@ -104,7 +104,7 @@ export default function MessagesPage() {
   useEffect(() => {
     const fetchConversations = async () => {
       try {
-        const res = await fetch(API_ROUTES.MESSAGES, {
+        const res = await fetch(API_ROUTES.MESSAGES.GET_ALL, {
           credentials: "include",
         })
         if (!res.ok) throw new Error("Failed to fetch conversations")
@@ -124,7 +124,7 @@ export default function MessagesPage() {
     if (!activeConversationId) return
     const fetchMessages = async () => {
       try {
-        const res = await fetch(API_ROUTES.GET_CONVERSATION(activeUserId), {
+        const res = await fetch(API_ROUTES.MESSAGES.GET_CONVERSATION(activeUserId), {
           credentials: "include",
         })
         if (!res.ok) throw new Error("Failed to fetch messages")
@@ -224,7 +224,7 @@ export default function MessagesPage() {
 
   const fetchConversationsRefresh = async () => {
     try {
-      const res = await fetch(API_ROUTES.MESSAGES, {
+      const res = await fetch(API_ROUTES.MESSAGES.GET_ALL, {
         credentials: "include",
       })
       if (res.ok) {
@@ -250,7 +250,7 @@ export default function MessagesPage() {
 
     setSendingMessage(true)
     try {
-      const res = await fetch(API_ROUTES.MESSAGES, {
+      const res = await fetch(API_ROUTES.MESSAGES.GET_ALL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -289,7 +289,7 @@ export default function MessagesPage() {
     if (!manager) return
 
     try {
-      const res = await fetch(API_ROUTES.START_CONVERSATION, {
+      const res = await fetch(API_ROUTES.MESSAGES.START_CONVERSATION, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -311,7 +311,7 @@ export default function MessagesPage() {
 
   const startConversationWithUser = async (userId: string) => {
     try {
-      const res = await fetch(API_ROUTES.START_CONVERSATION, {
+      const res = await fetch(API_ROUTES.MESSAGES.START_CONVERSATION, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -57,6 +57,59 @@ exports.getPosts = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Get single post
+// @route   GET /api/v1/posts/:id
+// @access  Private
+exports.getPost = asyncHandler(async (req, res, next) => {
+  const postId = req.params.id;
+
+  // Validate MongoDB ObjectId format
+  if (!mongoose.Types.ObjectId.isValid(postId)) {
+    return next(new ErrorResponse(`Invalid post ID format: ${postId}`, 400));
+  }
+
+  const post = await Post.findById(postId)
+    .populate({
+      path: 'client',
+      populate: { path: 'user', select: 'name email' }
+    })
+    .populate({
+      path: 'Manager',
+      populate: { path: 'user', select: 'name email' }
+    })
+    .populate('platforms.account', 'username platform')
+
+  if (!post) {
+    return next(new ErrorResponse(`Post not found with id ${postId}`, 404));
+  }
+
+  // Check authorization
+  let isAuthorized = false;
+  
+  // Admins can see all posts
+  if (req.user.role === 'admin') {
+    isAuthorized = true;
+  }
+  // Check if manager is assigned to this client
+  else if (req.user.role === 'manager') {
+    const manager = await Manager.findOne({ user: req.user.id });
+    isAuthorized = manager?.managedClients.includes(post.client._id.toString());
+  }
+  // Client users can only see their own posts
+  else if (req.user.role === 'client' && req.user.client.toString() === post.client._id.toString()) {
+    isAuthorized = true;
+  }
+
+  if (!isAuthorized) {
+    return next(new ErrorResponse('Not authorized to access this post', 403));
+  }
+
+  res.status(200).json({
+    success: true,
+    data: post
+  });
+});
+
 // @desc    Create new post
 // @route   POST /api/v1/posts
 // @route   POST /api/v1/clients/:clientId/posts

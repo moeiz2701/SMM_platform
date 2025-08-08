@@ -17,7 +17,7 @@ const {
   getManagerForClient,
   removeClientFromManager,
   getmyManager,
-  
+  getMyStats,
 } = require('../controllers/managerController');
 const { protect, authorize } = require('../middleware/auth');
 const reviewRouter = require('../routes/reviewRoutes');
@@ -25,6 +25,9 @@ const reviewRouter = require('../routes/reviewRoutes');
 const router = express.Router();
 router.use('/:managerId/reviews', reviewRouter);
 router.get('/MyManager', protect, getMyManager);
+
+// Get manager statistics/analytics for the current manager user
+router.get('/me/stats', protect, authorize('manager'), getMyStats);
 
 // Get requests for the current manager user
 router.get('/me/requests', protect, authorize('manager'), getMyRequests);

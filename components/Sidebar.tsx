@@ -2,11 +2,39 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { IconUsers, IconChartBar, IconFileText, IconSettings, IconMenu2, IconX, IconUser } from '@tabler/icons-react';
+import { 
+  IconUsers, 
+  IconChartBar, 
+  IconFileText, 
+  IconSettings, 
+  IconMenu2, 
+  IconX, 
+  IconUser,
+  IconCalendarEvent,
+  IconMessage,
+  IconReportAnalytics,
+  IconReceipt,
+  IconPigMoney,
+  IconBellRinging,
+  IconBuildingStore,
+  IconMailbox,
+  IconForms
+} from '@tabler/icons-react';
 import style from '@/styling/sidebar.module.css';
 import API_ROUTES from '@/app/apiRoutes';
 import Image from 'next/image';
-import { Home, User, Settings, Mail, FileText, Menu, X, Calendar as CalendarIcon } from "lucide-react";
+import { 
+  Home, 
+  User, 
+  Settings, 
+  Mail, 
+  FileText, 
+  Menu, 
+  X, 
+  BellDot, 
+  CreditCard,
+  Megaphone 
+} from "lucide-react";
 
 interface SidebarProps {
   userRole: string;
@@ -31,13 +59,13 @@ const navItems: NavItem[] = [
   {
     label: 'Content',
     href: '/manager/content',
-    icon: <IconFileText className="w-5 h-5" />,
+    icon: <IconForms className="w-5 h-5" />,
     allowedRoles: ['Manager']
   },
   {
     label: 'Calendar',
     href: '/manager/calendar',
-    icon: <IconFileText className="w-5 h-5" />,
+    icon: <IconCalendarEvent className="w-5 h-5" />,
     allowedRoles: ['Manager']
   },
   {
@@ -49,43 +77,49 @@ const navItems: NavItem[] = [
   {
     label: 'Messages',
     href: '/manager/messages',
-    icon: <IconFileText className="w-5 h-5" />,
+    icon: <IconMessage className="w-5 h-5" />,
     allowedRoles: ['Manager']
   },
   {
     label: 'Reports',
     href: '/manager/reports',
-    icon: <IconFileText className="w-5 h-5" />,
+    icon: <IconReportAnalytics className="w-5 h-5" />,
     allowedRoles: ['Manager']
   },
   {
     label: 'Campaigns',
     href: '/manager/campaigns',
-    icon: <IconFileText className="w-5 h-5" />,
+    icon: <Megaphone className="w-5 h-5" />,
     allowedRoles: ['Manager']
   },
   {
     label: 'Invoices',
     href: '/manager/invoices',
-    icon: <IconFileText className="w-5 h-5" />,
+    icon: <IconReceipt className="w-5 h-5" />,
     allowedRoles: ['Manager']
   },
   {
     label: 'Budgets',
     href: '/manager/budgets',
-    icon: <IconFileText className="w-5 h-5" />,
+    icon: <IconPigMoney className="w-5 h-5" />,
     allowedRoles: ['Manager']
   },
   {
     label: 'Profile',
     href: '/manager/profile',
-    icon: <IconUsers className="w-5 h-5" />,
+    icon: <IconUser className="w-5 h-5" />,
     allowedRoles: ['Manager']
   },
   {
     label: 'Settings',
     href: '/manager/settings',
     icon: <IconSettings className="w-5 h-5" />,
+    allowedRoles: ['Manager']
+  },
+   {
+    label: 'Notifications',
+    href: '/manager/notifications',
+    icon: <IconBellRinging className="w-5 h-5" />,
     allowedRoles: ['Manager']
   },
   // User nav items from ClientSidebar
@@ -98,43 +132,49 @@ const navItems: NavItem[] = [
   {
     label: 'Social Accounts',
     href: '/client/accounts',
-    icon: <User className="w-5 h-5" />, 
+    icon: <IconBuildingStore className="w-5 h-5" />, 
     allowedRoles: ['user', 'client']
   },
   {
     label: 'Calendar',
     href: '/client/calendar',
-    icon: <CalendarIcon className="w-5 h-5" />, 
+    icon: <IconCalendarEvent className="w-5 h-5" />, 
     allowedRoles: ['user', 'client']
   },
   {
     label: 'Profile',
     href: '/client/profile',
-    icon: <User className="w-5 h-5" />, 
+    icon: <IconUser className="w-5 h-5" />, 
+    allowedRoles: ['user', 'client']
+  },
+  {
+    label: 'Messages',
+    href: '/client/message',
+    icon: <IconMessage className="w-5 h-5" />,
     allowedRoles: ['user', 'client']
   },
   {
     label: 'Manager',
     href: '/client/manager',
-    icon: <Mail className="w-5 h-5" />, 
+    icon: <IconMailbox className="w-5 h-5" />, 
     allowedRoles: ['user', 'client']
   },
   {
     label: 'Requests',
     href: '/client/requests',
-    icon: <Mail className="w-5 h-5" />, 
+    icon: <IconForms className="w-5 h-5" />, 
     allowedRoles: ['user', 'client']
   },
   {
     label: 'Notifications',
     href: '/client/notifications',
-    icon: <FileText className="w-5 h-5" />, 
+    icon: <BellDot className="w-5 h-5" />, 
     allowedRoles: ['user', 'client']
   },
   {
     label: 'Invoices',
     href: '/client/invoices',
-    icon: <Settings className="w-5 h-5" />, 
+    icon: <CreditCard className="w-5 h-5" />, 
     allowedRoles: ['user', 'client']
   },
   {

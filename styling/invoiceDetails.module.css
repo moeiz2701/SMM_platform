@@ -1,5 +1,9 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+
+
 .invoiceDetailPage {
-  max-width: 900px;
+  padding: 30px;
+  
 }
 
 .loading {
@@ -67,6 +71,8 @@
   font-size: 2rem;
   font-weight: 600;
   color: #f0f0f0;
+        font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
 }
 
 .headerActions {
@@ -177,8 +183,8 @@
 
 .invoiceCard {
   width: 100%;
-  max-width: 800px;
-  background-color: #2a2a2a;
+ 
+  background-color: var(--component-background);
   border: 1px solid #333;
   border-radius: 8px;
   padding: 2rem;
@@ -197,6 +203,8 @@
   font-weight: 600;
   color: #f0f0f0;
   margin-bottom: 0.5rem;
+        font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
 }
 
 .companyInfo p {
@@ -254,7 +262,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  background-color: #1a1a1a;
+  background-color:var(--component-background-secondary);
   border: 1px solid #333;
   border-radius: 8px;
   padding: 1rem;
@@ -284,7 +292,7 @@
 }
 
 .amountCard {
-  background-color: #1a1a1a;
+  background-color: var(--component-background-secondary);
   border: 1px solid #333;
   border-radius: 8px;
   padding: 1.5rem;
@@ -361,7 +369,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  background-color: #1a1a1a;
+  background-color: var(--component-background-secondary);
   border: 1px solid #333;
   border-radius: 6px;
   padding: 1rem;

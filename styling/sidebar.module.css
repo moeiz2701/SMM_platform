@@ -32,7 +32,7 @@
 }
 
 .sidebar {
-  background: var(--component-background);
+   background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
   color: white;
   height: 100vh;
   font-family: 'BalooMedium', sans-serif;

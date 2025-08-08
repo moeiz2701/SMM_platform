@@ -1,12 +1,17 @@
 // This file centralizes your backend API endpoints for easy import and usage in your frontend code.
 
+import { get } from "http";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api/v1';
 
 export const API_ROUTES = {
-  MESSAGES: `${API_BASE_URL}/messages`,
-  START_CONVERSATION: `${API_BASE_URL}/messages/start`,
-  GET_CONVERSATION: (id: string) => `${API_BASE_URL}/messages/${id}`,
-  READ: (id: string) => `${API_BASE_URL}/messages/read/${id}`,
+  MESSAGES: {
+    GET_ALL: `${API_BASE_URL}/messages`,
+    SEND: `${API_BASE_URL}/messages`,
+    START_CONVERSATION: `${API_BASE_URL}/messages/start`,
+    GET_CONVERSATION: (userId: string) => `${API_BASE_URL}/messages/${userId}`,
+    MARK_AS_READ: (conversationId: string) => `${API_BASE_URL}/messages/read/${conversationId}`,
+  },
 
   AUTH: {
     REGISTER: `${API_BASE_URL}/auth/register`,
@@ -35,6 +40,7 @@ export const API_ROUTES = {
     ADD_PAYMENT_METHOD: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/payment-method`,
     ME: `${API_BASE_URL}/clients/me`,
     ME_MANAGER: `${API_BASE_URL}/clients/me/manager`,
+    GET: (clientId: string) => `${API_BASE_URL}/clients/${clientId}`,
     
   },
 
@@ -54,6 +60,7 @@ export const API_ROUTES = {
     DELETE: (id: string) => `${API_BASE_URL}/managers/${id}`,
     GET_CLIENTS: (id: string) => `${API_BASE_URL}/managers/${id}/clients`,
     ME:`${API_BASE_URL}/managers/MyManager`,
+    ME_STATS: `${API_BASE_URL}/managers/me/stats`,
     GET_FOR_CLIENT: (clientId: string) => `${API_BASE_URL}/managers/for-client/${clientId}`,
     GET_MY_MANAGER: `${API_BASE_URL}/managers/my-manager`,
     REMOVE_CLIENT: (managerId: string, clientId: string) => 

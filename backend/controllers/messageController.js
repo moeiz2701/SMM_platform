@@ -5,6 +5,7 @@
 const Message = require('../models/Message');
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
+const { createNotificationWithEmail } = require('../utils/notificationHelper');
 
 // @desc    Get conversation between two users
 // @route   GET /api/v1/messages/:userId
@@ -179,6 +180,25 @@ exports.sendMessage = asyncHandler(async (req, res, next) => {
     { path: "sender", select: "name profilePhoto" },
     { path: "recipient", select: "name profilePhoto" }
   ]);
+
+  // Create notification for the recipient
+  try {
+    await createNotificationWithEmail({
+      userId: recipientId,
+      type: 'message',
+      title: 'New Message',
+      message: `You have received a new message from ${populated.sender.name}`,
+      priority: 'medium',
+      actionRequired: false,
+      relatedEntity: {
+        entityType: 'Message',
+        entityId: message._id
+      }
+    });
+  } catch (notificationError) {
+    console.error('Error creating message notification:', notificationError);
+    // Continue with response even if notification fails
+  }
 
   // Optional: emit via socket.io here if needed
 

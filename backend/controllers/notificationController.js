@@ -1,6 +1,8 @@
 const Notification = require('../models/Notification');
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
+const User = require('../models/User');
+const sendEmail = require('../utils/sendEmail');
 
 // @desc    Get all notifications
 // @route   GET /api/v1/notifications
@@ -76,16 +78,36 @@ exports.markAllAsRead = asyncHandler(async (req, res, next) => {
 // @route   POST /api/v1/notifications
 // @access  Private
 exports.createNotification = asyncHandler(async (req, res, next) => {
-  req.body.user = req.user.id;
+  try {
+    const notificationData = {
+      userId: req.user.id,
+      type: req.body.type,
+      title: req.body.title,
+      message: req.body.message,
+      priority: req.body.priority,
+      actionRequired: req.body.actionRequired
+    };
 
-  const notification = await Notification.create(req.body);
+    const notification = await createNotificationWithEmail(notificationData);
 
-  // Real-time notification would be implemented here (e.g., via Socket.io)
-  
-  res.status(201).json({
-    success: true,
-    data: notification
-  });
+    // Real-time notification would be implemented here (e.g., via Socket.io)
+    
+    res.status(201).json({
+      success: true,
+      data: notification
+    });
+  } catch (err) {
+    console.error('Error in createNotification:', err);
+    if (err.code === 404) {
+      return next(err);
+    }
+    // If email sending failed but notification was created
+    res.status(201).json({
+      success: true,
+      data: err.notification,
+      emailSent: false
+    });
+  }
 });
 
 // @desc    Process action for notification

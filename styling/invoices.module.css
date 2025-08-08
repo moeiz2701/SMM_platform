@@ -1,5 +1,9 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+
+
 .invoicesPage {
   max-width: 1400px;
+  padding: 30px;
 }
 
 .header {
@@ -10,9 +14,11 @@
 }
 
 .header h1 {
-  font-size: 2rem;
+  font-size:3rem;
   font-weight: 600;
   color: #f0f0f0;
+      font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
 }
 
 .summary {
@@ -23,12 +29,17 @@
 }
 
 .summaryCard {
-  background-color: #2a2a2a;
+  background-color: var(--component-background);
   border: 1px solid #333;
   border-radius: 8px;
   padding: 1.5rem;
 }
+.summaryCard:hover {
+  background-color: var(--component-background-secondary);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 
+}
 .summaryCard h3 {
   font-size: 0.875rem;
   font-weight: 500;
@@ -44,51 +55,61 @@
 
 .filters {
   display: flex;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 1.5rem;
   margin-bottom: 2rem;
 }
 
-.searchBox {
+.searchContainer {
   position: relative;
   flex: 1;
   max-width: 400px;
 }
 
-.searchBox svg {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #6b7280;
-}
-
-.searchBox input {
+.searchBar {
   width: 100%;
-  padding: 0.75rem 1rem 0.75rem 3rem;
-  background-color: #2a2a2a;
-  border: 1px solid #333;
-  border-radius: 6px;
-  color: #f0f0f0;
-  font-size: 0.875rem;
 }
 
-.searchBox input::placeholder {
-  color: #6b7280;
+.tabs {
+  display: flex;
+  gap: 1rem;
+  border-bottom: 1px solid #333;
+  padding-bottom: 0.5rem;
 }
 
-.statusFilter {
-  padding: 0.75rem 1rem;
-  background-color: #2a2a2a;
-  border: 1px solid #333;
-  border-radius: 6px;
+.tab {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.tab:hover {
   color: #f0f0f0;
-  font-size: 0.875rem;
+}
+
+.tabActive {
+  color: var(--theme-tertiary);
+  font-weight: 500;
+}
+
+.tabActive::after {
+  content: '';
+  position: absolute;
+  bottom: -0.5rem;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--theme-tertiary);
 }
 
 .tableContainer {
-  background-color: #2a2a2a;
-  border-radius: 8px;
-  border: 1px solid #333;
+ 
+  
   overflow: hidden;
   margin-bottom: 2rem;
 }

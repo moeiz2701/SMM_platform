@@ -2,9 +2,11 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import styles from "../../../styling/invoices.module.css"
-import { Search, Eye } from "lucide-react"
+import { Eye } from "lucide-react"
 import API_ROUTES from "@/app/apiRoutes"
 import type { Invoice } from "@/types/invoice"
+import Table, { type TableColumn } from "@/components/table"
+import SearchBar from "@/components/searchbar"
 
 const InvoicesPage = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([])
@@ -12,7 +14,6 @@ const InvoicesPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
-  const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
   useEffect(() => {
@@ -60,8 +61,8 @@ const InvoicesPage = () => {
   const filteredInvoices = invoices.filter((invoice) => {
     const matchesSearch =
       invoice._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.campaign?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.client?.name.toLowerCase().includes(searchTerm.toLowerCase())
+      (typeof invoice.campaign === 'object' && invoice.campaign?.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (typeof invoice.client === 'object' && invoice.client?.user?.name.toLowerCase().includes(searchTerm.toLowerCase()))
 
     let matchesStatus = true
     if (statusFilter === "overdue") {
@@ -72,10 +73,6 @@ const InvoicesPage = () => {
 
     return matchesSearch && matchesStatus
   })
-
-  const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const paginatedInvoices = filteredInvoices.slice(startIndex, startIndex + itemsPerPage)
 
   const totalAmount = invoices.reduce((sum, invoice) => sum + invoice.amount, 0)
   const paidAmount = invoices
@@ -135,102 +132,115 @@ const InvoicesPage = () => {
       </div>
 
       <div className={styles.filters}>
-        <div className={styles.searchBox}>
-          <Search size={20} />
-          <input
-            type="text"
+        <div className={styles.searchContainer}>
+          <SearchBar 
             placeholder="Search invoices..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onSearch={setSearchTerm}
+            className={styles.searchBar}
           />
         </div>
 
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={styles.statusFilter}>
-          <option value="all">All Status</option>
-          <option value="paid">Paid</option>
-          <option value="pending">Pending</option>
-          <option value="overdue">Overdue</option>
-        </select>
+        <div className={styles.tabs}>
+          {[
+            "All Status",
+            "Paid",
+            "Pending",
+            "Overdue"
+          ].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setStatusFilter(tab === "All Status" ? "all" : tab.toLowerCase())}
+              className={`${styles.tab} ${statusFilter === (tab === "All Status" ? "all" : tab.toLowerCase()) ? styles.tabActive : ""}`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className={styles.tableContainer}>
-        <table className={styles.invoicesTable}>
-          <thead>
-            <tr>
-              <th>Invoice ID</th>
-              <th>Campaign</th>
-              <th>Client</th>
-              <th>Amount</th>
-              <th>Issue Date</th>
-              <th>Due Date</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedInvoices.map((invoice) => {
-              const overdue = isOverdue(invoice.dueDate, invoice.status)
-              return (
-                <tr key={invoice._id} className={overdue ? styles.overdueRow : ""}>
-                  <td className={styles.invoiceId}>{invoice._id.slice(-8)}</td>
-                  <td>{invoice.campaign?.name || "N/A"}</td>
-                    <td>{invoice.client?.name || "N/A"}</td>
-                  <td className={styles.amount}>${invoice.amount.toLocaleString()}</td>
-                  <td>{new Date(invoice.issuedDate).toLocaleDateString()}</td>
-                  <td className={overdue ? styles.overdue : ""}>{new Date(invoice.dueDate).toLocaleDateString()}</td>
-                  <td>
-                    <span
-                      className={styles.statusBadge}
-                      style={{ backgroundColor: overdue ? "#ef4444" : getStatusColor(invoice.status) }}
-                    >
-                      {overdue ? "overdue" : invoice.status}
-                    </span>
-                  </td>
-                  <td>
-                    <div className={styles.actions}>
-                      <Link href={`/manager/invoices/${invoice._id}`} className={styles.actionButton}>
-                        <Eye size={16} />
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
+        <Table
+          data={filteredInvoices}
+          columns={[
+            {
+              key: "invoiceId",
+              label: "INVOICE ID",
+              sortable: true,
+              render: (_, row) => (
+                <span className={styles.invoiceId}>{row._id.slice(-8)}</span>
               )
-            })}
-          </tbody>
-        </table>
+            },
+            {
+              key: "campaign",
+              label: "CAMPAIGN",
+              sortable: true,
+              render: (value) => (
+                typeof value === 'object' && value ? value.name : 'N/A'
+              )
+            },
+            {
+              key: "client",
+              label: "CLIENT",
+              sortable: true,
+              render: (value) => (
+                typeof value === 'object' && value?.user ? value.user.name : 'N/A'
+              )
+            },
+            {
+              key: "amount",
+              label: "AMOUNT",
+              type: "currency",
+              sortable: true
+            },
+            {
+              key: "issuedDate",
+              label: "ISSUE DATE",
+              type: "date",
+              sortable: true
+            },
+            {
+              key: "dueDate",
+              label: "DUE DATE",
+              type: "date",
+              sortable: true,
+              render: (value, row) => (
+                <span className={isOverdue(value, row.status) ? styles.overdue : ""}>
+                  {new Date(value).toLocaleDateString()}
+                </span>
+              )
+            },
+            {
+              key: "status",
+              label: "STATUS",
+              type: "status",
+              sortable: true,
+              render: (value, row) => {
+                const overdue = isOverdue(row.dueDate, value)
+                return (
+                  <span className={styles.statusBadge} style={{ backgroundColor: overdue ? "#ef4444" : getStatusColor(value) }}>
+                    {overdue ? "overdue" : value}
+                  </span>
+                )
+              }
+            },
+            {
+              key: "actions",
+              label: "ACTIONS",
+              render: (_, row) => (
+                <div className={styles.actions}>
+                  <Link href={`/manager/invoices/${row._id}`} className={styles.actionButton}>
+                    <Eye size={16} />
+                  </Link>
+                </div>
+              )
+            }
+          ]}
+          pageSize={itemsPerPage}
+          searchable={false}
+          emptyMessage="No invoices found"
+          className={styles.reusableTable}
+        />
       </div>
-
-      {totalPages > 1 && (
-        <div className={styles.pagination}>
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-            className={styles.paginationButton}
-          >
-            Previous
-          </button>
-
-          <div className={styles.pageNumbers}>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`${styles.pageButton} ${currentPage === page ? styles.active : ""}`}
-              >
-                {page}
-              </button>
-            ))}
-          </div>
-
-          <button
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
-            className={styles.paginationButton}
-          >
-            Next
-          </button>
-        </div>
-      )}
 
       {filteredInvoices.length === 0 && !loading && (
         <div className={styles.emptyState}>

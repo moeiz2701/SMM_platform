@@ -12,6 +12,7 @@
 
 }
 
+
 .button2{
   display: flex;
   align-items: center;
@@ -172,4 +173,37 @@ span{
 }
 button{
   font-family: 'BalooMedium';
+}
+
+.animation{
+  animation: fadeUp 0.3s ease-in-out;
+}
+
+@keyframes fadeUp {
+  0% {
+    transform: translateY(50);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.themeButton{
+  
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, var(--theme-tertiary, #4f46e5), #6366f1);
+  color: var(--theme-secondary, #ffffff);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: "Poppins", sans-serif;
+  box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+
 }

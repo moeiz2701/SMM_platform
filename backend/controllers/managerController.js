@@ -1,12 +1,74 @@
-// @desc    Get manager by user id
-// @route   GET /api/v1/managers/user/:userId
-// @access  Private/Admin/Manager
-
 const Manager = require('../models/Manager');
 const Client = require('../models/Client');
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
 const mongoose = require('mongoose');
+
+// @desc    Get manager analytics/stats
+// @route   GET /api/v1/managers/me/stats
+// @access  Private/Manager
+exports.getMyStats = asyncHandler(async (req, res, next) => {
+  // Only managers can access their stats
+  if (req.user.role !== 'manager') {
+    return next(new ErrorResponse('Only managers can access their stats', 403));
+  }
+
+  // Find the manager document for the current user
+  const manager = await Manager.findOne({ user: req.user.id })
+    .populate({
+      path: 'managedClients',
+      populate: {
+        path: 'user',
+        select: 'name email'
+      }
+    });
+
+  if (!manager) {
+    return next(new ErrorResponse('Manager profile not found for this user', 404));
+  }
+
+  // Calculate various statistics
+  const totalClients = manager.managedClients?.length || 0;
+  const pendingRequests = manager.requests?.filter(req => req.status === 'pending').length || 0;
+  const approvedRequests = manager.requests?.filter(req => req.status === 'approved').length || 0;
+  const activeClients = manager.managedClients?.filter(client => client.status === 'active').length || 0;
+  
+  // Calculate engagement metrics
+  const totalReviews = manager.reviews?.length || 0;
+  const avgRating = manager.rating || 0;
+  
+  // Get recent activity (you can extend this based on your needs)
+  const recentClients = manager.managedClients?.slice(-5) || [];
+
+  const stats = {
+    overview: {
+      totalClients,
+      activeClients,
+      pendingRequests,
+      approvedRequests,
+      totalReviews,
+      avgRating: parseFloat(avgRating.toFixed(1))
+    },
+    performance: {
+      clientSatisfaction: avgRating,
+      responseRate: pendingRequests > 0 ? ((approvedRequests / (approvedRequests + pendingRequests)) * 100).toFixed(1) : 100,
+      retentionRate: activeClients > 0 ? ((activeClients / totalClients) * 100).toFixed(1) : 0
+    },
+    recent: {
+      recentClients: recentClients.map(client => ({
+        id: client._id,
+        name: client.user?.name || 'Unknown',
+        status: client.status,
+        assignedAt: client.createdAt
+      }))
+    }
+  };
+
+  res.status(200).json({
+    success: true,
+    data: stats
+  });
+});
 
 // @desc    Get all managers
 // @route   GET /api/v1/managers

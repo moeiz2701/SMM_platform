@@ -23,7 +23,7 @@ const {
   addPaymentMethod,
   getClientsByManager,
    getMyClientManager,
-  getClientsByManager
+  
 } = require('../controllers/clientController');
 // Send a request to a client (manager only)
 
@@ -47,7 +47,7 @@ router.post('/:id/request', protect, authorize('manager'), sendRequest);
 router.post('/request-manager/:managerId', protect, authorize('client'), sendRequestToManager);
 
 // Get all requests for a client (admin/manager)
-router.get('/:id/requests', protect, authorize('admin', 'client', 'client'), getRequests);
+router.get('/:id/requests', protect, authorize('admin', 'client', 'user'), getRequests);
 
 router
   .route('/user/:userId')

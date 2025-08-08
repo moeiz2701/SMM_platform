@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import type { Client, ClientFilterTab } from "../../../components/client"
 import dynamic from "next/dynamic"
 import ReusableTable, { type TableColumn, type TableAction } from "../../../components/table"
@@ -18,6 +19,7 @@ export default function ClientsPage() {
   const [loading, setLoading] = useState(true)
   const [showSearchClient, setShowSearchClient] = useState(false)
   const [managerId, setManagerId] = useState<string | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
     async function fetchData() {
@@ -219,6 +221,7 @@ export default function ClientsPage() {
   ]
 
  return (
+    <div className="animation">
     <div className={styles.layout}>
       <main className={styles.main}>
         <div className={styles.header}>
@@ -226,7 +229,7 @@ export default function ClientsPage() {
 
           <div className={styles.topActions}>
             <div className={styles.leftActions}>
-              <button className={styles.addButton} onClick={() => setShowSearchClient((v) => !v)}>
+              <button className="themeButton" onClick={() => setShowSearchClient((v) => !v)}>
                 <span className={styles.plusIcon}>+</span>
                 Add Client
               </button>
@@ -284,6 +287,7 @@ export default function ClientsPage() {
                     searchable={false}
                     emptyMessage="No clients found"
                     className={styles.reusableTable}
+                    onRowClick={(row) => router.push(`/manager/client/${row.id}`)}
                   />
                   <div className={styles.footer}>
                     <span className={styles.counter}>
@@ -296,6 +300,7 @@ export default function ClientsPage() {
           </>
         )}
       </main>
+    </div>
     </div>
   )
 }
