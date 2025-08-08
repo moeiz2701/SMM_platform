@@ -177,10 +177,12 @@ const CampaignDetailPage = () => {
               {campaign.status}
             </span>
             <div className={styles.actionButtons}>
-              <Link href={`/campaigns/${campaign._id}/edit`} className={styles.editButton}>
-                <Edit size={16} />
-                Edit Campaign
-              </Link>
+              <button className="themeButton">
+                <Link href={`/campaigns/${campaign._id}/edit`}>
+                  <Edit size={16} />
+                  Edit Campaign
+                </Link>
+              </button>
               {campaign.status === "active" && (
                 <button onClick={handlePauseCampaign} className={styles.pauseButton}>
                   <Pause size={16} />

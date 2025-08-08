@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import styles from "../../../styling/ClientManager.module.css"
 import API_ROUTES from '../../apiRoutes'
-import ManagerProfile from './managerProfile'
+import ManagerProfilePage from "./managerProfile"
 
 type Manager = {
   _id: string;
@@ -40,61 +40,53 @@ export default function ClientManagerPage() {
   const [managers, setManagers] = useState<Manager[]>([])
   const [showManagerDetails, setShowManagerDetails] = useState(false)
   const [selectedManager, setSelectedManager] = useState<Manager | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [clientData, setClientData] = useState<Client | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
+  // Check if client already has a manager
+  useEffect(() => {
+    const fetchCurrentManager = async () => {
+      try {
+        const res = await fetch(API_ROUTES.CLIENTS.ME_MANAGER, {
+          credentials: 'include'
+        });
 
-useEffect(() => {
-  const fetchData = async () => {
-    setIsLoading(true);
-    try {
-      // 1. Get client data first
-      const clientRes = await fetch(API_ROUTES.CLIENTS.ME, {
-        credentials: 'include'
-      });
-      
-      if (!clientRes.ok) throw new Error("Client data failed");
-      
-      const clientData = await clientRes.json();
-      setClientData(clientData.data);
+        const data = await res.json();
 
-      // 2. Use the NEW endpoint to get manager for this client
-      if (clientData.data?._id) {
-        const managerRes = await fetch(
-          API_ROUTES.MANAGERS.GET_FOR_CLIENT(clientData.data._id), 
-          {
-            credentials: 'include'
-          }
-        );
-        
-        if (!managerRes.ok) throw new Error("Manager fetch failed");
-        
-        const managerData = await managerRes.json();
-        if (managerData.data) {
-          setCurrentManager(managerData.data);
+        if (res.ok && data.success && data.data) {
+          setCurrentManager(data.data);
+          setIsLoading(false);
+          return; // If manager exists, don't fetch all managers
         }
+      } catch (err) {
+        console.error("Error fetching current manager:", err);
       }
 
-      // 3. Get all managers for selection
-      const allManagersRes = await fetch(API_ROUTES.MANAGERS.GET_ALL, {
+      // If no current manager, fetch all available managers
+      fetchManagers();
+    };
+
+    fetchCurrentManager();
+  }, []);
+
+  const fetchManagers = async () => {
+    try {
+      const res = await fetch(API_ROUTES.MANAGERS.GET_ALL, {
         credentials: 'include'
       });
-      
-      if (!allManagersRes.ok) throw new Error("Managers list failed");
-      
-      const allManagersData = await allManagersRes.json();
-      setManagers(allManagersData.data);
 
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setManagers(data.data);
+      } else {
+        console.error("Failed to fetch managers:", data.message);
+      }
     } catch (err) {
-      console.error("Data loading error:", err);
-      // Handle error state
+      console.error("Error fetching managers:", err);
     } finally {
       setIsLoading(false);
     }
   };
-
-  fetchData();
-}, []);
 
   const handleSelectManager = (manager: Manager) => {
     setSelectedManager(manager)
@@ -104,93 +96,52 @@ useEffect(() => {
   const handleAssignManager = async (managerId: string) => {
     setIsLoading(true)
     try {
-      const res = await fetch(API_ROUTES.CLIENTS.ASSIGN_MANAGER(managerId), {
-        method: 'PUT',
-        credentials: 'include'
-      })
-      
-      const data = await res.json()
-      
-      if (res.ok && data.success) {
-        // Update local state with the new manager
-        const manager = managers.find(m => m._id === managerId)
-        if (manager) {
-          setCurrentManager(manager)
-          if (clientData) {
-            setClientData({...clientData, manager: managerId})
-          }
+      const res = await fetch(API_ROUTES.CLIENTS.SEND_REQUEST_TO_MANAGER(managerId), {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
         }
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        alert(`Request sent successfully to manager! They will be notified and can accept or decline your request.`);
+        setShowManagerDetails(false);
+        setSelectedManager(null);
+      } else {
+        console.error("Failed to send request to manager:", data.message);
+        alert(data.message || "Failed to send request to manager. Please try again.");
       }
     } catch (err) {
-      console.error("Error assigning manager:", err)
+      console.error("Error sending request to manager:", err);
+      alert("Error sending request to manager. Please try again.");
     } finally {
-      setShowManagerDetails(false)
-      setSelectedManager(null)
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
-const handleChangeManager = async () => {
-  if (!currentManager || !clientData) {
-    console.error("Current manager or client data is missing");
-    return;
+  const handleChangeManager = () => {
+    setCurrentManager(null)
+    setShowManagerDetails(false)
+    // Fetch all managers when changing manager
+    fetchManagers()
   }
 
-  const confirmed = window.confirm(
-    "Are you sure you want to change your manager? You'll need to select a new one."
-  );
-  if (!confirmed) return;
-
-  setIsLoading(true);
-  try {
-    const url = API_ROUTES.MANAGERS.REMOVE_CLIENT(currentManager._id, clientData._id);
-    console.log('Making request to:', url);
-
-    const res = await fetch(url, {
-      method: 'DELETE',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    // Check response content type
-    const contentType = res.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      const text = await res.text();
-      throw new Error(`Server returned ${res.status}: ${text.substring(0, 100)}`);
-    }
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.message || `Request failed with status ${res.status}`);
-    }
-
-    // Update local state
-    setCurrentManager(null);
-    setClientData({...clientData, manager: undefined});
-    
-  } catch (err: unknown) {  // Proper TypeScript typing
-    let errorMessage = "Failed to change manager";
-    if (err instanceof Error) {
-      errorMessage = err.message;
-    } else if (typeof err === 'string') {
-      errorMessage = err;
-    }
-    console.error("Error changing manager:", errorMessage);
-    alert(`Error: ${errorMessage}`);
-  } finally {
-    setIsLoading(false);
-  }
-};
-
+  // If loading, show loading state
   if (isLoading) {
-    return <div className={styles.main}>Loading...</div>
+    return (
+      <div className={styles.main}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>Loading...</h1>
+        </div>
+      </div>
+    )
   }
 
-  // If client has a manager assigned, show their profile
-  if (currentManager && clientData?.manager) {
+  // If client has a current manager, show manager profile
+  if (currentManager) {
     return (
       <div className={styles.main}>
         <div className={styles.header}>
@@ -201,7 +152,8 @@ const handleChangeManager = async () => {
             </button>
           </div>
         </div>
-        <ManagerProfile id={currentManager._id} />
+
+        <ManagerProfilePage id={currentManager._id} />
       </div>
     )
   }
@@ -210,9 +162,9 @@ const handleChangeManager = async () => {
   return (
     <div className={styles.main}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Select Your Manager</h1>
+        <h1 className={styles.title}>Request a Manager</h1>
         <div className={styles.headerContent}>
-          <p>Choose from our experienced team of account managers to guide your journey.</p>
+          <p>Send requests to our experienced team of account managers. They will review and respond to your request.</p>
         </div>
       </div>
 
@@ -260,15 +212,16 @@ const handleChangeManager = async () => {
                   View Details
                 </button>
 
-                <button
-                  className={styles.selectButton}
-                  onClick={() => handleAssignManager(manager._id)}
-                  disabled={isLoading || manager.status === "inactive"}
-                >
-                  {isLoading ? "Assigning..." : "Select Manager"}
-                </button>
+                  <button
+                    className={styles.selectButton}
+                    onClick={() => handleAssignManager(manager._id)}
+                    disabled={isLoading || manager.status === "inactive"}
+                  >
+                    {isLoading ? "Sending Request..." : "Send Request"}
+                  </button>
+                </div>
               </div>
-            </div>
+
           </div>
         ))}
       </div>
@@ -349,21 +302,22 @@ const handleChangeManager = async () => {
               </div>
             </div>
 
-            <div className={styles.modalFooter}>
-              <button className={styles.cancelButton} onClick={() => setShowManagerDetails(false)}>
-                Cancel
-              </button>
-              <button
-                className={styles.selectButton}
-                onClick={() => handleAssignManager(selectedManager._id)}
-                disabled={isLoading || selectedManager.status === "inactive"}
-              >
-                {isLoading ? "Assigning..." : "Select This Manager"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <div className={styles.modalFooter}>
+        <button className={styles.cancelButton} onClick={() => setShowManagerDetails(false)}>
+          Cancel
+        </button>
+        <button
+          className={styles.selectButton}
+          onClick={() => handleAssignManager(selectedManager._id)}
+          disabled={isLoading || selectedManager.status === "inactive"}
+        >
+          {isLoading ? "Sending Request..." : "Send Request to Manager"}
+        </button>
+      </div>
     </div>
-  )
-}
+  </div>
+)}
+</div>
+
+  )}
+

@@ -251,11 +251,12 @@ const CreateCampaignPage = () => {
   return (
     <div className={styles.createCampaignPage}>
       <div className={styles.header}>
+         <h1>Create New Campaign</h1>
         <Link href="/manager/campaigns" className={styles.backButton}>
           <ArrowLeft size={20} />
           Back to Campaigns
         </Link>
-        <h1>Create New Campaign</h1>
+       
       </div>
 
       <form onSubmit={handleSubmit} className={styles.form}>
@@ -551,7 +552,7 @@ const CreateCampaignPage = () => {
           </Link>
           <button 
             type="submit" 
-            className={styles.submitButton}
+            className="themeButton"
             disabled={!selectedClient || form.platforms.length === 0}
           >
             Create Campaign

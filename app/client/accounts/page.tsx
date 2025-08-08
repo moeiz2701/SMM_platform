@@ -63,7 +63,7 @@ const page = () => {
   };
 
   return (
-    <div>
+    <div className={styles.socialAccountsContainer}>
       <h2>Your Social Accounts</h2>
       <div className={styles.accountDisplay}>
         {/* Instagram */}

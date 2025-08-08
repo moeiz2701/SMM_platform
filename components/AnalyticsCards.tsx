@@ -3,7 +3,18 @@
 import "@/styling/ClientDashboard.css"
 
 import type React from "react"
-import { Users, TrendingUp, MessageSquare, Clock } from "lucide-react"
+import { Users, TrendingUp, MessageSquare, DollarSign } from "lucide-react"
+
+interface Analytics {
+  totalEngagement: number;
+  reachGrowth: number;
+  conversionRate: number;
+  roi: number;
+}
+
+interface AnalyticsCardsProps {
+  analytics: Analytics;
+}
 
 interface AnalyticsCardProps {
   title: string
@@ -37,35 +48,35 @@ function AnalyticsCard({ title, value, change, changeType, icon }: AnalyticsCard
   )
 }
 
-export default function AnalyticsCards() {
+export default function AnalyticsCards({ analytics }: AnalyticsCardsProps) {
   const cards = [
     {
-      title: "Total Posts",
-      value: "150",
+      title: "Total Engagement",
+      value: analytics.totalEngagement.toLocaleString(),
       change: "+12% from last month",
       changeType: "positive" as const,
       icon: <Users size={24} />,
     },
     {
-      title: "Engagement Rate",
-      value: "9.1%",
-      change: "+2.1% from last week",
-      changeType: "positive" as const,
+      title: "Reach Growth",
+      value: `${analytics.reachGrowth}%`,
+      change: `${analytics.reachGrowth > 0 ? '+' : ''}${analytics.reachGrowth}% this month`,
+      changeType: analytics.reachGrowth >= 0 ? "positive" as const : "negative" as const,
       icon: <TrendingUp size={24} />,
     },
     {
-      title: "New Messages",
-      value: "5",
-      change: "+2 new today",
+      title: "Conversion Rate",
+      value: `${analytics.conversionRate}%`,
+      change: "Based on click-through",
       changeType: "neutral" as const,
       icon: <MessageSquare size={24} />,
     },
     {
-      title: "Pending Approvals",
-      value: "3",
-      change: "-1 from yesterday",
-      changeType: "positive" as const,
-      icon: <Clock size={24} />,
+      title: "ROI",
+      value: `${analytics.roi}%`,
+      change: "Return on Investment",
+      changeType: analytics.roi >= 0 ? "positive" as const : "negative" as const,
+      icon: <DollarSign size={24} />,
     },
   ]
 

@@ -1,3 +1,7 @@
+// Get manager info for the current user's client profile
+
+// Get manager info for a client
+
 const express = require('express');
 const {
   getClients,
@@ -7,6 +11,7 @@ const {
   deleteClient,
   getClientsByUser,
   sendRequest,
+  sendRequestToManager,
   getRequests,
   assignManagerToClient,
   deleteRequest,
@@ -16,7 +21,9 @@ const {
   deleteBillingInfo,
   getMyClient,
   addPaymentMethod,
-  getClientsByManager
+  getClientsByManager,
+   getMyClientManager,
+  
 } = require('../controllers/clientController');
 // Send a request to a client (manager only)
 
@@ -25,17 +32,22 @@ const router = express.Router();
 
 const { protect, authorize } = require('../middleware/auth');
 
+
 router.get('/me', protect, getMyClient);
 router.get('/manager/clients', protect, authorize('manager'), getClientsByManager);
 router
   .route('/')
   .get(protect, getClients)
   .post(protect, createClient);
+router.get('/me/manager', protect, getMyClientManager);
 
 router.post('/:id/request', protect, authorize('manager'), sendRequest);
 
+// Send a request to a manager (client only)
+router.post('/request-manager/:managerId', protect, authorize('client'), sendRequestToManager);
+
 // Get all requests for a client (admin/manager)
-router.get('/:id/requests', protect, authorize('admin', 'client', 'client'), getRequests);
+router.get('/:id/requests', protect, authorize('admin', 'client', 'user'), getRequests);
 
 router
   .route('/user/:userId')
@@ -52,7 +64,7 @@ router.put('/assign-manager/:managerId', protect, authorize('user','client', 'cl
 
 // Delete a request from a client (admin or client owner only)
 router.delete('/:clientId/requests/:requestId', protect, authorize('admin', 'user','client', 'client'), deleteRequest);
-
+router.get('/manager/clients', protect, authorize('manager'), getClientsByManager);
 // Billing info routes
 router
   .route('/:id/billing')

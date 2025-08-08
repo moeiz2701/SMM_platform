@@ -38,6 +38,7 @@ const userRoutes = require('./routes/userRoutes');
 const invoiceRoutes = require('./routes/invoiceRoutes')
 const campaignRoutes = require('./routes/campaignRoutes')
 
+const messageRoutes = require('./routes/messageRoutes');
 
 const app = express();
 
@@ -75,6 +76,7 @@ app.use('/api/v1/managers/:managerId/reviews', reviewRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/ad-campaigns', campaignRoutes);
 app.use('/api/v1/invoices', invoiceRoutes);
+app.use('/api/v1/messages', messageRoutes);
 
 
 const PORT = process.env.PORT || 3000;

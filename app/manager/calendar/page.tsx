@@ -1106,6 +1106,7 @@ export default function CalendarPage() {
   }
 
   return (
+    <div className="animation">
     <div className={styles.layout}>
       <main className={styles.main}>
         {/* Calendar Header and Navigation */}
@@ -1113,28 +1114,29 @@ export default function CalendarPage() {
           <h1 className={styles.title}>Content Calendar</h1>
           <div className={styles.actionsRow}>
             <div className={styles.leftActions}>
-              <button 
-                className={styles.createButton}
-                onClick={() => {
-                  const selectedDateObj = new Date(
-                    currentDate.getFullYear(),
-                    currentDate.getMonth(),
-                    selectedDate
-                  )
-                  setFormData({
-                    ...formData,
-                    dueDate: selectedDateObj.toISOString().split('T')[0]
-                  })
-                  setShowCreateModal(true)
-                }}
-              >
-                <span className={styles.plusIcon}>+</span>
-                Add Content
-              </button>
+               <button 
+                      className={styles.addContentButton}
+                      onClick={() => {
+                        const selectedDateObj = new Date(
+                          currentDate.getFullYear(),
+                          currentDate.getMonth(),
+                          selectedDate
+                        )
+                        setFormData({
+                          ...formData,
+                          dueDate: selectedDateObj.toISOString().split('T')[0]
+                        })
+                        setShowCreateModal(true)
+                      }}
+                    >
+                      <span className={styles.plusIcon}>+</span>
+                      Add Content
+                    </button>
               <div className={styles.filterWrapper} ref={filterRef}>
                 <button 
                   className={styles.actionButton} 
                   onClick={() => setShowFilters(!showFilters)}
+                  style={{ padding:'1rem'}}
                 >
                   <span className={styles.actionIcon}>⚙</span>
                   Filter
@@ -1383,6 +1385,7 @@ export default function CalendarPage() {
         {showCreateModal && renderModal() }
         {previewContent && renderPreviewModal()}
       </main>
+    </div>
     </div>
   )
 }

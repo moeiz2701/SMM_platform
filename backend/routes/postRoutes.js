@@ -32,9 +32,9 @@ router
 
 router
   .route('/:id')
-  //.get(protect, checkOwnership(Post), getPost)
-  .put( updatePost)
-  .delete(protect,  deletePost);
+  .get(protect, getPost)
+  .put(protect, updatePost)
+  .delete(protect, deletePost);
 
 router
   .route('/:id/simulate')

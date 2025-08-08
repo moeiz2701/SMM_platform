@@ -1,3 +1,7 @@
+// @desc    Get manager info for the current user's client profile
+// @route   GET /api/v1/clients/me/manager
+// @access  Private/User
+
 // @desc    Send a request to a client (by manager)
 // @route   POST /api/v1/clients/:id/request
 // @access  Private/Manager
@@ -9,6 +13,7 @@ const asyncHandler = require('../middleware/async');
 const Manager = require('../models/Manager'); // Add at the top if not already
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+const { createNotificationWithEmail } = require('../utils/notificationHelper');
 
 const mongoose = require('mongoose');
 // @desc    Get all clients
@@ -53,11 +58,59 @@ exports.getClients = asyncHandler(async (req, res, next) => {
   });
 });
 
+exports.getMyClientManager = asyncHandler(async (req, res, next) => {
+  // Find the client document where user field matches the current user's id
+  const client = await Client.findOne({ user: req.user.id }).populate({
+    path: 'manager',
+    populate: {
+      path: 'user',
+      model: 'User',
+      select: 'name email profilePhoto'
+    },
+    select: 'profilePhoto user'
+  });
+  if (!client) {
+    return res.status(200).json({ success: true, data: null });
+  }
+  if (!client.manager) {
+    return res.status(200).json({ success: true, data: null });
+  }
+  res.status(200).json({
+    success: true,
+    data: client.manager
+  });
+});
+
+
+exports.getClientsByManager = asyncHandler(async (req, res, next) => {
+  console.log('Fetching clients for manager ID:', req.user.id); // Log the manager's user ID
+  
+  const manager = await Manager.findOne({ user: req.user.id })
+    .populate('managedClients')
+    .lean();
+
+  console.log('Manager document found:', !!manager); // Log if manager exists
+  console.log('Number of managed clients:', manager?.managedClients?.length || 0); // Log client count
+
+  if (!manager) {
+    return res.status(200).json({ success: true, data: [] });
+  }
+
+  res.status(200).json({
+    success: true,
+    data: manager.managedClients || [] // Ensure we always return an array
+  });
+});
 // @desc    Get single client
 // @route   GET /api/v1/clients/:id
 // @access  Private
 exports.getClient = asyncHandler(async (req, res, next) => {
-  const client = await Client.findById(req.params.id).populate('user', 'name email');
+  const client = await Client.findById(req.params.id)
+    .populate('user', 'name email')
+    .populate({
+      path: 'manager',
+      populate: { path: 'user', select: 'name email' }
+    });
 
   if (!client) {
     return next(
@@ -65,8 +118,11 @@ exports.getClient = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Make sure user owns the client or is admin
-  if (client.user.toString() !== req.user.id && req.user.role !== 'admin') {
+  // Make sure user owns the client, is admin, or is the assigned manager
+  const isClientOwner = client.user._id.toString() === req.user.id;
+  const isAdmin = req.user.role === 'admin';
+  const isAssignedManager = client.manager && client.manager.user && client.manager.user._id.toString() === req.user.id;
+  if (!isClientOwner && !isAdmin && !isAssignedManager) {
     return next(
       new ErrorResponse(`Not authorized to access this client`, 401)
     );
@@ -84,9 +140,9 @@ exports.getClient = asyncHandler(async (req, res, next) => {
 exports.createClient = asyncHandler(async (req, res, next) => {
   // Add user to req.body
   req.body.user = req.user.id;
-const user = await User.findById(req.user.id);
-user.role = 'client';
-await user.save();
+  const user = await User.findById(req.user.id);
+  user.role = 'client';
+  await user.save();
   // profilePhoto should be a Cloudinary URL if provided
   // (Assume frontend uploads to Cloudinary and sends the URL)
 
@@ -99,8 +155,8 @@ await user.save();
   // Create the client document
   const client = await Client.create(req.body);
 
-  // Update user's role to 'client'
-  await User.findByIdAndUpdate(userId, { role: 'client' });
+  // Update user's role to 'client' (already done above, so this line can be removed)
+  // await User.findByIdAndUpdate(req.user.id, { role: 'client' });
 
   res.status(201).json({
     success: true,
@@ -199,16 +255,132 @@ exports.sendRequest = asyncHandler(async (req, res, next) => {
   }
   const clientId = req.params.id;
   // Find the Manager document for the current user
-  const managerDoc = await Manager.findOne({ user: req.user.id });
+  const managerDoc = await Manager.findOne({ user: req.user.id }).populate('user', 'name email');
   if (!managerDoc) {
     return next(new ErrorResponse('Manager profile not found for this user', 404));
   }
   const managerId = managerDoc._id;
+  
   try {
     const client = await Client.sendRequest(clientId, managerId);
+    
+    // Find the client with user info to create notification
+    const clientWithUser = await Client.findById(clientId).populate('user');
+    if (!clientWithUser || !clientWithUser.user) {
+      console.error('Client or client user not found for notification');
+      return res.status(200).json({ 
+        success: true, 
+        requests: client.requests,
+        message: "Request sent but notification could not be created"
+      });
+    }
+
+    // Create notification for the client
+    try {
+      await createNotificationWithEmail({
+        userId: clientWithUser.user._id,
+        type: 'system',
+        title: 'New Manager Request',
+        message: `${managerDoc.user.name} has sent you a request to become your manager. You can review and accept this request in your requests section.`,
+        relatedEntity: {
+          entityType: 'Client',
+          entityId: clientId
+        },
+        priority: 'high',
+        actionRequired: true
+      });
+
+      console.log('Notification created successfully for client user:', clientWithUser.user._id);
+    } catch (notificationError) {
+      console.error('Error creating notification:', notificationError);
+      // Continue with response even if notification fails
+    }
+
     res.status(200).json({ success: true, requests: client.requests });
   } catch (err) {
     return next(new ErrorResponse(err.message, 404));
+  }
+});
+
+// @desc    Send a request to a manager (by client)
+// @route   POST /api/v1/clients/request-manager/:managerId
+// @access  Private/Client
+exports.sendRequestToManager = asyncHandler(async (req, res, next) => {
+  // Only clients can send requests to managers
+  if (req.user.role !== 'client') {
+    return next(new ErrorResponse('Only clients can send requests to managers', 403));
+  }
+
+  const managerId = req.params.managerId;
+  
+  // Find the client document for the current user
+  const clientDoc = await Client.findOne({ user: req.user.id }).populate('user', 'name email');
+  if (!clientDoc) {
+    return next(new ErrorResponse('Client profile not found for this user', 404));
+  }
+
+  // Check if manager exists
+  const manager = await Manager.findById(managerId).populate('user', 'name email');
+  if (!manager) {
+    return next(new ErrorResponse(`Manager not found with id ${managerId}`, 404));
+  }
+
+  // Check if manager is active
+  if (manager.status !== 'active') {
+    return next(new ErrorResponse('Manager is not active', 400));
+  }
+
+  // Check if request already exists
+  const existingRequest = manager.requests.find(
+    req => req.Client.toString() === clientDoc._id.toString() && req.status === 'pending'
+  );
+  
+  if (existingRequest) {
+    return next(new ErrorResponse('A pending request already exists for this manager', 400));
+  }
+
+  try {
+    // Add the request to the manager's requests array
+    manager.requests.push({
+      Client: clientDoc._id,
+      status: 'pending'
+    });
+    await manager.save();
+
+    // Create notification for the manager
+    try {
+      await createNotificationWithEmail({
+        userId: manager.user._id,
+        type: 'system',
+        title: 'New Client Request',
+        message: `${clientDoc.user.name} has sent you a request to become their manager. You can review and respond to this request in your requests section.`,
+        relatedEntity: {
+          entityType: 'Manager',
+          entityId: managerId
+        },
+        priority: 'high',
+        actionRequired: true
+      });
+
+      console.log('Notification created successfully for manager user:', manager.user._id);
+    } catch (notificationError) {
+      console.error('Error creating notification:', notificationError);
+      // Continue with response even if notification fails
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      message: `Request sent to manager ${manager.user.name}`,
+      request: {
+        Client: clientDoc._id,
+        manager: managerId,
+        status: 'pending',
+        date: new Date()
+      }
+    });
+  } catch (err) {
+    console.error('Error sending request to manager:', err);
+    return next(new ErrorResponse('Error sending request to manager', 500));
   }
 });
 
@@ -217,7 +389,7 @@ exports.sendRequest = asyncHandler(async (req, res, next) => {
 // @access  Private/Admin/Manager
 exports.getRequests = asyncHandler(async (req, res, next) => {
   // Only admin or manager can view requests
-  if (req.user.role !== 'admin' && req.user.role !== 'client' && req.user.role !== 'client') {
+  if (req.user.role !== 'admin' && req.user.role !== 'client' && req.user.role !== 'user') {
     return next(new ErrorResponse('Not authorized to view requests', 403));
   }
   const clientId = req.params.id;
@@ -247,7 +419,7 @@ exports.assignManagerToClient = asyncHandler(async (req, res, next) => {
 
   // Check if manager exists
   const Manager = require('../models/Manager');
-  const manager = await Manager.findById(managerId);
+  const manager = await Manager.findById(managerId).populate('user', 'name email');
   if (!manager) {
     return next(new ErrorResponse('Manager not found', 404));
   }
@@ -257,15 +429,41 @@ exports.assignManagerToClient = asyncHandler(async (req, res, next) => {
     { user: userId },
     { manager: managerId },
     { new: true, runValidators: true }
-  );
+  ).populate('user', 'name email');
+  
   if (!client) {
     return next(new ErrorResponse('Client not found for this user', 404));
   }
-  // Add client to manager's managedClients array if not already pres
+  
+  // Add client to manager's managedClients array if not already present
   if (!manager.managedClients.includes(client._id)) {
     manager.managedClients.push(client._id);
     await manager.save();
   }
+
+  // Create notification for the manager
+  try {
+    if (manager.user && client.user) {
+      await createNotificationWithEmail({
+        userId: manager.user._id,
+        type: 'system',
+        title: 'New Client Assigned',
+        message: `${client.user.name} has assigned you as their manager. You can now manage their campaigns and view their account details.`,
+        relatedEntity: {
+          entityType: 'Client',
+          entityId: client._id
+        },
+        priority: 'high',
+        actionRequired: false
+      });
+
+      console.log('Manager assignment notification created successfully for manager user:', manager.user._id);
+    }
+  } catch (notificationError) {
+    console.error('Error creating manager assignment notification:', notificationError);
+    // Continue with response even if notification fails
+  }
+
   res.status(200).json({
     success: true,
     data: client
@@ -287,7 +485,7 @@ exports.deleteRequest = asyncHandler(async (req, res, next) => {
   }
   // Only admin or the client owner can delete a request
   if (
-    req.user.role !== 'admin' ||
+    req.user.role !== 'admin' &&
     client.user.toString() !== req.user.id || req.user.role !== 'client'
   ) {
     console.log('Current role:', req.user.role);

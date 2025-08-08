@@ -1,3 +1,5 @@
+const Client = require('../models/Client');
+const Manager = require('../models/Manager');
 const User = require('../models/User');
 const ErrorResponse = require('../utils/errorResponse');
 const sendEmail = require('../utils/sendEmail');
@@ -217,4 +219,52 @@ const sendTokenResponse = (user, statusCode, res) => {
       success: true,
       token
     });
+};
+
+
+exports.getAllClientsAndManagers = async (req, res, next) => {
+  try {
+    // Get all clients with their user info
+    const clients = await Client.find()
+      .populate({
+        path: 'user',
+        select: 'email role'
+      })
+      .select('profilePhoto status user');
+
+    // Get all managers with their user info
+    const managers = await Manager.find()
+      .populate({
+        path: 'user',
+        select: 'email role'
+      })
+      .select('profilePhoto status user');
+
+    // Format response
+    const formattedClients = clients.map(client => ({
+      type: 'client',
+      id: client.user?._id,
+      email: client.user?.email,
+      role: client.user?.role,
+      profilePhoto: client.profilePhoto,
+      status: client.status
+    }));
+
+    const formattedManagers = managers.map(manager => ({
+      type: 'manager',
+      id: manager.user?._id,
+      email: manager.user?.email,
+      role: manager.user?.role,
+      profilePhoto: manager.profilePhoto,
+      status: manager.status
+    }));
+
+    res.status(200).json({
+      success: true,
+      clients: formattedClients,
+      managers: formattedManagers
+    });
+  } catch (err) {
+    next(err);
+  }
 };

@@ -208,7 +208,9 @@ export default function ManagerProfile({ params }: { params: { id: string } }) {
               <img src={manager.profilePhoto} alt={manager.name} className={styles.profilePhoto} />
             ) : (
               <div className={styles.profilePhotoPlaceholder}>
-                <span className={styles.profileInitial}>{manager.name.charAt(0).toUpperCase()}</span>
+                <span className={styles.profileInitial}>
+                  {(manager.name || user.name || "?").charAt(0).toUpperCase()}
+                </span>
               </div>
             )}
             {isHoveringPhoto && (

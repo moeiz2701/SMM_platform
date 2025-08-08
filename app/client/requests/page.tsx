@@ -19,32 +19,53 @@ interface Request {
   manager: Manager;
   date?: string;
   status?: string;
-  _id?: string; // Add _id for request identification
+  _id?: string;
 }
 
-const RequestCard = ({ manager, onAccept, disabled }: { manager: Manager; onAccept: () => void; disabled: boolean; }) => {
+const RequestCard = ({ 
+  manager, 
+  onAccept, 
+  disabled 
+}: { 
+  manager: Manager; 
+  onAccept: () => void; 
+  disabled: boolean; 
+}) => {
   if (!manager || !manager.user) return null;
+
   const { profilePhoto } = manager;
   const { name, email } = manager.user;
+
   return (
     <div className={style.requestCard}>
       <img
         src={profilePhoto || '/icons/profile.svg'}
         alt={name}
         className={style.requestCardImg}
-        onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { e.currentTarget.onerror = null; e.currentTarget.src = '/icons/profile.svg'; }}
+        onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { 
+          e.currentTarget.onerror = null; 
+          e.currentTarget.src = '/icons/profile.svg'; 
+        }}
       />
-      <div>
-        <div className={style.requestCardName}><h1>{name}</h1></div>
-        <div className={style.requestCardEmail}><p>{email}</p></div>
-        <div className={style.requestCardText}><p>wants to be your manager</p></div>
-        <button
-          className={style.acceptButton}
-          onClick={onAccept}
-          disabled={disabled}
-        >
-          Accept request
-        </button>
+      <div className={style.requestCardContent}>
+        <div className={style.requestCardName}>
+          <h1>{name}</h1>
+        </div>
+        <div className={style.requestCardEmail}>
+          <p>{email}</p>
+        </div>
+        <div className={style.requestCardText}>
+          <p>wants to be your manager</p>
+        </div>
+        <div className={style.requestCardActions}>
+          <button
+            className={`${style.actionButton} ${style.acceptButton}`}
+            onClick={onAccept}
+            disabled={disabled}
+          >
+            {disabled ? 'Processing...' : 'Accept Request'}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -66,15 +87,19 @@ const RequestsPage = () => {
         const userData = await userRes.json();
         const userId = userData.data?._id;
         if (!userId) throw new Error('User not found');
+
         // Get client for this user
         const clientRes = await fetch(`${API_ROUTES.CLIENTS.CREATE}?user=${userId}`, { credentials: 'include' });
         if (!clientRes.ok) throw new Error('Failed to fetch client');
         const clientData = await clientRes.json();
         const client = clientData.data && Array.isArray(clientData.data) && clientData.data.length > 0 ? clientData.data[0] : null;
         if (!client || !client._id) throw new Error('Client not found');
-        setClientId(client._id); // Save clientId for later use
+
+        setClientId(client._id);
+
         // Get requests for this client
         const reqRes = await fetch(API_ROUTES.CLIENTS.GET_REQUESTS(client._id), { credentials: 'include' });
+        console.log(client._id, 'Client ID for requests');
         if (!reqRes.ok) throw new Error('Failed to fetch requests');
         const reqData = await reqRes.json();
         setRequests(reqData.requests || []);
@@ -84,13 +109,16 @@ const RequestsPage = () => {
         setLoading(false);
       }
     };
+
     fetchRequests();
   }, []);
 
   const handleAccept = async (managerId: string, requestId?: string) => {
     if (!clientId || !requestId) return;
+
     setAccepting(managerId);
     setError('');
+
     try {
       // Delete the request first
       const delRes = await fetch(API_ROUTES.CLIENTS.DELETE_REQUEST(clientId, requestId), {
@@ -98,6 +126,7 @@ const RequestsPage = () => {
         credentials: 'include',
       });
       if (!delRes.ok) throw new Error('Failed to delete request');
+
       // Assign the manager
       const res = await fetch(API_ROUTES.CLIENTS.ASSIGN_MANAGER(managerId), {
         method: 'PUT',
@@ -105,6 +134,7 @@ const RequestsPage = () => {
         headers: { 'Content-Type': 'application/json' },
       });
       if (!res.ok) throw new Error('Failed to assign manager');
+
       // Remove the accepted request from the list
       setRequests((prev) => prev.filter((req) => req._id !== requestId));
     } catch (e: any) {
@@ -114,22 +144,76 @@ const RequestsPage = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className={style.pageContainer}>
+        <div className={style.pageHeader}>
+          <h1 className={style.pageTitle}>Your Requests</h1>
+        </div>
+        <div className={style.loadingContainer}>
+          <div className={style.loadingSpinner}></div>
+          <p className={style.loadingText}>Loading your requests...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={style.pageContainer}>
+        <div className={style.pageHeader}>
+          <h1 className={style.pageTitle}>Your Requests</h1>
+        </div>
+        <div className={style.errorContainer}>
+          <div className={style.errorIcon}>⚠️</div>
+          <p className={style.errorText}>{error}</p>
+          <button 
+            className={style.retryButton}
+            onClick={() => window.location.reload()}
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <h2>Your requests</h2>
-      {loading && <div>Loading...</div>}
-      {error && <div style={{ color: 'red' }}>{error}</div>}
-      {!loading && !error && requests.length === 0 && <div>No requests found.</div>}
-      {requests
-        .filter((req) => req.manager && req.manager._id)
-        .map((req, idx) => (
-          <RequestCard
-            key={idx}
-            manager={req.manager}
-            onAccept={() => req.manager && req.manager._id && handleAccept(req.manager._id, req._id)}
-            disabled={accepting === req.manager._id}
-          />
-        ))}
+    <div className={style.pageContainer}>
+      <div className={style.pageHeader}>
+        <h1 className={style.pageTitle}>Your Requests</h1>
+        <p className={style.pageSubtitle}>
+          {requests.length === 0 
+            ? "No pending requests" 
+            : `${requests.length} pending request${requests.length !== 1 ? 's' : ''}`
+          }
+        </p>
+      </div>
+
+      <div className={style.requestsContainer}>
+        {requests.length === 0 ? (
+          <div className={style.emptyState}>
+            <div className={style.emptyIcon}>📋</div>
+            <h3 className={style.emptyTitle}>No requests found</h3>
+            <p className={style.emptyText}>
+              You don't have any pending management requests at the moment.
+            </p>
+          </div>
+        ) : (
+          <div className={style.requestsList}>
+            {requests
+              .filter((req) => req.manager && req.manager._id)
+              .map((req, idx) => (
+                <RequestCard
+                  key={req._id || idx}
+                  manager={req.manager}
+                  onAccept={() => req.manager && req.manager._id && handleAccept(req.manager._id, req._id)}
+                  disabled={accepting === req.manager._id}
+                />
+              ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

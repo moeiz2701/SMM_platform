@@ -1,5 +1,8 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+
+
 .budgetDetailPage {
-  max-width: 1200px;
+  padding: 30px;
 }
 
 .loading {
@@ -67,6 +70,8 @@
   font-size: 2rem;
   font-weight: 600;
   color: #f0f0f0;
+        font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
 }
 
 .statusBadge {
@@ -103,14 +108,13 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  background-color: #2a2a2a;
+  background-color: var(--component-background);
   border: 1px solid #333;
   border-radius: 8px;
   padding: 1.5rem;
 }
 
 .overviewCard svg {
-  color: #3b82f6;
   flex-shrink: 0;
 }
 
@@ -150,7 +154,7 @@
 }
 
 .utilizationSection {
-  background-color: #2a2a2a;
+  background-color: var(--component-background);
   border: 1px solid #333;
   border-radius: 8px;
   padding: 1.5rem;
@@ -162,12 +166,14 @@
   font-weight: 600;
   color: #f0f0f0;
   margin-bottom: 1rem;
+        font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
 }
 
 .utilizationBar {
   width: 100%;
   height: 12px;
-  background-color: #374151;
+  background-color: var(--component-background-secondary);
   border-radius: 6px;
   overflow: hidden;
   margin-bottom: 0.75rem;
@@ -192,7 +198,7 @@
 }
 
 .section {
-  background-color: #2a2a2a;
+  background-color: var(--component-background);
   border: 1px solid #333;
   border-radius: 8px;
   padding: 1.5rem;
@@ -203,6 +209,8 @@
   font-weight: 600;
   color: #f0f0f0;
   margin-bottom: 1rem;
+        font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
 }
 
 .platformTable {
@@ -266,7 +274,7 @@
 .monthBar {
   width: 100%;
   height: 8px;
-  background-color: #374151;
+  background-color: var(--component-background-secondary);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -303,7 +311,7 @@
 .weekBar {
   width: 100%;
   height: 120px;
-  background-color: #374151;
+  background-color: var(--component-background-secondary);
   border-radius: 4px 4px 0 0;
   display: flex;
   align-items: end;
@@ -312,7 +320,7 @@
 
 .weekBarFill {
   width: 100%;
-  background-color: #3b82f6;
+  background-color:var(--theme-tertiary);
   transition: height 0.3s ease;
   border-radius: 4px 4px 0 0;
 }

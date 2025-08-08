@@ -15,7 +15,8 @@ exports.redirectToOAuth = (req, res) => {
     // Instagram uses Facebook's OAuth with Instagram-specific scopes
     authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${process.env.FACEBOOK_CLIENT_ID}&redirect_uri=${redirectUri}&scope=instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement&response_type=code`;
   }
-  
+
+
   console.log(platform, 'OAuth redirect URL:', authUrl);
   res.redirect(authUrl);
 };
@@ -201,4 +202,6 @@ exports.handleOAuthCallback = async (req, res) => {
     console.error('OAuth callback error:', err);
     res.status(500).send('OAuth callback failed');
   }
+
+  
 };

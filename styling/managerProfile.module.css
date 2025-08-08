@@ -1,0 +1,797 @@
+/* ManagerProfile.module.css */
+
+/* .profileContainer {
+  background-color: #121212;
+  color: #e0e0e0;
+  min-height: 100vh;
+  padding: 2rem;
+} */
+
+.profileWrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: #1b202a;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+/* Header Section */
+.profileHeader {
+  display: flex;
+  padding: 2rem;
+  gap: 2rem;
+
+}
+
+.profileImageContainer {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.profileImage {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #333;
+}
+
+.statusBadge {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background-color: #333;
+  padding: 0.25rem 0.5rem;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.profileInfo {
+  flex-grow: 1;
+}
+
+.profileName {
+  font-size: 2rem;
+  margin: 0 0 0.5rem;
+  color: #ffffff;
+}
+
+.profileTitle {
+  color: #a0a0a0;
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+}
+
+.profileRating {
+  margin-bottom: 1rem;
+}
+
+.profileMeta {
+  display: flex;
+  gap: 1.5rem;
+  color: #a0a0a0;
+  font-size: 0.9rem;
+}
+
+.profileMeta span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Tab Container */
+.tabContainer {
+  padding: 2rem;
+}
+
+/* Stats Grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.statCard {
+  background-color: #1f2937;
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: transform 0.2s;
+}
+
+.statCard:hover {
+  transform: translateY(-3px);
+}
+
+.statIcon {
+  background-color: #333;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4a90e2;
+}
+
+.statContent h3 {
+  font-size: 1.5rem;
+  margin: 0 0 0.25rem;
+  color: #ffffff;
+}
+
+.statContent p {
+  margin: 0;
+  color: #a0a0a0;
+  font-size: 0.9rem;
+}
+
+/* Info Sections */
+.infoSection {
+  margin-bottom: 2rem;
+}
+
+.infoSection h3 {
+  color: #ffffff;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  border-bottom: 1px solid #333;
+  padding-bottom: 0.5rem;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.infoItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #e0e0e0;
+  font-size: 0.95rem;
+}
+
+.websiteLink {
+  color: #4a90e2;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.websiteLink:hover {
+  text-decoration: underline;
+}
+
+/* Social Links */
+.socialLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.socialLink {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  text-decoration: none;
+  color: #e0e0e0;
+  background-color: #252525;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.socialLink:hover {
+  background-color: #333;
+}
+
+/* Stars */
+.starsContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.star {
+  color: #333;
+}
+
+.starFilled {
+  color: #ffc107;
+  fill: #ffc107;
+}
+
+.ratingText {
+  margin-left: 0.5rem;
+  color: #a0a0a0;
+  font-size: 0.9rem;
+}
+
+/* Status */
+.statusIconActive {
+  color: #4caf50;
+}
+
+.statusIconInactive {
+  color: #f44336;
+}
+
+.statusIconPending {
+  color: #ff9800;
+}
+
+.statusText {
+  font-size: 0.85rem;
+}
+
+.statusText.active,
+.statusText.approved {
+  color: #4caf50;
+}
+
+.statusText.inactive,
+.statusText.rejected {
+  color: #f44336;
+}
+
+.statusText.pending {
+  color: #ff9800;
+}
+
+/* Clients List */
+.clientsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.clientsHeader h3 {
+  color: #ffffff;
+  margin: 0;
+}
+
+.clientsStats {
+  display: flex;
+  gap: 1rem;
+  color: #a0a0a0;
+  font-size: 0.9rem;
+}
+
+.activeClients {
+  color: #4caf50;
+}
+
+.inactiveClients {
+  color: #f44336;
+}
+
+.clientsList {
+  display: grid;
+  gap: 1rem;
+}
+
+.clientCard {
+  background-color: #252525;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: transform 0.2s;
+}
+
+.clientCard:hover {
+  transform: translateY(-2px);
+}
+
+.clientInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.clientAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #333;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.clientDetails h4 {
+  margin: 0 0 0.25rem;
+  color: #ffffff;
+}
+
+.clientStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.viewClientBtn {
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background-color 0.2s;
+}
+
+.viewClientBtn:hover {
+  background-color: #3a7bc8;
+}
+
+/* Reviews */
+.reviewsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.reviewsHeader h3 {
+  color: #ffffff;
+  margin: 0;
+}
+
+.overallRating {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.reviewCount {
+  color: #a0a0a0;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.reviewsList {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.reviewCard {
+  background-color: #0e0f13;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.reviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.reviewerInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.reviewerAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #333;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.reviewerDetails h4 {
+  margin: 0 0 0.25rem;
+  color: #ffffff;
+}
+
+.reviewDate {
+  color: #a0a0a0;
+  font-size: 0.85rem;
+}
+
+.reviewComment {
+  margin: 0;
+  color: #e0e0e0;
+  line-height: 1.5;
+}
+
+/* Requests */
+.requestsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.requestsHeader h3 {
+  color: #ffffff;
+  margin: 0;
+}
+
+.requestsStats {
+  display: flex;
+  gap: 1rem;
+  color: #a0a0a0;
+  font-size: 0.9rem;
+}
+
+.pendingRequests {
+  color: #ff9800;
+}
+
+.approvedRequests {
+  color: #4caf50;
+}
+
+.rejectedRequests {
+  color: #f44336;
+}
+
+.requestsList {
+  display: grid;
+  gap: 1rem;
+}
+
+.requestCard {
+  background-color: #252525;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: transform 0.2s;
+}
+
+.requestCard:hover {
+  transform: translateY(-2px);
+}
+
+.requestInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.requestAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #333;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.requestDetails h4 {
+  margin: 0 0 0.25rem;
+  color: #ffffff;
+}
+
+.requestDate {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #a0a0a0;
+  font-size: 0.85rem;
+}
+
+.requestStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Loading and Error States */
+.loading,
+.error {
+  padding: 2rem;
+  text-align: center;
+  color: #ffffff;
+}
+
+/* Tab Navigation */
+.tabNavigation {
+  display: flex;
+  border-bottom: 1px solid #333;
+  padding: 0 2rem;
+  background-color: #1b202a;
+}
+
+.tabButton {
+  background: none;
+  border: none;
+  padding: 0.5rem 1.5rem;
+  cursor: pointer;
+  color: #a0a0a0;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tabButton:hover {
+  color: #e0e0e0;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.tabButton.active {
+  color: #6c82a4;
+  border-bottom-color: #6c82a4;
+  background-color: rgba(74, 144, 226, 0.1);
+}
+
+.tabButton.active svg {
+  color: #4a90e2;
+}
+
+/* Tab Content Transitions */
+.tabContent {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Badge in tabs */
+.tabButton .badge {
+  background-color: #333;
+  color: #e0e0e0;
+  border-radius: 10px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  margin-left: 0.25rem;
+}
+
+.tabButton.active .badge {
+  background-color: rgba(74, 144, 226, 0.2);
+  color: #4a90e2;
+}
+
+/* Review Form Styles */
+.reviewFormContainer {
+  background-color: #0e0f13;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.reviewFormContainer h4 {
+  color: #ffffff;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+}
+
+.formGroup {
+  margin-bottom: 1.25rem;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.formGroup textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 0.75rem;
+  background-color: #1b202a;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.formGroup textarea:focus {
+  outline: none;
+  border-color: #6c82a4;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+/* Interactive Stars */
+.interactiveStars {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.interactiveStar {
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.interactiveStar:hover {
+  color: #ffc107;
+  transform: scale(1.2);
+}
+
+.interactiveStar.filled {
+  color: #ffc107;
+  fill: #ffc107;
+}
+
+/* Form Buttons */
+.formActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.submitButton {
+  background-color: #6c82a4;
+  color: white;
+  border: none;
+  padding: 0.65rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.submitButton:hover {
+  background-color: #6c82a4;
+}
+
+.cancelButton {
+  background-color: transparent;
+  color: #a0a0a0;
+  border: 1px solid #333;
+  padding: 0.65rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancelButton:hover {
+  background-color: #333;
+  color: #e0e0e0;
+}
+
+/* Review Action Buttons */
+.reviewActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.editButton {
+  background-color: rgba(74, 144, 226, 0.1);
+  color: #6c82a4;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.editButton:hover {
+  background-color: rgba(74, 144, 226, 0.2);
+}
+
+.deleteButton {
+  background-color: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.deleteButton:hover {
+  background-color: rgba(244, 67, 54, 0.2);
+}
+
+/* Add Review Button */
+.addReviewButton {
+  background-color: #6c82a4;
+  color: white;
+  border: none;
+  padding: 0.65rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.addReviewButton:hover {
+  background-color: #6c82a4;
+}
+
+/* Empty State */
+.reviewsEmptyState {
+  text-align: center;
+  padding: 2rem;
+  color: #a0a0a0;
+  background-color: #252525;
+  border-radius: 8px;
+  border: 1px dashed #333;
+}
+
+.reviewsEmptyState p {
+  margin-bottom: 1rem;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .reviewFormContainer {
+    padding: 1rem;
+  }
+  
+  .formActions {
+    flex-direction: column;
+  }
+  
+  .submitButton,
+  .cancelButton {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .reviewHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .reviewActions {
+    align-self: flex-end;
+  }
+}

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import styles from "../../../styling/campaigns.module.css";
 import { Plus, Search, Eye, Edit, Pause, Play, Archive } from "lucide-react";
+import SearchBar from "@/components/searchbar";
+import Table, { TableColumn } from "@/components/table";
 import API_ROUTES from "@/app/apiRoutes";
 import type { AdCampaign } from "@/types/adCompaign";
 
@@ -161,125 +163,154 @@ const handleArchiveCampaign = async (id: string) => {
     );
   }
 
+  // Table columns definition
+  const columns: TableColumn[] = [
+    {
+      key: "name",
+      label: "Name",
+      sortable: true,
+      render: (value, row) => <span className={styles.campaignName}>{value}</span>,
+    },
+    {
+      key: "objective",
+      label: "Objective",
+      sortable: true,
+      render: (value) => getObjectiveLabel(value),
+    },
+    {
+      key: "platforms",
+      label: "Platforms",
+      render: (value) => (
+        <div className={styles.platforms}>
+          {Array.isArray(value)
+            ? value.map((platform: any, idx: number) => (
+                <span key={idx} className={styles.platformTag}>
+                  {platform.platform}
+                </span>
+              ))
+            : null}
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      label: "Status",
+      type: "status",
+      sortable: true,
+      render: (value) => (
+        <span
+          className={styles.statusBadge}
+          style={{ backgroundColor: getStatusColor(value) }}
+        >
+          {value}
+        </span>
+      ),
+    },
+    {
+      key: "startDate",
+      label: "Start Date",
+      type: "date",
+      sortable: true,
+      render: (value) => new Date(value).toLocaleDateString(),
+    },
+    {
+      key: "endDate",
+      label: "End Date",
+      type: "date",
+      sortable: true,
+      render: (value) => new Date(value).toLocaleDateString(),
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      type: "actions",
+      render: (_: any, row: AdCampaign) => (
+        <div className={styles.actions}>
+          <Link href={`campaigns/${row._id}`} className={styles.actionButton}>
+            <Eye size={16} />
+          </Link>
+          <Link href={`campaigns/${row._id?.toString()}`} className={styles.actionButton}>
+            <Edit size={16} />
+          </Link>
+          {row.status === "active" && (
+            <button
+              onClick={() => handlePauseCampaign(row._id!.toString())}
+              className={styles.actionButton}
+              title="Pause Campaign"
+            >
+              <Pause size={16} />
+            </button>
+          )}
+          {row.status === "paused" && (
+            <button
+              onClick={() => handleResumeCampaign(row._id!.toString())}
+              className={styles.actionButton}
+              title="Resume Campaign"
+            >
+              <Play size={16} />
+            </button>
+          )}
+          {row.status !== "archived" && (
+            <button
+              onClick={() => handleArchiveCampaign(row._id!.toString())}
+              className={styles.actionButton}
+              title="Archive Campaign"
+            >
+              <Archive size={16} />
+            </button>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className={styles.campaignsPage}>
       <div className={styles.header}>
         <h1>Campaigns</h1>
-        <Link href="campaigns/create" className={styles.createButton}>
-          <Plus size={20} />
-          Create Campaign
-        </Link>
+        <button className="themeButton">
+          <Link href="campaigns/create" >
+            <Plus size={20} />
+            Create Campaign
+          </Link>
+        </button>
       </div>
 
       <div className={styles.filters}>
-        <div className={styles.searchBox}>
-          <Search size={20} />
-          <input
-            type="text"
-            placeholder="Search campaigns..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+        <SearchBar
+          placeholder="Search campaigns..."
+          onSearch={setSearchTerm}
+          className={styles.searchBox}
+        />
 
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className={styles.statusFilter}
-        >
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="paused">Paused</option>
-          <option value="completed">Completed</option>
-          <option value="draft">Draft</option>
-          <option value="archived">Archived</option>
-        </select>
+        <div className={styles.tabs}>
+          {[
+            "All Status",
+            "Active",
+            "Paused",
+            "Completed",
+            "Draft",
+            "Archived"
+          ].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setStatusFilter(tab === "All Status" ? "all" : tab.toLowerCase())}
+              className={`${styles.tab} ${statusFilter === (tab === "All Status" ? "all" : tab.toLowerCase()) ? styles.tabActive : ""}`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className={styles.tableContainer}>
-        <table className={styles.campaignsTable}>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Objective</th>
-              <th>Platforms</th>
-              <th>Status</th>
-              <th>Start Date</th>
-              <th>End Date</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredCampaigns.map((campaign) => (
-              <tr key={campaign._id?.toString()}>
-                <td className={styles.campaignName}>{campaign.name}</td>
-                <td>{getObjectiveLabel(campaign.objective)}</td>
-                <td>
-                  <div className={styles.platforms}>
-                    {campaign.platforms?.map((platform, index) => (
-                      <span key={index} className={styles.platformTag}>
-                        {platform.platform}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td>
-                  <span
-                    className={styles.statusBadge}
-                    style={{ backgroundColor: getStatusColor(campaign.status) }}
-                  >
-                    {campaign.status}
-                  </span>
-                </td>
-                <td>{new Date(campaign.startDate).toLocaleDateString()}</td>
-                <td>{new Date(campaign.endDate).toLocaleDateString()}</td>
-                <td>
-                  <div className={styles.actions}>
-                    <Link
-                      href={`campaigns/${campaign._id}`}
-                      className={styles.actionButton}
-                    >
-                      <Eye size={16} />
-                    </Link>
-                    <Link
-                      href={`campaigns/${campaign._id?.toString()}`} 
-                      className={styles.actionButton}
-                    >
-                      <Edit size={16} />
-                    </Link>
-                    {campaign.status === "active" && (
-                      <button
-                        onClick={() => handlePauseCampaign(campaign._id!.toString())}
-                        className={styles.actionButton}
-                        title="Pause Campaign"
-                      >
-                        <Pause size={16} />
-                      </button>
-                    )}
-                    {campaign.status === "paused" && (
-                      <button
-                        onClick={() => handleResumeCampaign(campaign._id!.toString())}
-                        className={styles.actionButton}
-                        title="Resume Campaign"
-                      >
-                        <Play size={16} />
-                      </button>
-                    )}
-                    {campaign.status !== "archived" && (
-                      <button
-                        onClick={() => handleArchiveCampaign(campaign._id!.toString())}
-                        className={styles.actionButton}
-                        title="Archive Campaign"
-                      >
-                        <Archive size={16} />
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Table
+          data={filteredCampaigns}
+          columns={columns}
+          pageSize={10}
+          searchable={false}
+          emptyMessage="No campaigns found"
+        />
       </div>
 
       {filteredCampaigns.length === 0 && !loading && (

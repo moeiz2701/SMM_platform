@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import ReusableTable, { type TableColumn, type TableAction } from "../../../components/table"
 import type { ContentItem, FilterTab } from "../../../components/content"
 import type { CreateContentFormData, ValidationErrors } from "../../../components/create-content"
@@ -8,6 +9,7 @@ import styles from "@/styling/content.module.css"
 import SearchBar from "../../../components/searchbar"
 import API_ROUTES from "@/app/apiRoutes"
 import { useManager } from "@/contexts/managerContext"
+import { IconEdit, IconTrash, IconUpload, IconCheck, IconLoader2 } from "@tabler/icons-react"
 
 interface Platform {
   platform: string
@@ -43,7 +45,7 @@ interface PostItem {
   status: string
   platforms: Platform[]
   isSimulated: boolean
-  client: string
+  client: string | { _id: string; name: string }
   Manager: string
   createdAt: string
   updatedAt: string
@@ -471,6 +473,7 @@ function CreateContentModal({
 
 export default function ContentPage() {
   const { manager, loading: managerLoading } = useManager()
+  const router = useRouter()
   const [clientsData, setClientsData] = useState<{id: string, name: string}[]>([]);
   const [clientsError, setClientsError] = useState('');
   const [posts, setPosts] = useState<PostItem[]>([])
@@ -526,7 +529,8 @@ export default function ContentPage() {
       }
 
       // Get the client's social accounts
-      const socialAccountsResponse = await fetch(`http://localhost:3000/api/v1/social-accounts/client/${post.client._id || post.client}`, {
+      const clientId = typeof post.client === 'string' ? post.client : post.client._id;
+      const socialAccountsResponse = await fetch(`http://localhost:3000/api/v1/social-accounts/client/${clientId}`, {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -543,12 +547,18 @@ export default function ContentPage() {
       const socialAccounts = socialAccountsData.data || []
 
       // Find matching accounts for all platforms in the post
-      const uploadResults = []
-      const errors = []
+      interface UploadResult {
+        platform: string;
+        result: any;
+        account: any;
+      }
+      
+      const uploadResults: UploadResult[] = []
+      const errors: string[] = []
       
       for (const postPlatform of post.platforms) {
         try {
-          const matchingAccount = socialAccounts.find(account => 
+          const matchingAccount = socialAccounts.find((account: any) => 
             account.platform.toLowerCase() === postPlatform.platform.toLowerCase()
           )
           
@@ -791,13 +801,13 @@ export default function ContentPage() {
     {
       key: "title",
       label: "TITLE",
-      type: "text",
+      type: "string",
       sortable: true,
     },
     {
       key: "content",
       label: "CONTENT",
-      type: "text",
+      type: "string",
       sortable: false,
       render: (value) => (
         <div className={styles.contentPreview}>
@@ -808,7 +818,7 @@ export default function ContentPage() {
     {
       key: "platforms",
       label: "PLATFORMS",
-      type: "custom",
+      type: "array",
       sortable: false,
       render: (_, row) => (
         <div className={styles.platformTags}>
@@ -842,8 +852,9 @@ export default function ContentPage() {
       <button 
         onClick={() => handleEditPost(row)}
         className={styles.editButton}
+        title="Edit post"
       >
-        Edit
+        <IconEdit size={16} />
       </button>
       
       {/* Show upload button only if status is not published */}
@@ -854,22 +865,27 @@ export default function ContentPage() {
           className={styles.uploadButton}
           title={`Upload to: ${row.platforms.map((p: Platform) => p.platform).join(', ')}`}
         >
-          {uploadingPosts.has(row._id) ? 'Uploading...' : 'Upload'}
+          {uploadingPosts.has(row._id) ? (
+            <IconLoader2 size={16} className="animate-spin" />
+          ) : (
+            <IconUpload size={16} />
+          )}
         </button>
       )}
       
       {/* Show published status indicator if published */}
       {row.status.toLowerCase() === 'published' && (
         <span className={styles.publishedIndicator} title="Already published">
-          ✓ Published
+          <IconCheck size={16} />
         </span>
       )}
       
       <button 
         onClick={() => handleDeletePost(row._id)}
         className={styles.deleteButton}
+        title="Delete post"
       >
-        Delete
+        <IconTrash size={16} />
       </button>
     </div>
   )
@@ -887,10 +903,12 @@ export default function ContentPage() {
             mediaItem.mediaType === 'video' ? 'video/mp4' : 'application/octet-stream'
     }));
     
+    const clientId = typeof post.client === 'string' ? post.client : post.client._id;
+    
     setFormData({
       title: post.title,
       platforms: post.platforms.map((p: Platform) => p.platform),
-      clients: [post.client], // This should already be the correct client ID
+      clients: [clientId], // Use the extracted client ID
       content: post.content,
       tags: [...post.hashtags],
       links: [], // Initialize empty array
@@ -949,7 +967,7 @@ export default function ContentPage() {
       }
 
       const scheduledTime = new Date(formData.dueDate).toISOString();
-      const clientId = formData.clients[0] || editingPost?.client;
+      const clientId = formData.clients[0] || (typeof editingPost?.client === 'string' ? editingPost.client : editingPost?.client._id);
       
       // Combine content with hashtags
       const finalContent = combineContentWithHashtags(formData.content, formData.tags)
@@ -1286,6 +1304,7 @@ export default function ContentPage() {
   }
 
   return (
+    <div className="animation">
     <div className={styles.layout}>
       <main className={styles.main}>
         <div className={styles.header}>
@@ -1297,6 +1316,9 @@ export default function ContentPage() {
                 className={styles.createButton} 
                 onClick={() => setShowCreateModal(true)}
                 disabled={!manager}
+                style={{
+                  backgroundColor: "var(--theme-tertiary)" 
+                }}
               >
                 <span className={styles.plusIcon}>+</span>
                 Create Content
@@ -1408,7 +1430,7 @@ export default function ContentPage() {
               pageSize={5}
               searchable={false}
               emptyMessage="No content found"
-              onRowClick={(row) => console.log("Row clicked:", row)}
+              onRowClick={(row) => router.push(`/manager/content/${row._id}`)}
             />
           )}
         </div>
@@ -1479,6 +1501,7 @@ export default function ContentPage() {
           />
         )}
       </main>
+    </div>
     </div>
   )
 }

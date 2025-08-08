@@ -5,6 +5,7 @@ const SocialAccount = require('../models/SocialAccount');
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
 const cloudinaryUtils = require('../utils/cloudinary');
+const Notification = require('../models/Notification');
 // Then use cloudinaryUtils.uploadToCloudinary and cloudinaryUtils.deleteFromCloudinary
 const mongoose = require('mongoose');
 
@@ -53,6 +54,59 @@ exports.getPosts = asyncHandler(async (req, res, next) => {
     success: true,
     count: posts.length, 
     data: posts
+  });
+});
+
+// @desc    Get single post
+// @route   GET /api/v1/posts/:id
+// @access  Private
+exports.getPost = asyncHandler(async (req, res, next) => {
+  const postId = req.params.id;
+
+  // Validate MongoDB ObjectId format
+  if (!mongoose.Types.ObjectId.isValid(postId)) {
+    return next(new ErrorResponse(`Invalid post ID format: ${postId}`, 400));
+  }
+
+  const post = await Post.findById(postId)
+    .populate({
+      path: 'client',
+      populate: { path: 'user', select: 'name email' }
+    })
+    .populate({
+      path: 'Manager',
+      populate: { path: 'user', select: 'name email' }
+    })
+    .populate('platforms.account', 'username platform')
+
+  if (!post) {
+    return next(new ErrorResponse(`Post not found with id ${postId}`, 404));
+  }
+
+  // Check authorization
+  let isAuthorized = false;
+  
+  // Admins can see all posts
+  if (req.user.role === 'admin') {
+    isAuthorized = true;
+  }
+  // Check if manager is assigned to this client
+  else if (req.user.role === 'manager') {
+    const manager = await Manager.findOne({ user: req.user.id });
+    isAuthorized = manager?.managedClients.includes(post.client._id.toString());
+  }
+  // Client users can only see their own posts
+  else if (req.user.role === 'client' && req.user.client.toString() === post.client._id.toString()) {
+    isAuthorized = true;
+  }
+
+  if (!isAuthorized) {
+    return next(new ErrorResponse('Not authorized to access this post', 403));
+  }
+
+  res.status(200).json({
+    success: true,
+    data: post
   });
 });
 
@@ -157,6 +211,48 @@ exports.createPost = asyncHandler(async (req, res, next) => {
   }
 
   const post = await Post.create(req.body);
+
+  // Create notification for the client about the scheduled post
+  try {
+    
+    // Get client with user information
+    const clientWithUser = await Client.findById(clientId).populate('user', 'name email');
+    
+    if (clientWithUser && clientWithUser.user) {
+      let notificationTitle = 'New Post Scheduled';
+      let notificationMessage = '';
+      
+      // Customize message based on post status
+      if (req.body.status === 'scheduled') {
+        const scheduleDate = new Date(req.body.scheduledTime).toLocaleString();
+        notificationMessage = `A new post "${req.body.title || 'Untitled'}" has been scheduled for ${scheduleDate}. You can review and manage your scheduled posts in the content section.`;
+      } else if (req.body.status === 'draft') {
+        notificationTitle = 'New Post Draft Created';
+        notificationMessage = `A new post draft "${req.body.title || 'Untitled'}" has been created for you. You can review and schedule it when ready.`;
+      } else {
+        notificationMessage = `A new post "${req.body.title || 'Untitled'}" has been created and is ready for review.`;
+      }
+
+      await Notification.create({
+        type: 'post',
+        title: notificationTitle,
+        message: notificationMessage,
+        relatedEntity: {
+          entityType: 'Post',
+          entityId: post._id
+        },
+        user: clientWithUser.user._id,
+        priority: req.body.status === 'scheduled' ? 'medium' : 'low',
+        actionRequired: req.body.status === 'draft'
+      });
+
+      console.log('Post notification created successfully for client user:', clientWithUser.user._id);
+    }
+  } catch (notificationError) {
+    console.error('Error creating post notification:', notificationError);
+    // Continue with response even if notification fails
+  }
+
   res.status(201).json({ success: true, data: post });
 });
 

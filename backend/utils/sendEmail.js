@@ -12,13 +12,14 @@ const transporter = nodemailer.createTransport({
 });
 
 // Send email
-exports.sendEmail = async ({ email, subject, message }) => {
+exports.sendEmail = async ({ email, subject, text, html }) => {
   try {
     const mailOptions = {
       from: process.env.FROM_EMAIL,
       to: email,
       subject,
-      text: message
+      text: text || html?.replace(/<[^>]*>/g, ''), // Fallback text version from HTML
+      html: html // Include HTML content if provided
     };
 
     await transporter.sendMail(mailOptions);

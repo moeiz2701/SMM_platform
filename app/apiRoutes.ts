@@ -1,8 +1,18 @@
 // This file centralizes your backend API endpoints for easy import and usage in your frontend code.
 
+import { get } from "http";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api/v1';
 
 export const API_ROUTES = {
+  MESSAGES: {
+    GET_ALL: `${API_BASE_URL}/messages`,
+    SEND: `${API_BASE_URL}/messages`,
+    START_CONVERSATION: `${API_BASE_URL}/messages/start`,
+    GET_CONVERSATION: (userId: string) => `${API_BASE_URL}/messages/${userId}`,
+    MARK_AS_READ: (conversationId: string) => `${API_BASE_URL}/messages/read/${conversationId}`,
+  },
+
   AUTH: {
     REGISTER: `${API_BASE_URL}/auth/register`,
     LOGIN: `${API_BASE_URL}/auth/login`,
@@ -12,6 +22,7 @@ export const API_ROUTES = {
     RESET_PASSWORD: (token: string) => `${API_BASE_URL}/auth/resetpassword/${token}`,
     UPDATE_DETAILS: `${API_BASE_URL}/auth/updatedetails`,
     UPDATE_PASSWORD: `${API_BASE_URL}/auth/updatepassword`,
+    GET_ALL_USERS: `${API_BASE_URL}/auth/all-users`
   },
 
   CLIENTS: {
@@ -21,12 +32,16 @@ export const API_ROUTES = {
     BY_USER: (userId: string) => `${API_BASE_URL}/clients/user/${userId}`,
     BY_MANAGER: `${API_BASE_URL}/clients/manager/clients`,
     SEND_REQUEST: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/request`,
+    SEND_REQUEST_TO_MANAGER: (managerId: string) => `${API_BASE_URL}/clients/request-manager/${managerId}`,
     GET_REQUESTS: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/requests`,
     ASSIGN_MANAGER: (managerId: string) => `${API_BASE_URL}/clients/assign-manager/${managerId}`,
     DELETE_REQUEST: (clientId: string, requestId: string) => `${API_BASE_URL}/clients/${clientId}/requests/${requestId}`,
     ADD_OR_UPDATE_BILLING: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/billing`,
     ADD_PAYMENT_METHOD: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/payment-method`,
     ME: `${API_BASE_URL}/clients/me`,
+    ME_MANAGER: `${API_BASE_URL}/clients/me/manager`,
+    GET: (clientId: string) => `${API_BASE_URL}/clients/${clientId}`,
+    
   },
 
   SOCIAL_ACCOUNTS: {
@@ -45,6 +60,7 @@ export const API_ROUTES = {
     DELETE: (id: string) => `${API_BASE_URL}/managers/${id}`,
     GET_CLIENTS: (id: string) => `${API_BASE_URL}/managers/${id}/clients`,
     ME:`${API_BASE_URL}/managers/MyManager`,
+    ME_STATS: `${API_BASE_URL}/managers/me/stats`,
     GET_FOR_CLIENT: (clientId: string) => `${API_BASE_URL}/managers/for-client/${clientId}`,
     GET_MY_MANAGER: `${API_BASE_URL}/managers/my-manager`,
     REMOVE_CLIENT: (managerId: string, clientId: string) => 
@@ -56,6 +72,9 @@ export const API_ROUTES = {
     : `${API_BASE_URL}/managers/${managerId}/reviews`,
   DELETE_REVIEW: (managerId: string, reviewId: string) => 
     `${API_BASE_URL}/managers/${managerId}/reviews/${reviewId}`,
+  MY_REQUESTS: `${API_BASE_URL}/managers/me/requests`,
+    ACCEPT_REQUEST: (clientId: string) => `${API_BASE_URL}/managers/accept-request/${clientId}`,
+    DECLINE_REQUEST: (clientId: string) => `${API_BASE_URL}/managers/decline-request/${clientId}`
    
   },
 
@@ -91,6 +110,16 @@ POSTS: {
     GET_BY_MANAGER: `${API_BASE_URL}/invoices/manager`,
     GET_BY_CLIENT: `${API_BASE_URL}/invoices/client`,
     GET: (id: string) =>`${API_BASE_URL}/invoices/invoiceDetails/${id}`,
+    PAY: (id: string) => `${API_BASE_URL}/invoices/${id}/pay`,
+    CONFIRM_PAYMENT: (id: string) => `${API_BASE_URL}/invoices/${id}/confirm-payment`,
+  },
+
+  NOTIFICATIONS: {
+    GET_ALL: `${API_BASE_URL}/notifications`,
+    GET_UNREAD_COUNT: `${API_BASE_URL}/notifications/unread-count`,
+    MARK_AS_READ: (id: string) => `${API_BASE_URL}/notifications/${id}/read`,
+    MARK_ALL_READ: `${API_BASE_URL}/notifications/mark-all-read`,
+    PROCESS_ACTION: (id: string) => `${API_BASE_URL}/notifications/${id}/action`
   },
 
 USERS: {

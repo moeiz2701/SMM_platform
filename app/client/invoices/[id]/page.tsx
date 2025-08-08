@@ -13,6 +13,8 @@ const InvoiceDetailPage = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [updating, setUpdating] = useState(false)
+  const [paying, setPaying] = useState(false)
+  const [paymentError, setPaymentError] = useState<string | null>(null)
 
   const invoiceId =
     typeof params.id === "string"
@@ -28,6 +30,8 @@ const InvoiceDetailPage = () => {
   }, [invoiceId])
 
         const fetchInvoice = async () => {
+        if (!invoiceId) return
+        
         try {
             setLoading(true)
             const res = await fetch(API_ROUTES.INVOICES.GET(invoiceId), {
@@ -50,13 +54,58 @@ const InvoiceDetailPage = () => {
         }
         }
 
+  const handlePayInvoice = async () => {
+    if (!invoice || invoice.status === "paid" || !invoiceId) return
+
+    try {
+      setPaying(true)
+      setPaymentError(null)
+      
+      const res = await fetch(API_ROUTES.INVOICES.PAY(invoiceId), {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        }
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.message || "Payment failed")
+      }
+
+      if (data.success && data.data.paymentStatus === "succeeded") {
+        // Payment successful
+        setInvoice((prev) => prev ? { 
+          ...prev, 
+          status: "paid", 
+          paymentDate: new Date().toISOString() 
+        } : null)
+        alert("Payment processed successfully!")
+      } else if (data.requiresAction) {
+        // 3D Secure authentication required
+        // In a real app, you'd handle this with Stripe's frontend SDK
+        alert("Additional authentication required. Please contact support.")
+      } else {
+        throw new Error("Payment processing failed")
+      }
+    } catch (err: any) {
+      setPaymentError(err.message || "Failed to process payment")
+      console.error("Payment error:", err)
+    } finally {
+      setPaying(false)
+    }
+  }
+
   const handleMarkAsPaid = async () => {
     if (!invoice || invoice.status === "paid") return
 
     try {
       setUpdating(true)
-      await invoiceAPI.markAsPaid(invoice._id)
-      setInvoice((prev) => (prev ? { ...prev, status: "paid", paymentDate: new Date().toISOString() } : null))
+      // This would be for admin/manager functionality
+      // For now, we'll use the payment function
+      await handlePayInvoice()
     } catch (err: any) {
       alert(err.response?.data?.message || "Failed to mark invoice as paid")
     } finally {
@@ -118,15 +167,34 @@ const InvoiceDetailPage = () => {
             </span>
             <div className={styles.actionButtons}>
               {invoice.status !== "paid" && (
-                <button onClick={handleMarkAsPaid} className={styles.paidButton} disabled={updating}>
-                  <Check size={16} />
-                  {updating ? "Updating..." : "Mark as Paid"}
-                </button>
+                <>
+                  <button 
+                    onClick={handlePayInvoice} 
+                    className={styles.payButton} 
+                    disabled={paying}
+                  >
+                    <CreditCard size={16} />
+                    {paying ? "Processing..." : "Pay Invoice"}
+                  </button>
+                  <button onClick={handleMarkAsPaid} className={styles.paidButton} disabled={updating}>
+                    <Check size={16} />
+                    {updating ? "Updating..." : "Mark as Paid"}
+                  </button>
+                </>
               )}
             </div>
           </div>
         </div>
       </div>
+
+      {paymentError && (
+        <div className={styles.paymentError}>
+          <p>Payment Error: {paymentError}</p>
+          <button onClick={() => setPaymentError(null)} className={styles.dismissButton}>
+            ×
+          </button>
+        </div>
+      )}
 
       <div className={styles.content}>
         <div className={styles.invoiceCard}>
@@ -173,7 +241,7 @@ const InvoiceDetailPage = () => {
               <Calendar size={24} />
               <div>
                 <h3>Campaign</h3>
-                <p>{invoice.campaign?.name}</p>
+                <p>{typeof invoice.campaign === 'object' ? invoice.campaign.name : invoice.campaign}</p>
               </div>
             </div>
 
@@ -181,7 +249,7 @@ const InvoiceDetailPage = () => {
               <User size={24} />
               <div>
                 <h3>Client</h3>
-                <p>{invoice.client?.user?.name}</p>
+                <p>{typeof invoice.client === 'object' ? invoice.client.user?.name || 'N/A' : invoice.client}</p>
               </div>
             </div>
 
@@ -189,7 +257,7 @@ const InvoiceDetailPage = () => {
               <CreditCard size={24} />
               <div>
                 <h3>Budget</h3>
-                <p>{invoice.budget?.totalBudget}</p>
+                <p>${typeof invoice.budget === 'object' ? invoice.budget.totalBudget?.toLocaleString() || '0' : invoice.budget}</p>
               </div>
             </div>
           </div>
@@ -219,20 +287,28 @@ const InvoiceDetailPage = () => {
             <h3>Reference Information</h3>
             <div className={styles.referenceGrid}>
               <div className={styles.referenceItem}>
-                <span className={styles.referenceLabel}>Manager ID:</span>
-                <span className={styles.referenceValue}>{invoice.manager?.user?.name}</span>
+                <span className={styles.referenceLabel}>Manager:</span>
+                <span className={styles.referenceValue}>
+                  {typeof invoice.manager === 'object' ? invoice.manager.user?.name || 'N/A' : invoice.manager}
+                </span>
               </div>
               <div className={styles.referenceItem}>
-                <span className={styles.referenceLabel}>Client ID:</span>
-                <span className={styles.referenceValue}>{invoice.client?.user?.name}</span>
+                <span className={styles.referenceLabel}>Client:</span>
+                <span className={styles.referenceValue}>
+                  {typeof invoice.client === 'object' ? invoice.client.user?.name || 'N/A' : invoice.client}
+                </span>
               </div>
               <div className={styles.referenceItem}>
-                <span className={styles.referenceLabel}>Campaign ID:</span>
-                <span className={styles.referenceValue}>{invoice.campaign?.name}</span>
+                <span className={styles.referenceLabel}>Campaign:</span>
+                <span className={styles.referenceValue}>
+                  {typeof invoice.campaign === 'object' ? invoice.campaign.name : invoice.campaign}
+                </span>
               </div>
               <div className={styles.referenceItem}>
-                <span className={styles.referenceLabel}>Budget ID:</span>
-                <span className={styles.referenceValue}>{invoice.budget?.totalBudget}</span>
+                <span className={styles.referenceLabel}>Budget:</span>
+                <span className={styles.referenceValue}>
+                  ${typeof invoice.budget === 'object' ? invoice.budget.totalBudget?.toLocaleString() || '0' : invoice.budget}
+                </span>
               </div>
             </div>
           </div>

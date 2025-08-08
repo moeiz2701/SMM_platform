@@ -23,9 +23,9 @@ const ReviewSchema = new mongoose.Schema({
 });
 
 const RequestSchema = new mongoose.Schema({
-  manager: {
+  Client: {
     type: mongoose.Schema.ObjectId,
-    ref: 'User',
+    ref: 'Client',
     required: true
   },
   date: {
