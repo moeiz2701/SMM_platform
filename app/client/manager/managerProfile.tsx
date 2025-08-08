@@ -1,18 +1,18 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { User, Phone, Building, Globe, Star, Calendar, Users, MessageSquare, ExternalLink, Mail, MapPin, Award, TrendingUp, Clock, CheckCircle, XCircle, AlertCircle, Edit, Trash2, Plus } from 'lucide-react'
-import styles from "../../../styling/ManagerProfile.module.css"
-import API_ROUTES from "@/app/apiRoutes"
-import styles from '../../../styling/managerProfile.module.css' // Assuming you have a CSS module for styles
+import { User, Phone, Building, Globe, Star, Calendar, Users, MessageSquare, ExternalLink, Mail, Award, TrendingUp, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { API_ROUTES } from "@/app/apiRoutes"
+import styles from '../../../styling/managerProfile.module.css'
 
 interface Manager {
   _id: string;
   user: {
+    _id: string;
     name: string;
     email: string;
   };
-  status: string;
+  status: 'active' | 'inactive';
   rating: number;
   experience: number;
   createdAt: string;
@@ -37,17 +37,11 @@ interface Manager {
       _id: string;
       name: string;
     };
+    reviewerName?: string;
+    reviewerId?: string;
     date: string;
     rating: number;
     comment: string;
-  }>;
-  requests: Array<{
-    _id: string;
-    manager: {
-      name: string;
-    };
-    date: string;
-    status: string;
   }>;
 }
 
@@ -55,242 +49,67 @@ type Props = {
   id: string
 }
 
-interface CurrentUser {
-  id: string;
-  name: string;
-  // Add other user properties you need
-}
-
-type Manager = {
-  _id: string;
-  user: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-  phone: string;
-  department: string;
-  status: 'active' | 'inactive';
-  profilePhoto: string;
-  website: string;
-  socialMedia: {
-    linkedin: string;
-    facebook: string;
-    twitter: string;
-    instagram: string;
-  };
-  experience: number;
-  rating: number;
-  managedClients: any[];
-  reviews: any[];
-  requests: any[];
-  createdAt: string;
-};
-
 export default function ManagerProfilePage({ id }: Props) {
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'reviews' >('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'reviews'>('overview')
   const [manager, setManager] = useState<Manager | null>(null)
   const [loading, setLoading] = useState(true)
-  const [showReviewForm, setShowReviewForm] = useState(false)
-  const [editingReviewId, setEditingReviewId] = useState<string | null>(null)
-  // Add this state to store user names for reviews
-  const [reviewForm, setReviewForm] = useState({
-    rating: 5,
-    comment: ''
-  })
 
   useEffect(() => {
-  if (!id) return
-  
-  const fetchData = async () => {
-    try {
-      setLoading(true)
-      // Fetch current user first
-      const userRes = await fetch(API_ROUTES.AUTH.ME, {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-      
-      if (userRes.ok) {
-        const userData = await userRes.json()
-        // Check if the data is nested under a 'data' property
-        const user = userData.data || userData;
-        
-        setCurrentUser({
-          id: user._id,
-          name: user.name // This should be the logged-in user's name
-        })
-      }
-      
-      // Then fetch manager data
-      await fetchManager()
-    } catch (err) {
-      console.error("Failed to load data:", err)
-    } finally {
-      setLoading(false)
-    }
-  }
-  
-  fetchData()
-}, [id])
-
-
-  const fetchManager = async () => {
-  try {
-    const res = await fetch(API_ROUTES.MANAGERS.GET_ONE(id), {
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    if (!id) return
     
-    const data = await res.json();
-    const managerData = data.data;
-
-    // Fetch names for all reviewers
-    const reviewsWithNames = await Promise.all(
-      managerData.reviews.map(async (review: any) => {
-        let reviewerName = 'User';
-        let reviewerId = null;
-
-        if (typeof review.reviewer === 'string') {
-          reviewerId = review.reviewer;
-          try {
-            const userRes = await fetch(API_ROUTES.USERS.GET_ONE(review.reviewer), {
-              credentials: 'include',
-              headers: {
-                'Content-Type': 'application/json'
-              }
-            });
-            if (userRes.ok) {
-              const userData = await userRes.json();
-              reviewerName = userData.data?.name || userData.name || 'User';
-            }
-          } catch (err) {
-            console.error("Failed to fetch user:", err);
-          }
-        } else if (review.reviewer?._id) {
-          reviewerId = review.reviewer._id;
-          reviewerName = review.reviewer.name || 'User';
-        }
-
-        return {
-          ...review,
-          reviewerName,
-          reviewerId
-        };
-      })
-    );
-
-    setManager({
-      ...managerData,
-      reviews: reviewsWithNames
-    });
-  } catch (err) {
-    console.error("Failed to load manager:", err);
-  }
-};
-
-  const handleReviewSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const method = editingReviewId ? 'PUT' : 'POST';
-      const url = editingReviewId
-        ? API_ROUTES.MANAGERS.ADD_OR_UPDATE_REVIEW(id, editingReviewId)
-        : API_ROUTES.MANAGERS.ADD_OR_UPDATE_REVIEW(id);
-
-      const response = await fetch(url, {
-        method,
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          rating: reviewForm.rating,
-          comment: reviewForm.comment
+    const fetchManager = async () => {
+      try {
+        setLoading(true)
+        const res = await fetch(API_ROUTES.MANAGERS.GET_ONE(id), {
+          credentials: 'include'
         })
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server returned ${response.status}: ${errorText.substring(0, 100)}`);
-      }
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.message || 'Review submission failed');
-      }
-
-      await fetchManager();
-      setShowReviewForm(false);
-      setEditingReviewId(null);
-      setReviewForm({ rating: 5, comment: '' });
-    } catch (err) {
-      console.error("Review submission error:", err);
-      alert(err instanceof Error ? err.message : "Failed to submit review");
-    }
-  };
-
-  const handleDeleteReview = async (reviewId: string) => {
-    if (!reviewId) {
-      console.error("Cannot delete review: Review ID is undefined");
-      alert("Cannot delete review: Invalid review ID");
-      return;
-    }
-
-    if (!id) {
-      console.error("Cannot delete review: Manager ID is undefined");
-      alert("Cannot delete review: Invalid manager ID");
-      return;
-    }
-
-    const confirmed = window.confirm("Are you sure you want to delete this review?");
-    if (!confirmed) return;
-
-    try {
-      const response = await fetch(API_ROUTES.MANAGERS.DELETE_REVIEW(id, reviewId), {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`)
         }
-      });
-
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        throw new Error(`Server returned ${response.status}: ${text.substring(0, 100)}`);
+        
+        const contentType = res.headers.get('content-type')
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Response is not JSON')
+        }
+        
+        const data = await res.json()
+        
+        if (data.success && data.data) {
+          setManager(data.data)
+        } else {
+          throw new Error(data.message || 'Failed to fetch manager data')
+        }
+      } catch (err) {
+        console.error("Failed to load manager:", err)
+        setManager(null)
+      } finally {
+        setLoading(false)
       }
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to delete review');
-      }
-
-      await fetchManager();
-    } catch (err) {
-      console.error("Error deleting review:", err);
-      alert(err instanceof Error ? err.message : "Failed to delete review");
     }
-  };
+    
+    fetchManager()
+  }, [id])
 
-  const handleEditReview = (review: any) => {
-    setEditingReviewId(review._id)
-    setReviewForm({
-      rating: review.rating,
-      comment: review.comment
-    })
-    setShowReviewForm(true)
+  if (loading) {
+    return (
+      <div className={styles.profileContainer}>
+        <div className={styles.profileWrapper}>
+          <div className={styles.loading}>Loading manager profile...</div>
+        </div>
+      </div>
+    )
   }
 
-  if (loading) return <div>Loading...</div>
-  if (!manager) return <div>Manager not found</div>
+  if (!manager) {
+    return (
+      <div className={styles.profileContainer}>
+        <div className={styles.profileWrapper}>
+          <div className={styles.error}>Manager not found or failed to load.</div>
+        </div>
+      </div>
+    )
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -315,18 +134,17 @@ export default function ManagerProfilePage({ id }: Props) {
     }
   }
 
-  const renderStars = (rating: number, interactive = false, onRatingChange?: (rating: number) => void) => {
+  const renderStars = (rating: number) => {
     return (
       <div className={styles.starsContainer}>
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={`star-${star}`}
             size={16}
-            className={`${styles.star} ${star <= rating ? styles.starFilled : ''} ${interactive ? styles.interactiveStar : ''}`}
-            onClick={() => interactive && onRatingChange && onRatingChange(star)}
+            className={`${styles.star} ${star <= rating ? styles.starFilled : ''}`}
           />
         ))}
-        {!interactive && <span className={styles.ratingText}>({rating.toFixed(1)})</span>}
+        <span className={styles.ratingText}>({rating.toFixed(1)})</span>
       </div>
     )
   }
@@ -456,205 +274,39 @@ export default function ManagerProfilePage({ id }: Props) {
     return (
       <div className={styles.tabContent}>
         <div className={styles.reviewsHeader}>
-          <h3>Client Reviews ({manager.reviews.length})</h3>
+          <h3>Client Reviews ({manager.reviews?.length || 0})</h3>
           <div className={styles.overallRating}>
-            {renderStars(manager.rating)}
-            <span className={styles.reviewCount}>Based on {manager.reviews.length} reviews</span>
+            {renderStars(manager.rating || 0)}
+            <span className={styles.reviewCount}>Based on {manager.reviews?.length || 0} reviews</span>
           </div>
-          <button 
-            className={styles.addReviewButton}
-            onClick={() => setShowReviewForm(true)}
-          >
-            <Plus size={16} />
-            Add Review
-          </button>
         </div>
-
-        {showReviewForm && (
-          <div className={styles.reviewFormContainer}>
-            <h4>{editingReviewId ? 'Edit Review' : 'Add Review'}</h4>
-            <form onSubmit={handleReviewSubmit}>
-              <div className={styles.formGroup}>
-                <label>Rating</label>
-                {renderStars(reviewForm.rating, true, (rating) => 
-                  setReviewForm({...reviewForm, rating})
-                )}
-              </div>
-              <div className={styles.formGroup}>
-                <label>Comment</label>
-                <textarea
-                  value={reviewForm.comment}
-                  onChange={(e) => setReviewForm({...reviewForm, comment: e.target.value})}
-                  required
-                />
-              </div>
-              <div className={styles.formActions}>
-                <button type="submit" className={styles.submitButton}>
-                  {editingReviewId ? 'Update Review' : 'Submit Review'}
-                </button>
-                <button 
-                  type="button" 
-                  className={styles.cancelButton}
-                  onClick={() => {
-                    setShowReviewForm(false)
-                    setEditingReviewId(null)
-                    setReviewForm({ rating: 5, comment: '' })
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
         
-             <div className={styles.reviewsList}>
-        {manager.reviews.map((review: any) => {
-          const reviewerName = review.reviewerName || 'User';
-          const isCurrentUserReview = review.reviewerId === currentUser?.id;
+        <div className={styles.reviewsList}>
+          {(manager.reviews || []).map((review: any) => {
+            const reviewerName = review.reviewerName || (typeof review.reviewer === 'object' ? review.reviewer.name : 'User')
 
-          return (
-            <div key={`review-${review._id}`} className={styles.reviewCard}>
-              <div className={styles.reviewHeader}>
-                <div className={styles.reviewerInfo}>
-                  <div className={styles.reviewerAvatar}>
-                    {reviewerName.charAt(0).toUpperCase()}
+            return (
+              <div key={`review-${review._id}`} className={styles.reviewCard}>
+                <div className={styles.reviewHeader}>
+                  <div className={styles.reviewerInfo}>
+                    <div className={styles.reviewerAvatar}>
+                      {reviewerName.charAt(0).toUpperCase()}
+                    </div>
+                    <div className={styles.reviewerDetails}>
+                      <h4>{reviewerName}</h4>
+                      <span className={styles.reviewDate}>{formatDate(review.date)}</span>
+                    </div>
                   </div>
-                  <div className={styles.reviewerDetails}>
-                    <h4>{reviewerName}</h4>
-                    <span className={styles.reviewDate}>{formatDate(review.date)}</span>
-                  </div>
-  const renderClientsTab = () => (
-    <div className={styles.tabContent}>
-      <div className={styles.clientsHeader}>
-        <h3>Managed Clients ({manager.managedClients?.length || 0})</h3>
-        <div className={styles.clientsStats}>
-          <span className={styles.activeClients}>
-            {manager.managedClients?.filter((c: any) => c.status === 'active').length || 0} Active
-          </span>
-          <span className={styles.inactiveClients}>
-            {manager.managedClients?.filter((c: any) => c.status === 'inactive').length || 0} Inactive
-          </span>
+                </div>
+                {renderStars(review.rating)}
+                <p className={styles.reviewComment}>{review.comment}</p>
+              </div>
+            )
+          })}
         </div>
       </div>
-      
-      <div className={styles.clientsList}>
-        {(manager.managedClients || []).map((client: any) => (
-          <div key={client._id} className={styles.clientCard}>
-            <div className={styles.clientInfo}>
-              <div className={styles.clientAvatar}>
-                {client.name.charAt(0)}
-              </div>
-              <div className={styles.clientDetails}>
-                <h4>{client.name}</h4>
-                <div className={styles.clientStatus}>
-                  {getStatusIcon(client.status)}
-                  <span className={`${styles.statusText} ${styles[client.status]}`}>
-                    {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <button className={styles.viewClientBtn}>
-              View Details
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-
-  const renderReviewsTab = () => (
-    <div className={styles.tabContent}>
-      <div className={styles.reviewsHeader}>
-        <h3>Client Reviews ({manager.reviews?.length || 0})</h3>
-        <div className={styles.overallRating}>
-          {renderStars(manager.rating || 0)}
-          <span className={styles.reviewCount}>Based on {manager.reviews?.length || 0} reviews</span>
-        </div>
-      </div>
-      
-      <div className={styles.reviewsList}>
-        {(manager.reviews || []).map((review: any, index: number) => (
-          <div key={index} className={styles.reviewCard}>
-            <div className={styles.reviewHeader}>
-              <div className={styles.reviewerInfo}>
-                <div className={styles.reviewerAvatar}>
-                  {review.reviewer.name.charAt(0)}
-                </div>
-                <div className={styles.reviewerDetails}>
-                  <h4>{review.reviewer.name}</h4>
-                  <span className={styles.reviewDate}>{formatDate(review.date)}</span>
-                </div>
-                {isCurrentUserReview && (
-                  <div className={styles.reviewActions}>
-                    <button 
-                      className={styles.editButton}
-                      onClick={() => handleEditReview(review)}
-                    >
-                      <Edit size={14} />
-                    </button>
-                    <button 
-                      className={styles.deleteButton}
-                      onClick={() => handleDeleteReview(review._id)}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                )}
-              </div>
-              {renderStars(review.rating)}
-              <p className={styles.reviewComment}>{review.comment}</p>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  )
-
-  const renderRequestsTab = () => (
-    <div className={styles.tabContent}>
-      <div className={styles.requestsHeader}>
-        <h3>Recent Requests ({manager.requests?.length || 0})</h3>
-        <div className={styles.requestsStats}>
-          <span className={styles.pendingRequests}>
-            {manager.requests?.filter((r: any) => r.status === 'pending').length || 0} Pending
-          </span>
-          <span className={styles.approvedRequests}>
-            {manager.requests?.filter((r: any) => r.status === 'approved').length || 0} Approved
-          </span>
-          <span className={styles.rejectedRequests}>
-            {manager.requests?.filter((r: any) => r.status === 'rejected').length || 0} Rejected
-          </span>
-        </div>
-      </div>
-      
-      <div className={styles.requestsList}>
-        {(manager.requests || []).map((request: any, index: number) => (
-          <div key={index} className={styles.requestCard}>
-            <div className={styles.requestInfo}>
-              <div className={styles.requestAvatar}>
-                {request.manager.name.charAt(0)}
-              </div>
-              <div className={styles.requestDetails}>
-                <h4>Request from {request.manager.name}</h4>
-                <span className={styles.requestDate}>
-                  <Clock size={14} />
-                  {formatDate(request.date)}
-                </span>
-              </div>
-            </div>
-            <div className={styles.requestStatus}>
-              {getStatusIcon(request.status)}
-              <span className={`${styles.statusText} ${styles[request.status]}`}>
-                {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
+    )
+  }
 
   return (
     <div className={styles.profileContainer}>
@@ -702,25 +354,11 @@ export default function ManagerProfilePage({ id }: Props) {
             Overview
           </button>
           <button
-            className={`${styles.tabButton} ${activeTab === 'clients' ? styles.active : ''}`}
-            onClick={() => setActiveTab('clients')}
-          >
-            <Users size={16} />
-            Clients ({manager.managedClients?.length || 0})
-          </button>
-          <button
             className={`${styles.tabButton} ${activeTab === 'reviews' ? styles.active : ''}`}
             onClick={() => setActiveTab('reviews')}
           >
             <MessageSquare size={16} />
             Reviews ({manager.reviews?.length || 0})
-          </button>
-          <button
-            className={`${styles.tabButton} ${activeTab === 'requests' ? styles.active : ''}`}
-            onClick={() => setActiveTab('requests')}
-          >
-            <AlertCircle size={16} />
-            Requests ({manager.requests?.length || 0})
           </button>
         </div>
 

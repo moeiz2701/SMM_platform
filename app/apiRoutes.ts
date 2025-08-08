@@ -35,8 +35,7 @@ export const API_ROUTES = {
     ADD_PAYMENT_METHOD: (clientId: string) => `${API_BASE_URL}/clients/${clientId}/payment-method`,
     ME: `${API_BASE_URL}/clients/me`,
     ME_MANAGER: `${API_BASE_URL}/clients/me/manager`,
-    GET_BY_IDS: `${API_BASE_URL}/clients/by-ids`,
-    BY_MANAGER: `${API_BASE_URL}/clients/manager/clients`,
+    
   },
 
   SOCIAL_ACCOUNTS: {
